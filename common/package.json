@@ -1,0 +1,5 @@
+{
+  "name": "@chess-bs/common",
+  "version": "1.0.0",
+  "main": "src/types.ts"
+}

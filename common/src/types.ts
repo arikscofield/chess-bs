@@ -1,4 +1,5 @@
-import Board from "../server/board";
+// import Board from "../server/board.js";
+// import Board = require('../server/board.js');
 
 export enum PieceType {
     Pawn = "Pawn",
@@ -18,14 +19,12 @@ export enum Color {
 export interface Piece {
     pieceType: PieceType;
     color: Color;
-    row: number;
-    col: number;
     hasMoved: boolean;
 }
 
 export interface Square {
-    rank: number,
-    file: number,
+    row: number,
+    col: number,
 }
 
 
@@ -43,4 +42,8 @@ export interface Rule {
     description: string;
 
     isMoveValid(move: Move, board: Board): boolean;
+}
+
+interface Board {
+    grid: (Piece | null)[][];
 }

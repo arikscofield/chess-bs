@@ -1,6 +1,6 @@
-import Board from "./board";
-import {Color, Move} from "../common/types";
-import {Player} from "./player";
+import Board from "./board.js";
+import {Color, type Move} from "@chess-bs/common";
+import {Player} from "./player.js";
 
 
 class Game {
@@ -11,6 +11,9 @@ class Game {
 
     constructor() {
         this.board = new Board();
+        this.players = { [Color.White]: new Player(), [Color.Black]: new Player()}; // TODO: Change to actual initialization
+        this.moveHistory = [];
+        this.turnColor = Color.White;
 
     }
 }

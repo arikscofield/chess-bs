@@ -10,7 +10,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "workspaces": [
+    "../common/*"
+  ],
   "dependencies": {
+    "@chess-bs/common": "1.0.0",
     "express": "^5.1.0",
     "socket.io": "^4.8.1"
   },
