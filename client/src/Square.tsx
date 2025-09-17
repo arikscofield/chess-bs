@@ -1,15 +1,29 @@
-import {Color, type Piece} from "@chess-bs/common"
+import {type Piece} from "@chess-bs/common"
 import {pieceImages} from "./assets/pieceImages.ts";
 
 
-function Square({ row, col, piece, view }: {row: number, col: number, piece: Piece, view: Color }) {
+const BoardType: Record<string, [string, string]> = {
+    Brown: ["bg-board-brown-light", "bg-board-brown-dark"],
+    Green: ["bg-board-green-light", "bg-board-green-dark"],
+}
 
 
-    const pieceString: string = piece.color + piece.pieceType;
+function Square({ row, col, piece, selected, movable, boardType = BoardType.Brown }: {row: number, col: number, piece: Piece | null, selected: boolean, movable: boolean, boardType?: [string, string] }) {
+
+
+    const pieceString: string = "" + piece?.color + piece?.pieceType;
 
     return (
-        <div className={`${row+col % 2 === 0 ? "bg-gray-200" : "bg-amber-800"}`}>
-            <img src={pieceImages[pieceString]} alt={pieceString}/>
+        <div className={`relative flex w-full h-full items-center justify-center group ${(row+col) % 2 === 0 ? boardType[0] : boardType[1]} ${piece !== null ? "cursor-grab" : ""}`}>
+            {selected && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 `}/>}
+            {movable && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 group-hover:hidden ${piece !== null ? "bg-transparent border-8 border-green-700/40 rounded-full" : "scale-[30%] rounded-full"}`}/> }
+            {movable && <div className={`absolute w-full h-full top-0 left-0 bg-green-600/40 hidden group-hover:block`}/>}
+
+            {piece !== null
+            ? <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} className={"z-10"} />
+            : <div className={"w-[90px] h-[90px]"}/>
+            }
+
         </div>
     )
 

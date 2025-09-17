@@ -1,5 +1,13 @@
 {
   "name": "@chess-bs/common",
   "version": "1.0.0",
-  "main": "src/types.ts"
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
 }

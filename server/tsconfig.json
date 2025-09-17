@@ -8,13 +8,10 @@
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
-    "target": "esnext",
-    // For nodejs:
-//    "lib": ["esnext"],
-    "types": ["node"],
-    // and npm install -D @types/node
+    "target": "es2022",
 
-
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
     "paths": {
       "@common/*": ["../common/*"]
     },
@@ -43,7 +40,7 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "references": [{ "path": "../common"}]
 }
