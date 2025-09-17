@@ -1,10 +1,13 @@
 import {useState} from "react";
 import Square from "./Square.tsx";
-import {Color, type Square as SquareType, type Move} from "@chess-bs/common";
+import {Color, type Square as SquareType, type Move, PieceType} from "@chess-bs/common";
 import BoardClass from "@chess-bs/common/dist/board";
 
 
-function Board({ board, view=Color.White, turn, handleMove } : { board: BoardClass, view: Color, turn: Color, handleMove: (move: Move) => void }) {
+function Board(
+    {board, view=Color.White, turn, promotionMove, handleMove, setPromotionMove, handleSelectPromotion } :
+    { board: BoardClass, view: Color, turn: Color, promotionMove: Move | null, handleMove: (move: Move) => void, setPromotionMove: (move: Move | null) => void, handleSelectPromotion: (pieceType: PieceType) => void }
+) {
 
 
     const [selectedSquare, setSelectedSquare] = useState<SquareType | null>(null);
@@ -14,8 +17,10 @@ function Board({ board, view=Color.White, turn, handleMove } : { board: BoardCla
     const rows = view === Color.White ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
     const cols = view === Color.White ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
 
+    const promotionOptions = [PieceType.Queen, PieceType.Knight, PieceType.Rook, PieceType.Bishop];
 
-    function handleSelectedSquare (square: SquareType) {
+
+    function handleSelectedSquare(square: SquareType) {
         if (turn !== view) return;
 
         const piece = board.getPiece(square);
@@ -28,14 +33,27 @@ function Board({ board, view=Color.White, turn, handleMove } : { board: BoardCla
             // Empty square: Deselect
             setSelectedSquare(null);
             setLegalMoves([]);
+            setPromotionMove(null);
         } else if (piece && piece.color === view) {
             // Selecting a piece
             setSelectedSquare(square);
             setLegalMoves(board.getLegalMoves(square, true));
+            setPromotionMove(null);
         } else if (selectedSquare && isLegalMove) {
             // Moving a piece
             const movingPiece = board.getPiece(selectedSquare)
             if (!movingPiece) return;
+
+            const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
+                ((movingPiece.color === Color.White && square.row === 0) ||
+                    (movingPiece.color === Color.Black && square.row === 7));
+
+            if (isPromotion) {
+                setPromotionMove({from: selectedSquare, to: square, piece: {type: movingPiece.pieceType, color: movingPiece.color}});
+                setLegalMoves([]);
+                return;
+            }
+
             handleMove({from: selectedSquare, to: square, piece: {type: movingPiece.pieceType, color: movingPiece.color}});
             setSelectedSquare(null);
             setLegalMoves([]);
@@ -43,6 +61,11 @@ function Board({ board, view=Color.White, turn, handleMove } : { board: BoardCla
     }
 
 
+    function handleSelectPromotionBoard(pieceType: PieceType) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        handleSelectPromotion(pieceType);
+    }
 
 
 
@@ -51,15 +74,25 @@ function Board({ board, view=Color.White, turn, handleMove } : { board: BoardCla
     return (
         <div className="grid grid-rows-8 grid-cols-8">
             {rows.map((row) => (
-                cols.map((col) => (
-                    <div key={col} onMouseDown={() => {handleSelectedSquare({row, col})}}>
-                        <Square row={row} col={col}
+                cols.map((col) => {
+                    let promotionOptionPieceType = null;
+                    if (promotionMove && col === promotionMove.to.col) {
+                        const rowDiff = Math.abs(row - promotionMove.to.row);
+                        if (rowDiff < promotionOptions.length) {
+                            promotionOptionPieceType = promotionOptions[rowDiff];
+                        }
+                    }
+                    return <div key={col}>
+                        <Square row={row} col={col} view={view}
                                 piece={board?.grid?.[row]?.[col] || null}
                                 selected={selectedSquare?.row === row && selectedSquare?.col === col}
                                 movable={legalMoves.some((move) => move.to.row === row && move.to.col === col)}
+                                handleSelectedSquare={handleSelectedSquare}
+                                promotionOptionPieceType={promotionOptionPieceType}
+                                handleSelectPromotion={handleSelectPromotionBoard}
                         />
                     </div>
-                ))
+                })
             ))}
         </div>
     )

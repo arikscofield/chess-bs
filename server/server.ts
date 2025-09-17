@@ -86,6 +86,7 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // TODO: Uncomment
         if (player.color !== game.turnColor) {
             callback({ status: AckStatus.ERROR, message: "Not players turn"});
             return;

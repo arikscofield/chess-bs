@@ -7,7 +7,7 @@ import {
     type ClientToServerEvents,
     Color,
     type GameState, type Move,
-    type ServerToClientEvents
+    type ServerToClientEvents, PieceType
 } from "@chess-bs/common";
 import {useEffect, useState} from "react";
 import {io, Socket} from "socket.io-client";
@@ -20,6 +20,7 @@ function App() {
     const [playerId, setPlayerId] = useState<string>("");
     const [view, setView] = useState<Color>(Color.White);
     const [turnColor, setTurnColor] = useState<Color>(Color.White);
+    const [promotionMove, setPromotionMove] = useState<Move | null>(null);
 
     // Board data
     const [grid, setGrid] = useState<(Piece | null)[][]>([]);
@@ -40,7 +41,7 @@ function App() {
             console.log(turn);
             setGrid(newGrid);
             setEnPassant(newEnPassant);
-            setTurnColor(turn);
+            setTurnColor(turn); // TODO: Uncomment
 
         });
 
@@ -48,7 +49,7 @@ function App() {
     }, [])
 
 
-    function handleMove (move: Move) {
+    function handleMove(move: Move) {
         socket?.emit("move", gameId, playerId, move, (response) => {
             if (response.status === AckStatus.OK) {
                 console.log("Move successful")
@@ -57,6 +58,16 @@ function App() {
                 console.error(response.message);
             }
         })
+    }
+
+
+    function handleSelectPromotion(pieceType: PieceType) {
+        if (!promotionMove) return;
+
+        const move = promotionMove;
+        move.promotion = pieceType;
+        handleMove(move);
+        setPromotionMove(null);
     }
 
 
@@ -115,7 +126,10 @@ function App() {
                 board={new BoardClass(grid, enPassant)}
                 view={view}
                 turn={turnColor}
+                promotionMove={promotionMove}
                 handleMove={handleMove}
+                setPromotionMove={setPromotionMove}
+                handleSelectPromotion={handleSelectPromotion}
             />
         </>
     )

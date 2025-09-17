@@ -85,6 +85,11 @@ export default class Board {
         const isCastle = movingPiece.pieceType === PieceType.King && Math.abs(from.col - to.col) > 1;
         const isDoublePawn = movingPiece.pieceType === PieceType.Pawn && Math.abs(from.row - to.row) > 1;
         const isEnPassant = movingPiece.pieceType === PieceType.Pawn && from.col !== to.col && this.getPiece(to) === null;
+        const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
+                ((movingPiece.color === Color.White && to.row === 0) ||
+                (movingPiece.color === Color.Black && to.row === 7));
+
+        if (isPromotion && move.promotion === undefined) return false; // Must promote
 
         if (!this.setPiece(to, movingPiece)) {
             return false;
@@ -116,6 +121,12 @@ export default class Board {
 
         if (isEnPassant) {
             this.setPiece({row: to.row-direction, col: to.col}, null);
+        }
+
+
+        // Pawn Promotion
+        if (isPromotion && move.promotion) {
+            movingPiece.pieceType = move.promotion;
         }
 
 
