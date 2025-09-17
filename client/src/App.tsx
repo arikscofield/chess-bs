@@ -34,10 +34,12 @@ function App() {
         const newSocket = io("http://localhost:3000");
         setSocket(newSocket);
 
-        newSocket.on("gameState", ({grid: newGrid, turn}: GameState) => {
+        newSocket.on("gameState", ({grid: newGrid, enPassant: newEnPassant, turn}: GameState) => {
             console.log(newGrid);
+            console.log(newEnPassant);
             console.log(turn);
             setGrid(newGrid);
+            setEnPassant(newEnPassant);
             setTurnColor(turn);
 
         });

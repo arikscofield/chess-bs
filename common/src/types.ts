@@ -93,6 +93,7 @@ export interface ClientToServerEvents {
 
 export interface GameState {
     grid: (Piece | null)[][];
+    enPassant: Square | null;
     turn: Color;
 }
 

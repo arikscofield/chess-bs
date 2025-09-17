@@ -83,28 +83,41 @@ export default class Board {
         if (!movingPiece) return false;
 
         const isCastle = movingPiece.pieceType === PieceType.King && Math.abs(from.col - to.col) > 1;
+        const isDoublePawn = movingPiece.pieceType === PieceType.Pawn && Math.abs(from.row - to.row) > 1;
+        const isEnPassant = movingPiece.pieceType === PieceType.Pawn && from.col !== to.col && this.getPiece(to) === null;
 
         if (!this.setPiece(to, movingPiece)) {
             return false;
         }
         movingPiece.hasMoved = true;
 
-        console.log(isCastle);
+        // Castling
         if (isCastle && from.col > to.col) {
-            console.log("Queenside castle")
             const rook = this.getPiece({row: from.row, col: 0});
             if (!rook) return false;
             rook.hasMoved = true;
             this.setPiece({row: from.row, col: to.col+1}, rook);
             this.setPiece({row: from.row, col: 0}, null);
         } else if (isCastle && from.col < to.col) {
-            console.log("Kingside castle")
             const rook = this.getPiece({row: from.row, col: 7});
             if (!rook) return false;
             rook.hasMoved = true;
             this.setPiece({row: from.row, col: to.col-1}, rook);
             this.setPiece({row: from.row, col: 7}, null);
         }
+
+        // En Passant
+        const direction = movingPiece.color === Color.White ? -1 : 1;
+        if (isDoublePawn) {
+            this.enPassant = {row: from.row + direction, col: from.col};
+        } else {
+            this.enPassant = null;
+        }
+
+        if (isEnPassant) {
+            this.setPiece({row: to.row-direction, col: to.col}, null);
+        }
+
 
         return this.setPiece(from, null);
     }
@@ -145,8 +158,14 @@ export default class Board {
                     moves.push({from: {row, col}, to: {row: row+direction, col: col-1}, piece: {type: piece.pieceType, color: piece.color}});
                 }
 
+                // En Passant
+                if (this.enPassant?.row === row+direction && this.enPassant?.col === col+1) {
+                    moves.push({from: {row, col}, to: {row: row+direction, col: col+1}, piece: {type: piece.pieceType, color: piece.color}});
+                }
+                if (this.enPassant?.row === row+direction && this.enPassant?.col === col-1) {
+                    moves.push({from: {row, col}, to: {row: row+direction, col: col-1}, piece: {type: piece.pieceType, color: piece.color}});
+                }
 
-                // TODO: En Passant
                 break;
             case PieceType.Knight:
                 moveOptions = [[1, 2], [-1, 2], [1, -2], [-1, -2], [2, 1], [-2, 1], [2, -1], [-2, -1]];

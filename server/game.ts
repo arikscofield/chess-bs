@@ -26,6 +26,7 @@ export default class Game {
     public getState(): GameState {
         return {
             grid: this.board.grid,
+            enPassant: this.board.enPassant,
             turn: this.turnColor
         }
     }
@@ -66,9 +67,7 @@ export default class Game {
 
 
     public makeMove(move: Move): boolean {
-        console.log(move);
         const legalMoves: Move[] = this.board.getLegalMoves(move.from, true);
-        console.log(legalMoves);
 
         if (!legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             return false;
