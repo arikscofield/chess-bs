@@ -2,6 +2,8 @@ import './App.css'
 import Board from "./Board.tsx";
 import {
     AckStatus,
+    type Piece,
+    type Square,
     type ClientToServerEvents,
     Color,
     type GameState, type Move,

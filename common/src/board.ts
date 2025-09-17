@@ -82,10 +82,30 @@ export default class Board {
         const movingPiece = this.getPiece(from);
         if (!movingPiece) return false;
 
+        const isCastle = movingPiece.pieceType === PieceType.King && Math.abs(from.col - to.col) > 1;
+
         if (!this.setPiece(to, movingPiece)) {
             return false;
         }
         movingPiece.hasMoved = true;
+
+        console.log(isCastle);
+        if (isCastle && from.col > to.col) {
+            console.log("Queenside castle")
+            const rook = this.getPiece({row: from.row, col: 0});
+            if (!rook) return false;
+            rook.hasMoved = true;
+            this.setPiece({row: from.row, col: to.col+1}, rook);
+            this.setPiece({row: from.row, col: 0}, null);
+        } else if (isCastle && from.col < to.col) {
+            console.log("Kingside castle")
+            const rook = this.getPiece({row: from.row, col: 7});
+            if (!rook) return false;
+            rook.hasMoved = true;
+            this.setPiece({row: from.row, col: to.col-1}, rook);
+            this.setPiece({row: from.row, col: 7}, null);
+        }
+
         return this.setPiece(from, null);
     }
 
