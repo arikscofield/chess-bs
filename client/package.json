@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "workspaces": [
+    "../common/*"
+  ],
   "dependencies": {
     "@chess-bs/common": "1.0.0",
     "@tailwindcss/vite": "^4.1.13",

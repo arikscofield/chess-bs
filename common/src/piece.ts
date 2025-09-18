@@ -1,5 +1,4 @@
-import {Color, type Move, PieceType, type Square} from "./types";
-import type Board from "./board";
+import {Color, PieceType} from "./types";
 
 
 export default class Piece {

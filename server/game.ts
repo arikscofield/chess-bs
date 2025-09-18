@@ -1,6 +1,7 @@
 import Board from "@chess-bs/common/dist/board.js";
 import {Color, type Move, type GameState} from "@chess-bs/common";
-import {Player} from "./player.js";
+// import Player from "@common/src/player.js";
+import Player from "@chess-bs/common/dist/player.js";
 import {parseFen} from "./helper.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -49,7 +50,7 @@ export default class Game {
             }
         }
 
-        const player =  new Player(playerId, color)
+        const player =  new Player(playerId, color, 2);
         this.players.push(player);
 
         return player;
@@ -66,14 +67,25 @@ export default class Game {
     }
 
 
-    public makeMove(move: Move): boolean {
+    public makeMove(move: Move, player: Player): boolean {
         const legalMoves: Move[] = this.board.getLegalMoves(move.from, true);
 
-        if (!legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
-            return false;
+        if (legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
+            // Legal regular chess move
+            return this.board.applyMove(move);
         }
 
-        return this.board.applyMove(move);
+        let legalRuleMoves: Move[] = [];
+        for (const rule of player.rules) {
+            legalRuleMoves = legalRuleMoves.concat(rule.getLegalMoves(this.board, move.from));
+        }
+        if (legalRuleMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
+            // Legal special rule move
+            return this.board.applyMove(move);
+        }
+
+        // Non-legal move TODO: do the move, but mark move as a bluff
+        return false;
     }
 
 

@@ -7,17 +7,19 @@ import {
     type ClientToServerEvents,
     Color,
     type GameState, type Move,
-    type ServerToClientEvents, PieceType
+    type ServerToClientEvents, PieceType,
 } from "@chess-bs/common";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {io, Socket} from "socket.io-client";
 import BoardClass from "@chess-bs/common/dist/board";
+import Player from "@chess-bs/common/dist/player";
 
 
 function App() {
 
     const [gameId, setGameId] = useState<string>("");
     const [playerId, setPlayerId] = useState<string>("");
+    const player = useRef<Player | null>(null);
     const [view, setView] = useState<Color>(Color.White);
     const [turnColor, setTurnColor] = useState<Color>(Color.White);
     const [promotionMove, setPromotionMove] = useState<Move | null>(null);
@@ -90,9 +92,10 @@ function App() {
                     socket?.emit("createGame", playerId, Color.White, (response) => {
                         console.log("createGame Ack:");
                         console.log(response);
-                        if (response.status === AckStatus.OK && response.gameId) {
+                        if (response.status === AckStatus.OK && response.gameId && response.player) {
                             setGameId(response.gameId);
-                            setView(response.color || Color.White);
+                            setView(response.player.color || Color.White);
+                            player.current = Player.from(response.player) || null;
                         } else {
                             console.error(response.message);
                         }
@@ -106,10 +109,11 @@ function App() {
                     socket?.emit("joinGame", gameIdInput, playerId, (response) => {
                         console.log("createGame Ack:");
                         console.log(response);
-                        if (response.status === AckStatus.OK) {
+                        if (response.status === AckStatus.OK && response.player) {
                             console.log("joined game")
                             setGameId(gameIdInput);
-                            setView(response.color || Color.White);
+                            setView(response.player?.color || Color.White);
+                            player.current = Player.from(response.player) || null;
                         } else {
                             console.error(response.message);
                         }
@@ -124,6 +128,7 @@ function App() {
             />
             <Board
                 board={new BoardClass(grid, enPassant)}
+                player={player.current}
                 view={view}
                 turn={turnColor}
                 promotionMove={promotionMove}

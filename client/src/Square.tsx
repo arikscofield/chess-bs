@@ -10,8 +10,8 @@ const BoardType: Record<string, [string, string]> = {
 
 
 function Square(
-    { row, col, view, piece, selected, movable, handleSelectedSquare, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
-    {row: number, col: number, view: Color, piece: Piece | null, selected: boolean, movable: boolean, handleSelectedSquare: (square: SquareType) => void, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
+    { row, col, view, piece, selected, movable, ruleMovable, handleSelectedSquare, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
+    {row: number, col: number, view: Color, piece: Piece | null, selected: boolean, movable: boolean, ruleMovable: boolean, handleSelectedSquare: (square: SquareType) => void, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
 
@@ -45,9 +45,16 @@ function Square(
         <div className={`relative flex w-full h-full items-center justify-center z-10 group ${(row+col) % 2 === 0 ? boardType[0] : boardType[1]} ${piece !== null ? "cursor-grab" : ""}`}
              onMouseDown={() => {handleSelectedSquare({row, col});}}
         >
+            {/* Selected Piece highlight */}
             {selected && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 `}/>}
-            {movable && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 group-hover:hidden ${piece !== null ? "bg-transparent border-8 border-green-700/40 rounded-full" : "scale-[30%] rounded-full"}`}/> }
-            {movable && <div className={`absolute w-full h-full top-0 left-0 bg-green-600/40 hidden group-hover:block`}/>}
+
+            {/* Showing legal moves: both regular chess (green), and rule-specific (blue) */}
+            {(movable || ruleMovable) && <div className={`absolute w-full h-full top-0 left-0 group-hover:hidden 
+                ${ruleMovable ? "bg-blue-700/40" : ""} ${movable ? "bg-green-700/40" : ""} 
+                ${piece !== null ? `bg-transparent border-8 ${ruleMovable ? "border-blue-700/40" : ""} ${movable ? "border-green-700/40" : ""} rounded-full` : "scale-[30%] rounded-full"}`}/> }
+
+            {/* Legal move on-hover-highlight */}
+            {(movable || ruleMovable) && <div className={`absolute w-full h-full top-0 left-0 hidden group-hover:block ${ruleMovable ? "bg-blue-600/40" : ""} ${movable ? "bg-green-600/40" : ""}`}/>}
 
             {piece !== null
             ? <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} className={"z-20"} />

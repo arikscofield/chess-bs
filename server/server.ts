@@ -31,7 +31,7 @@ io.on("connection", (socket) => {
         games.set(gameId, game);
         console.log(`Creating game ${gameId} for player ${playerId}`);
         socket.join(gameId);
-        callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId, color: player.color });
+        callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId, player: player });
     })
 
     socket.on("joinGame", (gameId, playerId, callback) => {
@@ -53,7 +53,7 @@ io.on("connection", (socket) => {
             }
             socket.join(gameId);
             io.to(gameId).emit("gameState", gameState);
-            callback({ status: AckStatus.OK, message: "Successfully joined game", color: player.color });
+            callback({ status: AckStatus.OK, message: "Successfully joined game", player: player });
             return;
         }
 
@@ -67,7 +67,7 @@ io.on("connection", (socket) => {
         console.log(`Joining game ${gameId} for player ${playerId}`);
         socket.join(gameId);
         io.to(gameId).emit("gameState", game.getState());
-        callback({ status: AckStatus.OK, message: "Successfully joined game", color: player.color });
+        callback({ status: AckStatus.OK, message: "Successfully joined game", player: player });
         console.log(game.players);
     })
 
@@ -92,7 +92,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        if (!game.makeMove(move)) {
+        if (!game.makeMove(move, player)) {
             callback({ status: AckStatus.ERROR, message: "Failed to make move"});
             return;
         }

@@ -1,3 +1,5 @@
 export * from "./types"
 export * from "./piece"
 export * from "./board"
+export * from "./rule"
+export * from "./player"

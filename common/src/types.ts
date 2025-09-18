@@ -59,18 +59,26 @@ export interface Move {
 export interface Rule {
     name: string;
     description: string;
+    pieceType: PieceType;
 
-    isMoveValid(move: Move, board: Board): boolean;
+    getLegalMoves(board: Board, square: Square): Move[];
 }
 
 export interface Board {
     grid: (Piece | null)[][];
     enPassant: Square | null;
 
+    attackers(square: Square, color: Color): Square[];
+    getPiece(square: Square): Piece | null | undefined;
+    setPiece(square: Square, piece: Piece | null): boolean;
+    applyMove(move: Move): boolean;
     getLegalMoves(square: Square, validateChecks: boolean): Move[];
+    findKing(color: Color): Square | null;
+    clone(): Board;
 }
 
-interface Player {
+export interface Player {
+    playerId: string;
     color: Color;
     rules: Rule[];
 }
@@ -86,8 +94,8 @@ export enum AckStatus {
 }
 
 export interface ClientToServerEvents {
-    createGame: (playerId: string, color: Color, callback: ({status, message, gameId}: {status: AckStatus, message: string, gameId?: string, color?: Color}) => void) => void;
-    joinGame: (gameId: string, playerId: string, callback: ({status, message}: {status: AckStatus, message: string, color?: Color}) => void) => void;
+    createGame: (playerId: string, color: Color, callback: ({status, message, gameId}: {status: AckStatus, message: string, gameId?: string, player?: Player}) => void) => void;
+    joinGame: (gameId: string, playerId: string, callback: ({status, message}: {status: AckStatus, message: string, player?: Player}) => void) => void;
     move: (gameId: string, playerId: string, move: Move, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
 }
 
