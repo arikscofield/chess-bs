@@ -155,7 +155,7 @@ export default class Board {
                 }
 
                 // Double forward move
-                if (!piece.hasMoved && this.getPiece({row: row+(2*direction), col}) === null) {
+                if (!piece.hasMoved && this.getPiece({row: row+direction, col}) === null && this.getPiece({row: row+(2*direction), col}) === null) {
                     moves.push({from: {row, col}, to: {row: row+(2*direction), col}, piece: {type: piece.pieceType, color: piece.color}});
                 }
 
