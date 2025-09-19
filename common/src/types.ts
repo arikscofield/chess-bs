@@ -54,6 +54,7 @@ export interface Move {
         color: Color,
     },
     promotion?: PieceType,
+    bluff?: boolean,
 }
 
 export interface Rule {
@@ -97,6 +98,7 @@ export interface ClientToServerEvents {
     createGame: (playerId: string, color: Color, callback: ({status, message, gameId}: {status: AckStatus, message: string, gameId?: string, player?: Player}) => void) => void;
     joinGame: (gameId: string, playerId: string, callback: ({status, message}: {status: AckStatus, message: string, player?: Player}) => void) => void;
     move: (gameId: string, playerId: string, move: Move, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
+    callBluff: (gameId: string, playerId: string, callback: ({status, message}: {status: AckStatus, message: string, result?: boolean}) => void) => void;
 }
 
 export interface GameState {

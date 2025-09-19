@@ -12,6 +12,8 @@ export default class Game {
     players: Player[];
     private moveHistory: Move[];
     turnColor: Color;
+    lastMoveWasBluff: boolean;
+    prevBoard: Board | null;
 
     constructor(gameId: string, fen: string = defaultFEN) {
         this.gameId = gameId;
@@ -19,6 +21,8 @@ export default class Game {
         this.players = [];
         this.moveHistory = [];
         this.turnColor = Color.White;
+        this.lastMoveWasBluff = false;
+        this.prevBoard = new Board();
 
         this.setFromFEN(fen);
     }
@@ -68,11 +72,17 @@ export default class Game {
 
 
     public makeMove(move: Move, player: Player): boolean {
+        const prevBoard = this.board.clone();
         const legalMoves: Move[] = this.board.getLegalMoves(move.from, true);
 
         if (legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal regular chess move
-            return this.board.applyMove(move);
+            if (this.board.applyMove(move)) {
+                this.lastMoveWasBluff = false;
+                this.prevBoard = prevBoard;
+                return true;
+            }
+            return false;
         }
 
         let legalRuleMoves: Move[] = [];
@@ -81,10 +91,25 @@ export default class Game {
         }
         if (legalRuleMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal special rule move
-            return this.board.applyMove(move);
+            if (this.board.applyMove(move)) {
+                this.lastMoveWasBluff = false;
+                this.prevBoard = prevBoard;
+                return true;
+            }
+            return false;
         }
 
-        // Non-legal move TODO: do the move, but mark move as a bluff
+        // Bluffing
+        if (move.bluff) {
+            if (this.board.applyMove(move)) {
+                this.lastMoveWasBluff = true;
+                this.prevBoard = prevBoard;
+                return true;
+            }
+            return false;
+        }
+
+        // Non-legal move
         return false;
     }
 

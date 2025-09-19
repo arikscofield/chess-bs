@@ -103,10 +103,53 @@ io.on("connection", (socket) => {
 
     })
 
+
+    socket.on("callBluff", (gameId, playerId, callback) => {
+        const game = games.get(gameId);
+        if (!game) {
+            console.log("Unable to make move: game not found");
+            callback({ status: AckStatus.ERROR, message: "Game not found" });
+            return;
+        }
+
+        const player = game.getPlayer(playerId);
+        if (!player) {
+            callback({ status: AckStatus.ERROR, message: "Invalid player"});
+            return;
+        }
+
+        if (player.color !== game.turnColor) {
+            callback({ status: AckStatus.ERROR, message: "Not players turn"});
+            return;
+        }
+
+        if (game.prevBoard === null) {
+            callback({ status: AckStatus.ERROR, message: "Unable to call bluff"});
+            return;
+        }
+
+        if (game.lastMoveWasBluff) {
+            game.board = game.prevBoard;
+            game.prevBoard = null;
+            game.board.enPassant = null;
+            io.to(gameId).emit("gameState", game.getState());
+            callback({ status: AckStatus.OK, message: "Successfully called bluff", result: true });
+            return;
+        } else {
+            game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
+            game.board.enPassant = null;
+            io.to(gameId).emit("gameState", game.getState());
+            callback({ status: AckStatus.OK, message: "Failed to call bluff", result: false });
+            return;
+        }
+    })
+
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
         // TODO: Check if both users disconnected and end/remove game
     });
+
+
 });
 
 

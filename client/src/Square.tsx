@@ -10,8 +10,8 @@ const BoardType: Record<string, [string, string]> = {
 
 
 function Square(
-    { row, col, view, piece, selected, movable, ruleMovable, handleSelectedSquare, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
-    {row: number, col: number, view: Color, piece: Piece | null, selected: boolean, movable: boolean, ruleMovable: boolean, handleSelectedSquare: (square: SquareType) => void, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
+    { row, col, view, piece, selected, movable, ruleMovable, isBluffing, handleSelectedSquare, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
+    {row: number, col: number, view: Color, piece: Piece | null, selected: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, handleSelectedSquare: (square: SquareType) => void, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
 
@@ -49,12 +49,13 @@ function Square(
             {selected && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 `}/>}
 
             {/* Showing legal moves: both regular chess (green), and rule-specific (blue) */}
-            {(movable || ruleMovable) && <div className={`absolute w-full h-full top-0 left-0 group-hover:hidden 
-                ${ruleMovable ? "bg-blue-700/40" : ""} ${movable ? "bg-green-700/40" : ""} 
-                ${piece !== null ? `bg-transparent border-8 ${ruleMovable ? "border-blue-700/40" : ""} ${movable ? "border-green-700/40" : ""} rounded-full` : "scale-[30%] rounded-full"}`}/> }
+            {(movable || ruleMovable) && !selected && <div className={`absolute w-full h-full top-0 left-0 group-hover:hidden 
+                ${isBluffing ? "bg-red-700/40" : (ruleMovable ? "bg-blue-700/40" : (movable ? "bg-green-700/40" : ""))}
+                ${piece === null ? `scale-[30%] rounded-full` : `bg-transparent border-8 rounded-full ${isBluffing ? "border-red-700/40" : (ruleMovable ? "border-blue-700/40" : (movable ? "border-green-700/40" : ""))}`}`
+            }/> }
 
             {/* Legal move on-hover-highlight */}
-            {(movable || ruleMovable) && <div className={`absolute w-full h-full top-0 left-0 hidden group-hover:block ${ruleMovable ? "bg-blue-600/40" : ""} ${movable ? "bg-green-600/40" : ""}`}/>}
+            {(movable || ruleMovable) && !selected && <div className={`absolute w-full h-full top-0 left-0 hidden group-hover:block ${isBluffing ? "bg-red-600/40" : (ruleMovable ? "bg-blue-600/40" : (movable ? "bg-green-600/40" : ""))}`}/>}
 
             {piece !== null
             ? <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} className={"z-20"} />
