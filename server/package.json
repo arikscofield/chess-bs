@@ -15,7 +15,7 @@
     "../common/*"
   ],
   "dependencies": {
-    "@chess-bs/common": "1.0.0",
+    "@chess-bs/common": "file:../common",
     "express": "^5.1.0",
     "socket.io": "^4.8.1"
   },
