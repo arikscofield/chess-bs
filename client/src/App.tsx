@@ -15,6 +15,7 @@ import {useEffect, useRef, useState} from "react";
 import {io, Socket} from "socket.io-client";
 import BoardClass from "@chess-bs/common/dist/board";
 import Player from "@chess-bs/common/dist/player";
+import NavBar from "./components/NavBar.tsx";
 
 
 function App() {
@@ -139,6 +140,7 @@ function App() {
 
     return (
         <>
+            <NavBar/>
             <button
                 onClick={() => {handleCreateGame();}}
             >

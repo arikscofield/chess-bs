@@ -316,7 +316,12 @@ export default class Board {
 
 
     public clone(): Board {
-        const newGrid: (Piece | null)[][] = this.grid.map(row => row.map(piece => piece ? new PieceClass(piece.pieceType, piece.color) : null))
+        const newGrid: (Piece | null)[][] = this.grid.map(row => row.map(piece => {
+            if (!piece) return null;
+            const newPiece = new PieceClass(piece.pieceType, piece.color);
+            newPiece.hasMoved = piece.hasMoved;
+            return newPiece;
+        }))
         const newEnPassant: Square | null = this.enPassant ? { row: this.enPassant.row, col: this.enPassant.col } : null;
         return new Board(newGrid, newEnPassant);
     }

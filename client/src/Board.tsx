@@ -89,7 +89,7 @@ function Board(
     if (!board) return;
 
     return (
-        <div className="grid grid-rows-8 grid-cols-8">
+        <div className="grid grid-rows-8 grid-cols-8 max-w-[750px] aspect-square">
             {rows.map((row) => (
                 cols.map((col) => {
                     let movable = legalMoves.some((move) => move.to.row === row && move.to.col === col);
