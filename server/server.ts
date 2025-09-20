@@ -37,6 +37,19 @@ io.on("connection", (socket) => {
     const cookies = parse(socket.handshake.headers.cookie || '');
     const playerId = cookies.playerId || crypto.randomUUID();
     console.log("User connected:", playerId);
+    socket.join(playerId);
+
+    function sendGameState(game: string): void;
+    function sendGameState(game: Game): void;
+    function sendGameState(game: string | Game): void {
+        if (typeof game === "string") {
+            const gameObj = games.get(game);
+            if (!gameObj) return;
+            io.to(game).emit("gameState", gameObj.getState());
+        } else {
+            io.to(game.gameId).emit("gameState", game.getState());
+        }
+    }
 
     socket.on("createGame", (color, callback) => {
         const gameId = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -53,7 +66,8 @@ io.on("connection", (socket) => {
         games.set(gameId, game);
         console.log(`Creating game ${gameId} for player ${playerId}`);
         socket.join(gameId);
-        callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId, player: player });
+        sendGameState(game);
+        callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId, gameStatus: game.gameStatus });
     })
 
     socket.on("joinGame", (gameId, callback) => {
@@ -75,7 +89,9 @@ io.on("connection", (socket) => {
             }
             socket.join(gameId);
             io.to(gameId).emit("gameState", gameState);
-            callback({ status: AckStatus.OK, message: "Successfully joined game", player: player });
+            sendGameState(game);
+            sendAllPlayerStates(gameId);
+            callback({ status: AckStatus.OK, message: "Successfully rejoined game", gameStatus: game.gameStatus });
             return;
         }
 
@@ -88,9 +104,20 @@ io.on("connection", (socket) => {
 
         console.log(`Joining game ${gameId} for player ${playerId}`);
         socket.join(gameId);
-        io.to(gameId).emit("gameState", game.getState());
-        callback({ status: AckStatus.OK, message: "Successfully joined game", player: player });
+        sendGameState(game);
+        sendAllPlayerStates(gameId);
+        callback({ status: AckStatus.OK, message: "Successfully joined game", gameStatus: game.gameStatus });
         console.log(game.players);
+
+
+        function sendAllPlayerStates(gameId: string) {
+            const game = games.get(gameId);
+            if (!game) return;
+
+            for (const player of game.players) {
+                io.to(player.playerId).emit("playerState", player.getState());
+            }
+        }
     })
 
 
@@ -120,7 +147,7 @@ io.on("connection", (socket) => {
         }
 
         game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
-        io.to(gameId).emit("gameState", game.getState());
+        sendGameState(game);
         callback({ status: AckStatus.OK, message: "Successfully made move" });
 
     })
@@ -154,13 +181,13 @@ io.on("connection", (socket) => {
             game.board = game.prevBoard;
             game.prevBoard = null;
             game.board.enPassant = null;
-            io.to(gameId).emit("gameState", game.getState());
+            sendGameState(game);
             callback({ status: AckStatus.OK, message: "Successfully called bluff", result: true });
             return;
         } else {
             game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
             game.board.enPassant = null;
-            io.to(gameId).emit("gameState", game.getState());
+            sendGameState(game);
             callback({ status: AckStatus.OK, message: "Failed to call bluff", result: false });
             return;
         }

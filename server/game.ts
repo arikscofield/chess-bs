@@ -1,5 +1,5 @@
 import Board from "@chess-bs/common/dist/board.js";
-import {Color, type Move, type GameState} from "@chess-bs/common";
+import {Color, type GameState, GameStatus, type Move} from "@chess-bs/common";
 // import Player from "@common/src/player.js";
 import Player from "@chess-bs/common/dist/player.js";
 import {parseFen} from "./helper.js";
@@ -7,7 +7,8 @@ import {parseFen} from "./helper.js";
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 export default class Game {
-    private gameId: string;
+    gameId: string;
+    gameStatus: GameStatus;
     board: Board;
     players: Player[];
     private moveHistory: Move[];
@@ -17,6 +18,7 @@ export default class Game {
 
     constructor(gameId: string, fen: string = defaultFEN) {
         this.gameId = gameId;
+        this.gameStatus = GameStatus.WAITING_FOR_PLAYER;
         this.board = new Board();
         this.players = [];
         this.moveHistory = [];
@@ -30,6 +32,7 @@ export default class Game {
 
     public getState(): GameState {
         return {
+            gameStatus: this.gameStatus,
             grid: this.board.grid,
             enPassant: this.board.enPassant,
             turn: this.turnColor
@@ -56,6 +59,10 @@ export default class Game {
 
         const player =  new Player(playerId, color, 2);
         this.players.push(player);
+        
+        if (this.players.length >= 2) {
+            this.gameStatus = GameStatus.RUNNING;
+        }
 
         return player;
     }

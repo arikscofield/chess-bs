@@ -85,6 +85,13 @@ export interface Player {
 }
 
 
+export enum GameStatus {
+    WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",
+    RUNNING = "RUNNING",
+    PAUSED = "PAUSED",
+    DONE = "DONE",
+}
+
 
 
 // -------- Socket Events -------------
@@ -95,13 +102,14 @@ export enum AckStatus {
 }
 
 export interface ClientToServerEvents {
-    createGame: (color: Color, callback: ({status, message, gameId}: {status: AckStatus, message: string, gameId?: string, player?: Player}) => void) => void;
-    joinGame: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string, player?: Player}) => void) => void;
+    createGame: (color: Color, callback: ({status, message, gameId}: {status: AckStatus, message: string, gameId?: string}) => void) => void;
+    joinGame: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     move: (gameId: string, move: Move, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     callBluff: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string, result?: boolean}) => void) => void;
 }
 
 export interface GameState {
+    gameStatus: GameStatus;
     grid: (Piece | null)[][];
     enPassant: Square | null;
     turn: Color;
@@ -109,6 +117,7 @@ export interface GameState {
 
 export interface PlayerState {
     playerId: string;
+    color: Color;
     rules: Rule[];
 }
 

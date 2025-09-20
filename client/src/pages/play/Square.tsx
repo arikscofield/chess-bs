@@ -58,7 +58,7 @@ function Square(
             {(movable || ruleMovable) && !selected && <div className={`absolute w-full h-full top-0 left-0 hidden group-hover:block ${isBluffing ? "bg-red-600/40" : (ruleMovable ? "bg-blue-600/40" : (movable ? "bg-green-600/40" : ""))}`}/>}
 
             {piece !== null
-            ? <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} className={"z-20"} />
+            ? <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} draggable={false} className={"z-20 select-none "} />
             : <div className={"w-[90px] h-[90px]"}/>
             }
 
