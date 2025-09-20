@@ -1,6 +1,8 @@
 import {Server} from "socket.io";
 import Game from "./game.js";
 import {AckStatus, type ClientToServerEvents, Color, type ServerToClientEvents} from "@chess-bs/common";
+import { serialize, parse } from "cookie";
+import {randomUUID} from "node:crypto";
 
 const port = 3000;
 const clientPort = 5173;
@@ -8,15 +10,35 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
     cors: {
         origin: "http://localhost:" + clientPort,
         methods: ["GET", "POST"],
+        credentials: true,
     }
 });
 
 const games: Map<string, Game> = new Map();
 
-io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
 
-    socket.on("createGame", (playerId, color, callback) => {
+// Ensure user has a playerId. If not, set a Set-Cookie header
+io.engine.on("headers", (headers, request) => {
+    const cookies = parse(request.headers.cookie || '');
+    if (!cookies.playerId) {
+        const playerId: string = randomUUID();
+        headers["set-cookie"] = serialize("playerId", playerId, {
+            httpOnly: true,
+            path: '/',
+            sameSite: "strict",
+            maxAge: 60 * 60 * 24 * 30,
+        });
+        // cookies.playerId = playerId;
+        request.headers.cookie += "; playerId=" + playerId;
+    }
+})
+
+io.on("connection", (socket) => {
+    const cookies = parse(socket.handshake.headers.cookie || '');
+    const playerId = cookies.playerId || crypto.randomUUID();
+    console.log("User connected:", playerId);
+
+    socket.on("createGame", (color, callback) => {
         const gameId = Math.random().toString(36).substring(2, 10).toUpperCase();
         const game = new Game(gameId);
 
@@ -34,7 +56,7 @@ io.on("connection", (socket) => {
         callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId, player: player });
     })
 
-    socket.on("joinGame", (gameId, playerId, callback) => {
+    socket.on("joinGame", (gameId, callback) => {
         const game = games.get(gameId);
         if (!game) {
             console.log("Unable to join game: game not found");
@@ -72,7 +94,7 @@ io.on("connection", (socket) => {
     })
 
 
-    socket.on("move", (gameId, playerId, move, callback) => {
+    socket.on("move", (gameId, move, callback) => {
         const game = games.get(gameId);
         if (!game) {
             console.log("Unable to make move: game not found");
@@ -104,7 +126,7 @@ io.on("connection", (socket) => {
     })
 
 
-    socket.on("callBluff", (gameId, playerId, callback) => {
+    socket.on("callBluff", (gameId, callback) => {
         const game = games.get(gameId);
         if (!game) {
             console.log("Unable to make move: game not found");
@@ -145,7 +167,7 @@ io.on("connection", (socket) => {
     })
 
     socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
+        console.log("User disconnected:", playerId);
         // TODO: Check if both users disconnected and end/remove game
     });
 

@@ -1,6 +1,6 @@
 import {Color, type Piece, type PieceType} from "@chess-bs/common"
-import {pieceImages} from "./assets/pieceImages.ts";
-import type {Square as SquareType} from "@chess-bs/common/dist/types";
+import {pieceImages} from "../../assets/pieceImages.ts";
+import type {Square as SquareType} from "@chess-bs/common/dist/types.ts";
 
 
 const BoardType: Record<string, [string, string]> = {

@@ -1,4 +1,4 @@
-import './App.css'
+import './Play.css'
 import Board from "./Board.tsx";
 import {
     AckStatus,
@@ -15,13 +15,11 @@ import {useEffect, useRef, useState} from "react";
 import {io, Socket} from "socket.io-client";
 import BoardClass from "@chess-bs/common/dist/board";
 import Player from "@chess-bs/common/dist/player";
-import NavBar from "./components/NavBar.tsx";
 
 
-function App() {
+function Play() {
 
     const [gameId, setGameId] = useState<string>("");
-    const [playerId, setPlayerId] = useState<string>("");
     const player = useRef<Player | null>(null);
     const [view, setView] = useState<Color>(Color.White);
     const [turnColor, setTurnColor] = useState<Color>(Color.White);
@@ -37,8 +35,9 @@ function App() {
 
 
     useEffect(() => {
-        loadPlayerId();
-        const newSocket = io("http://localhost:3000");
+        const newSocket = io("http://localhost:3000", {
+            withCredentials: true,
+        });
         setSocket(newSocket);
 
         newSocket.on("gameState", ({grid: newGrid, enPassant: newEnPassant, turn}: GameState) => {
@@ -56,7 +55,7 @@ function App() {
 
 
     function handleCreateGame() {
-        socket?.emit("createGame", playerId, Color.White, (response) => {
+        socket?.emit("createGame", Color.White, (response) => {
             console.log("createGame Ack:");
             console.log(response);
             if (response.status === AckStatus.OK && response.gameId && response.player) {
@@ -70,7 +69,7 @@ function App() {
     }
 
     function handleJoinGame() {
-        socket?.emit("joinGame", gameIdInput, playerId, (response) => {
+        socket?.emit("joinGame", gameIdInput, (response) => {
             console.log("createGame Ack:");
             console.log(response);
             if (response.status === AckStatus.OK && response.player) {
@@ -89,7 +88,7 @@ function App() {
     }
 
     function handleCallBluff() {
-        socket?.emit("callBluff", gameId, playerId, (response) => {
+        socket?.emit("callBluff", gameId, (response) => {
             if (response.status === AckStatus.OK) {
                 if (response.result) {
                     console.log("Bluff successful");
@@ -104,7 +103,7 @@ function App() {
     }
 
     function handleMove(move: Move) {
-        socket?.emit("move", gameId, playerId, move, (response) => {
+        socket?.emit("move", gameId, move, (response) => {
             if (response.status === AckStatus.OK) {
                 console.log("Move successful")
 
@@ -125,22 +124,8 @@ function App() {
     }
 
 
-    function loadPlayerId() {
-        // TODO: Uncomment
-        const savedPlayerId = localStorage.getItem("playerId");
-        if (savedPlayerId) {
-            setPlayerId(savedPlayerId);
-            console.log("Loaded playerId from localstorage: ", savedPlayerId);
-        } else {
-            const newPlayerId = Math.random().toString(36).substring(2, 10);
-            setPlayerId(newPlayerId);
-            localStorage.setItem("playerId", newPlayerId);
-        }
-    }
-
     return (
         <>
-            <NavBar/>
             <button
                 onClick={() => {handleCreateGame();}}
             >
@@ -180,4 +165,4 @@ function App() {
     )
 }
 
-export default App
+export default Play
