@@ -13,7 +13,7 @@ function NavBar() {
     ]
 
     return (
-        <div className="top-0 z-30 m-0 p-0 justify-between items-center text-xl text-black dark:text-white transition-colors bg-white dark:bg-gray-700 drop-shadow-sm shadow-md ">
+        <div className="top-0 z-30 m-0 p-0 justify-between items-center text-xl text-white transition-colors bg-fg-2 drop-shadow-sm shadow-md ">
             <div className={"min-h-12 max-h-20 flex items-center px-3 sm:px-6 lg:px-8 "}>
 
                 {/* Desktop NavBar */}

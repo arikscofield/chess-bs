@@ -2,16 +2,17 @@ import {Server} from "socket.io";
 import Game from "./game.js";
 import {AckStatus, type ClientToServerEvents, Color, type ServerToClientEvents} from "@chess-bs/common";
 import { serialize, parse } from "cookie";
-import {randomUUID} from "node:crypto";
+import { v4 as uuidv4 } from 'uuid'
 
 const port = 3000;
 const clientPort = 5173;
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
     cors: {
-        origin: "http://localhost:" + clientPort,
+        origin: [`http://127.0.0.1:${clientPort}`, `http://localhost:${clientPort}`, `http://192.168.1.90:${clientPort}`, `http://192.168.231.1:${clientPort}`],
+        // origin: "*",
         methods: ["GET", "POST"],
         credentials: true,
-    }
+    },
 });
 
 const games: Map<string, Game> = new Map();
@@ -21,7 +22,7 @@ const games: Map<string, Game> = new Map();
 io.engine.on("headers", (headers, request) => {
     const cookies = parse(request.headers.cookie || '');
     if (!cookies.playerId) {
-        const playerId: string = randomUUID();
+        const playerId: string = generateUUID();
         headers["set-cookie"] = serialize("playerId", playerId, {
             httpOnly: true,
             path: '/',
@@ -35,7 +36,7 @@ io.engine.on("headers", (headers, request) => {
 
 io.on("connection", (socket) => {
     const cookies = parse(socket.handshake.headers.cookie || '');
-    const playerId = cookies.playerId || crypto.randomUUID();
+    const playerId = cookies.playerId || generateUUID();
     console.log("User connected:", playerId);
     socket.join(playerId);
 
@@ -67,11 +68,11 @@ io.on("connection", (socket) => {
         console.log(`Creating game ${gameId} for player ${playerId}`);
         socket.join(gameId);
         sendGameState(game);
-        callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId, gameStatus: game.gameStatus });
+        callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId });
     })
 
     socket.on("joinGame", (gameId, callback) => {
-        const game = games.get(gameId);
+        const game = games.get(gameId.toUpperCase());
         if (!game) {
             console.log("Unable to join game: game not found");
             callback({ status: AckStatus.ERROR, message: "Game not found" });
@@ -91,7 +92,7 @@ io.on("connection", (socket) => {
             io.to(gameId).emit("gameState", gameState);
             sendGameState(game);
             sendAllPlayerStates(gameId);
-            callback({ status: AckStatus.OK, message: "Successfully rejoined game", gameStatus: game.gameStatus });
+            callback({ status: AckStatus.OK, message: "Successfully rejoined game" });
             return;
         }
 
@@ -106,7 +107,7 @@ io.on("connection", (socket) => {
         socket.join(gameId);
         sendGameState(game);
         sendAllPlayerStates(gameId);
-        callback({ status: AckStatus.OK, message: "Successfully joined game", gameStatus: game.gameStatus });
+        callback({ status: AckStatus.OK, message: "Successfully joined game" });
         console.log(game.players);
 
 
@@ -122,6 +123,8 @@ io.on("connection", (socket) => {
 
 
     socket.on("move", (gameId, move, callback) => {
+        console.log("Received move:");
+        console.log(move);
         const game = games.get(gameId);
         if (!game) {
             console.log("Unable to make move: game not found");
@@ -201,5 +204,9 @@ io.on("connection", (socket) => {
 
 });
 
+
+function generateUUID() {
+    return crypto.randomUUID?.() ?? uuidv4();
+}
 
 console.log(`Server started on port ${port}`);

@@ -112,7 +112,7 @@ function Game(
     return (<div>
         <Board
             board={new BoardClass(grid, enPassant)}
-            player={player.current}
+            player={player}
             view={view}
             turn={turnColor}
             isBluffing={isBluffing}

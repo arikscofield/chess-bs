@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {type RefObject, useEffect, useState} from "react";
 import Square from "./Square.tsx";
 import {Color, type Square as SquareType, type Move, PieceType, type Player} from "@chess-bs/common";
 import BoardClass from "@chess-bs/common/dist/board.ts";
@@ -6,7 +6,7 @@ import BoardClass from "@chess-bs/common/dist/board.ts";
 
 function Board(
     {board, player, view=Color.White, turn, isBluffing, promotionMove, handleMove, setPromotionMove, handleSelectPromotion } :
-    { board: BoardClass, player: Player | null, view: Color, turn: Color, isBluffing: boolean, promotionMove: Move | null, handleMove: (move: Move) => void, setPromotionMove: (move: Move | null) => void, handleSelectPromotion: (pieceType: PieceType) => void }
+    { board: BoardClass, player: RefObject<Player | null>, view: Color, turn: Color, isBluffing: boolean, promotionMove: Move | null, handleMove: (move: Move) => void, setPromotionMove: (move: Move | null) => void, handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
 
@@ -49,7 +49,7 @@ function Board(
             setLegalMoves(board.getLegalMoves(square, true));
             setPromotionMove(null);
             let newLegalRuleMoves: Move[] = [];
-            for (const rule of player?.rules || []) {
+            for (const rule of player.current?.rules || []) {
                 newLegalRuleMoves = newLegalRuleMoves.concat(rule.getLegalMoves(board, square));
             }
             setLegalRuleMoves(newLegalRuleMoves);
@@ -63,7 +63,7 @@ function Board(
                     (movingPiece.color === Color.Black && square.row === 7));
 
             if (isPromotion) {
-                setPromotionMove({from: selectedSquare, to: square, piece: {type: movingPiece.pieceType, color: movingPiece.color}});
+                setPromotionMove({from: selectedSquare, to: square, piece: {type: movingPiece.pieceType, color: movingPiece.color}, bluff: isBluffing});
                 setLegalMoves([]);
                 setLegalRuleMoves([]);
                 return;

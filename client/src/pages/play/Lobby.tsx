@@ -1,42 +1,20 @@
 import {Socket} from "socket.io-client";
-import {AckStatus, type ClientToServerEvents, Color, type ServerToClientEvents} from "@chess-bs/common";
+import {type ClientToServerEvents, type ServerToClientEvents} from "@chess-bs/common";
 import {useState} from "react";
 
 
-function Lobby({ socket, setGameId }: { socket: Socket<ServerToClientEvents, ClientToServerEvents>, setGameId: (gameId: string) => void }) {
+function Lobby({ socket, setGameId, createGame, joinGame }: { socket: Socket<ServerToClientEvents, ClientToServerEvents>, setGameId: (gameId: string) => void, createGame: () => void, joinGame: (gameId: string) => void }) {
 
     const [gameIdInput, setGameIdInput] = useState<string>("");
 
-    function handleCreateGame() {
-        socket?.emit("createGame", Color.White, (response) => {
-            if (response.status === AckStatus.OK && response.gameId) {
-                console.log(`Created game: ${response.gameId}`)
-                setGameId(response.gameId);
-            } else {
-                console.error(response.message);
-            }
-        });
-    }
-
-    function handleJoinGame() {
-        socket?.emit("joinGame", gameIdInput, (response) => {
-            if (response.status === AckStatus.OK) {
-                console.log(`Joined game: ${gameIdInput}`)
-                setGameId(gameIdInput);
-            } else {
-                console.error(response.message);
-            }
-        });
-    }
-
     return (<div>
-        <button
-            onClick={() => {handleCreateGame();}}
+        <button className={"bg-bg-2 border-2 border-transparent hover:border-fg-1 focus:border-fg-1 transition-colors"}
+            onClick={() => {createGame();}}
         >
             Create Game
         </button>
         <button
-            onClick={() => {handleJoinGame();}}
+            onClick={() => {joinGame(gameIdInput);}}
         >
             Join Game
         </button>
