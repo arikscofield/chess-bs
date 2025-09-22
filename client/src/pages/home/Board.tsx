@@ -1,7 +1,7 @@
 import {type RefObject, useEffect, useState} from "react";
 import Square from "./Square.tsx";
 import {Color, type Square as SquareType, type Move, PieceType, type Player} from "@chess-bs/common";
-import BoardClass from "@chess-bs/common/dist/board.ts";
+import BoardClass from "@chess-bs/common/dist/board.js";
 
 
 function Board(

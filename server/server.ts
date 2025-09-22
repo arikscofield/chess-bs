@@ -1,8 +1,8 @@
 import {Server} from "socket.io";
 import Game from "./game.js";
-import {AckStatus, type ClientToServerEvents, Color, type ServerToClientEvents} from "@chess-bs/common";
-import { serialize, parse } from "cookie";
-import { v4 as uuidv4 } from 'uuid'
+import {AckStatus, type ClientToServerEvents, Color, GameStatus, type ServerToClientEvents} from "@chess-bs/common";
+import {parse, serialize} from "cookie";
+import {v4 as uuidv4} from 'uuid'
 
 const port = 3000;
 const clientPort = 5173;
@@ -53,7 +53,9 @@ io.on("connection", (socket) => {
     }
 
     socket.on("createGame", (color, callback) => {
-        const gameId = Math.random().toString(36).substring(2, 10).toUpperCase();
+        let gameId = Math.random().toString(36).substring(2, 8);
+        while (games.get(gameId))
+            gameId = Math.random().toString(36).substring(2, 8);
         const game = new Game(gameId);
 
         const player = game.addPlayer(playerId, color);
@@ -72,7 +74,8 @@ io.on("connection", (socket) => {
     })
 
     socket.on("joinGame", (gameId, callback) => {
-        const game = games.get(gameId.toUpperCase());
+        // gameId = gameId.toUpperCase();
+        const game = games.get(gameId);
         if (!game) {
             console.log("Unable to join game: game not found");
             callback({ status: AckStatus.ERROR, message: "Game not found" });
@@ -129,6 +132,12 @@ io.on("connection", (socket) => {
         if (!game) {
             console.log("Unable to make move: game not found");
             callback({ status: AckStatus.ERROR, message: "Game not found" });
+            return;
+        }
+
+        if (game.gameStatus !== GameStatus.RUNNING) {
+            console.log("Unable to make move: game is not running");
+            callback({ status: AckStatus.ERROR, message: "Game not running" });
             return;
         }
 

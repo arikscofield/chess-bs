@@ -13,6 +13,7 @@ import {
     type Square
 } from "@chess-bs/common";
 import { Socket } from "socket.io-client";
+import {Button, Group} from "@mantine/core";
 
 
 function Game(
@@ -121,16 +122,19 @@ function Game(
             setPromotionMove={setPromotionMove}
             handleSelectPromotion={handleSelectPromotion}
         />
-        <button className={"bg-red-500"}
-                onClick={() => {handleBluff();}}
-        >
-            Bluff
-        </button>
-        <button className={""}
-                onClick={() => {handleCallBluff();}}
-        >
-            Call Bluff
-        </button>
+        <Group justify={"center"} gap={50} py={10}>
+            <Button color={"red"}
+                    onClick={() => {handleBluff();}}
+            >
+                Bluff
+            </Button>
+            <Button color={"green"}
+                    onClick={() => {handleCallBluff();}}
+            >
+                Call Bluff
+            </Button>
+        </Group>
+
     </div>)
 }
 
