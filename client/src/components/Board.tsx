@@ -1,4 +1,4 @@
-import {type RefObject, useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import Square from "./Square.tsx";
 import {Color, type Square as SquareType, type Move, PieceType, type Player} from "@chess-bs/common";
 import BoardClass from "@chess-bs/common/dist/board.js";
@@ -6,7 +6,7 @@ import BoardClass from "@chess-bs/common/dist/board.js";
 
 function Board(
     {board, player, view=Color.White, turn, isBluffing, promotionMove, handleMove, setPromotionMove, handleSelectPromotion } :
-    { board: BoardClass, player: RefObject<Player | null>, view: Color, turn: Color, isBluffing: boolean, promotionMove: Move | null, handleMove: (move: Move) => void, setPromotionMove: (move: Move | null) => void, handleSelectPromotion: (pieceType: PieceType) => void }
+    { board: BoardClass, player: Player | null, view: Color, turn: Color, isBluffing: boolean, promotionMove: Move | null, handleMove: (move: Move) => void, setPromotionMove: (move: Move | null) => void, handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
 
@@ -27,29 +27,29 @@ function Board(
     }, [turn])
 
     function handleSelectedSquare(square: SquareType) {
-        if (turn !== view) return;
+        if (turn !== player?.color) return;
 
         const piece = board.getPiece(square);
 
         if (piece === undefined) return; // Shouldn't be possible
 
         const isLegalMove = isBluffing
-            ? (piece === null || piece.color !== view) && !legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col)
+            ? (piece === null || piece.color !== player?.color) && !legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col)
             : legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col);
 
-        if ((piece === null && !isLegalMove) || (piece && piece.color !== view && !isLegalMove)) {
+        if ((piece === null && !isLegalMove) || (piece && piece.color !== player?.color && !isLegalMove)) {
             // Empty square: Deselect
             setSelectedSquare(null);
             setLegalMoves([]);
             setLegalRuleMoves([]);
             setPromotionMove(null);
-        } else if (piece && piece.color === view) {
+        } else if (piece && piece.color === player?.color) {
             // Selecting a piece
             setSelectedSquare(square);
             setLegalMoves(board.getLegalMoves(square, true));
             setPromotionMove(null);
             let newLegalRuleMoves: Move[] = [];
-            for (const rule of player.current?.rules || []) {
+            for (const rule of player?.rules || []) {
                 newLegalRuleMoves = newLegalRuleMoves.concat(rule.getLegalMoves(board, square));
             }
             setLegalRuleMoves(newLegalRuleMoves);
@@ -99,7 +99,7 @@ function Board(
                     // if (isBluffing) ruleMovable = !ruleMovable;
 
                     if (isBluffing && selectedSquare !== null) {
-                        movable = !(movable || ruleMovable) && board.grid[row][col]?.color !== view;
+                        movable = !(movable || ruleMovable) && board.grid[row][col]?.color !== player?.color;
                         ruleMovable = false;
                     }
 
@@ -111,7 +111,7 @@ function Board(
                         }
                     }
                     return <div key={col}>
-                        <Square row={row} col={col} view={view}
+                        <Square row={row} col={col} color={player?.color || Color.White}
                                 piece={board?.grid?.[row]?.[col] || null}
                                 selected={selectedSquare?.row === row && selectedSquare?.col === col}
                                 movable={movable}

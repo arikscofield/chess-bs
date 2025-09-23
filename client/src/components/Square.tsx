@@ -1,5 +1,5 @@
 import {Color, type Piece, type PieceType} from "@chess-bs/common"
-import {pieceImages} from "../../assets/pieceImages.ts";
+import {pieceImages} from "../assets/pieceImages.ts";
 import type {Square as SquareType} from "@chess-bs/common/dist/types.js";
 
 
@@ -10,13 +10,13 @@ const BoardType: Record<string, [string, string]> = {
 
 
 function Square(
-    { row, col, view, piece, selected, movable, ruleMovable, isBluffing, handleSelectedSquare, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
-    {row: number, col: number, view: Color, piece: Piece | null, selected: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, handleSelectedSquare: (square: SquareType) => void, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
+    { row, col, color, piece, selected, movable, ruleMovable, isBluffing, handleSelectedSquare, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
+    {row: number, col: number, color: Color, piece: Piece | null, selected: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, handleSelectedSquare: (square: SquareType) => void, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
 
     const pieceString: string = "" + piece?.color + piece?.pieceType;
-    const promotionPieceString: string = "" + view + promotionOptionPieceType;
+    const promotionPieceString: string = "" + color + promotionOptionPieceType;
 
     // before:absolute before:w-[10px] before:h-full before:left-[-10px] before:bg-linear-to-l before:from-black/40 before:to-black/0 before:opacity-50 before:z-10
     // after:absolute after:w-full after:h-full after:right-[-10px] after:bottom-[-10px] after:bg-linear-to-r after:from-black after:to-black/0 after:opacity-50 after:z-10

@@ -53,7 +53,7 @@ io.on("connection", (socket) => {
     }
 
     socket.on("createGame", (color, callback) => {
-        let gameId = Math.random().toString(36).substring(2, 8);
+        let gameId = generateGameId(6);
         while (games.get(gameId))
             gameId = Math.random().toString(36).substring(2, 8);
         const game = new Game(gameId);
@@ -71,6 +71,16 @@ io.on("connection", (socket) => {
         socket.join(gameId);
         sendGameState(game);
         callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId });
+
+
+        function generateGameId(len: number) {
+            const chars: string = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789";
+            let result: string = "";
+            for (let i=0; i < len; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        }
     })
 
     socket.on("joinGame", (gameId, callback) => {
@@ -135,18 +145,21 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // Game is running
         if (game.gameStatus !== GameStatus.RUNNING) {
             console.log("Unable to make move: game is not running");
             callback({ status: AckStatus.ERROR, message: "Game not running" });
             return;
         }
 
+        // Player is in the game
         const player = game.getPlayer(playerId);
         if (!player) {
             callback({ status: AckStatus.ERROR, message: "Invalid player"});
             return;
         }
 
+        // It's the players turn
         // TODO: Uncomment
         if (player.color !== game.turnColor) {
             callback({ status: AckStatus.ERROR, message: "Not players turn"});
@@ -173,23 +186,34 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // Game is running
+        if (game.gameStatus !== GameStatus.RUNNING) {
+            console.log("Unable to make move: game is not running");
+            callback({ status: AckStatus.ERROR, message: "Game not running" });
+            return;
+        }
+
+        // Player is in the game
         const player = game.getPlayer(playerId);
         if (!player) {
             callback({ status: AckStatus.ERROR, message: "Invalid player"});
             return;
         }
 
+        // It's the players turn
         if (player.color !== game.turnColor) {
             callback({ status: AckStatus.ERROR, message: "Not players turn"});
             return;
         }
 
+        // Able to call bluff
         if (game.prevBoard === null) {
             callback({ status: AckStatus.ERROR, message: "Unable to call bluff"});
             return;
         }
 
         if (game.lastMoveWasBluff) {
+            // Successful call
             game.board = game.prevBoard;
             game.prevBoard = null;
             game.board.enPassant = null;
@@ -197,6 +221,7 @@ io.on("connection", (socket) => {
             callback({ status: AckStatus.OK, message: "Successfully called bluff", result: true });
             return;
         } else {
+            // Failed call
             game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
             game.board.enPassant = null;
             sendGameState(game);

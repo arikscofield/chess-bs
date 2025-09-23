@@ -1,5 +1,3 @@
-import {useState} from "react";
-import { IoMenu, IoClose } from "react-icons/io5";
 import {Drawer, Group, Title, UnstyledButton} from "@mantine/core";
 import {FiSettings} from "react-icons/fi";
 import {useDisclosure} from "@mantine/hooks";
