@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react";
 import Square from "./Square.tsx";
-import {Color, type Move, PieceType, type Player, type Square as SquareType} from "@chess-bs/common";
+import {Color, type Move, type Piece, PieceType, type Player, type Square as SquareType} from "@chess-bs/common";
 import BoardClass from "@chess-bs/common/dist/board.js";
 import {useElementSize, useMergedRef, useMounted} from "@mantine/hooks";
 import {pieceImages} from "../assets/pieceImages.ts";
@@ -13,8 +13,8 @@ function Board(
 ) {
     const mounted = useMounted();
 
-    type mouseState = {x: number; y: number, row: number | null, col: number | null};
-    const [mouse, setMouse] = useState<mouseState>({ x: 0, y: 0, row: 0, col: 0 });
+    type mouseState = {x: number; y: number, row: number | null, col: number | null, piece: Piece | null};
+    const [mouse, setMouse] = useState<mouseState>({ x: 0, y: 0, row: 0, col: 0, piece: null });
     const { ref: sizeRef, width, height } = useElementSize();
     const boardRef = useRef<HTMLElement | null>(null);
 
@@ -73,15 +73,13 @@ function Board(
 
         const boardX = event.nativeEvent.offsetX;
         const boardY = event.nativeEvent.offsetY;
-        const x = event.pageX;
-        const y = event.pageY;
 
         let row = Math.floor(boardY / (height / numRows));
         if (player?.color === Color.Black) row = numRows - 1 - row;
         let col = Math.floor(boardX / (width / numCols));
         if (player?.color === Color.Black) col = numCols - 1 - col;
 
-        // console.log(`Pointer Down at relative: x: ${x} y: ${y} row: ${row}, col: ${col}`);
+        // console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
 
         const square = {row, col};
         const piece = board.getPiece(square)
@@ -90,8 +88,6 @@ function Board(
             deselect();
             return;
         }
-
-        setMouse({x, y, row, col});
 
         window.addEventListener("contextmenu", () => {
             deselect();
@@ -134,10 +130,20 @@ function Board(
         let col = Math.floor(boardX / ((boardRef.current?.scrollWidth || 0) / numCols));
         if (player?.color === Color.Black) col = numCols - 1 - col;
 
+        const piece = board.getPiece({row, col}) || null;
+
         if (isOverBoard) {
-            setMouse({x, y, row, col});
+            setMouse(prevMouse => {
+                if (piece && !prevMouse.piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
+                    boardRef.current.style.cursor = "grab";
+                } else if (!piece && prevMouse.piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
+                    boardRef.current.style.cursor = "pointer";
+                }
+                return {x, y, row, col, piece}
+            });
         } else {
-            setMouse({x, y, row: null, col: null});
+            setMouse({x, y, row: null, col: null, piece: null});
+            if (boardRef.current) boardRef.current.style.cursor = "pointer";
         }
 
         // console.log(`Pointer Move ${isOverBoard ? "over board" : ""} at x: ${x} y: ${y} row: ${row}, col: ${col}`);
@@ -181,6 +187,7 @@ function Board(
         setLegalMoves([]);
         setLegalRuleMoves([]);
         setPromotionMove(null);
+        setDraggedSquare(null);
     }
 
     // Move the currently selected square/piece to the given square
@@ -210,9 +217,16 @@ function Board(
     function startDrag(square: SquareType) {
         select(square);
         setDraggedSquare(square);
+        if (boardRef.current) boardRef.current.style.cursor = "grabbing";
     }
 
     function endDrag(square: SquareType) {
+        if (boardRef.current) {
+            const piece = board.getPiece(square) || null;
+            if (piece) boardRef.current.style.cursor = "grab";
+            else boardRef.current.style.cursor = "pointer";
+        }
+
         if (promotionMove) {
             return;
         }
