@@ -1,13 +1,15 @@
 import {type ReactNode, useMemo} from "react";
-import {io} from "socket.io-client";
+import {io, type Socket} from "socket.io-client";
 import {SocketContext} from "./SocketContext.ts";
+import type {ClientToServerEvents, ServerToClientEvents} from "@chess-bs/common";
 
 const SERVER_IP = "192.168.1.90";
 const SERVER_PORT = 3000;
 
 function SocketProvider({ children }: { children: ReactNode }) {
 
-    const socket = useMemo(() => io(`http://${SERVER_IP}:${SERVER_PORT}`, {
+    const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useMemo(
+        () => io(`http://${SERVER_IP}:${SERVER_PORT}`, {
         withCredentials: true,
     }), []);
 

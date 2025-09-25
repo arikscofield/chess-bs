@@ -5,7 +5,7 @@ import {useContext, useEffect, useState} from "react";
 import {
     AckStatus,
     Color,
-    type GameState, type Move, PieceType,
+    type GameState, type Move,
     type PlayerState,
 } from "@chess-bs/common";
 import Player from "@chess-bs/common/dist/player.js";
@@ -29,12 +29,12 @@ function Play() {
 
     const [view, setView] = useState<Color | null>(null);
     const [turnColor, setTurnColor] = useState<Color>(Color.White);
-    const [promotionMove, setPromotionMove] = useState<Move | null>(null);
     const [isBluffing, setIsBluffing] = useState<boolean>(false);
 
     const socket = useContext(SocketContext);
 
     useEffect(() => {
+        if (isMounted) return;
         console.log(`Attempted to join game ${gameId} from url`);
         if (socket && gameId) {
 
@@ -64,6 +64,7 @@ function Play() {
 
 
     function handleJoinGame(gameId: string) {
+        console.log("Test");
         socket?.emit("joinGame", gameId, (response) => {
             if (response.status === AckStatus.OK) {
                 console.log(`Joined game: ${gameId}`)
@@ -86,15 +87,6 @@ function Play() {
     }
 
 
-    function handleSelectPromotion(pieceType: PieceType) {
-        if (!promotionMove) return;
-
-        const move = promotionMove;
-        move.promotion = pieceType;
-        handleMove(move);
-        setPromotionMove(null);
-    }
-
     if (!isMounted || !socket) return;
 
     if (!gameId) return;
@@ -106,10 +98,7 @@ function Play() {
             view={view || Color.White}
             turn={turnColor}
             isBluffing={isBluffing}
-            promotionMove={promotionMove}
             handleMove={handleMove}
-            setPromotionMove={setPromotionMove}
-            handleSelectPromotion={handleSelectPromotion}
         />
         }
         <Group justify={"center"} gap={50} py={10}>

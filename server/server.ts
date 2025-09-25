@@ -29,7 +29,6 @@ io.engine.on("headers", (headers, request) => {
             sameSite: "strict",
             maxAge: 60 * 60 * 24 * 30,
         });
-        // cookies.playerId = playerId;
         request.headers.cookie += "; playerId=" + playerId;
     }
 })
@@ -56,22 +55,11 @@ io.on("connection", (socket) => {
         let gameId = generateGameId(6);
         while (games.get(gameId))
             gameId = Math.random().toString(36).substring(2, 8);
-        const game = new Game(gameId);
-
-        const player = game.addPlayer(playerId, color);
-
-        if (player === null) {
-            console.log("Unable to create game.");
-            callback({ status: AckStatus.ERROR, message: "Unable to create game" });
-            return;
-        }
+        const game = new Game(gameId, playerId);
 
         games.set(gameId, game);
         console.log(`Creating game ${gameId} for player ${playerId}`);
-        socket.join(gameId);
-        sendGameState(game);
         callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId });
-
 
         function generateGameId(len: number) {
             const chars: string = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789";
@@ -102,7 +90,7 @@ io.on("connection", (socket) => {
                 return;
             }
             socket.join(gameId);
-            io.to(gameId).emit("gameState", gameState);
+            // io.to(gameId).emit("gameState", gameState);
             sendGameState(game);
             sendAllPlayerStates(gameId);
             callback({ status: AckStatus.OK, message: "Successfully rejoined game" });

@@ -10,14 +10,16 @@ export default class Game {
     gameId: string;
     gameStatus: GameStatus;
     board: Board;
+    creatorPlayerId: string;
     players: Player[];
     private moveHistory: Move[];
     turnColor: Color;
     lastMoveWasBluff: boolean;
     prevBoard: Board | null;
 
-    constructor(gameId: string, fen: string = defaultFEN) {
+    constructor(gameId: string, createrPlayerId: string, fen: string = defaultFEN) {
         this.gameId = gameId;
+        this.creatorPlayerId = createrPlayerId;
         this.gameStatus = GameStatus.WAITING_FOR_PLAYER;
         this.board = new Board();
         this.players = [];
