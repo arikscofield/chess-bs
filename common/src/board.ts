@@ -82,9 +82,9 @@ export default class Board {
         const movingPiece = this.getPiece(from);
         if (!movingPiece) return false;
 
-        const isCastle = movingPiece.pieceType === PieceType.King && Math.abs(from.col - to.col) > 1;
+        const isCastle = movingPiece.pieceType === PieceType.King && !movingPiece.hasMoved && Math.abs(from.col - to.col) == 2;
         const isDoublePawn = movingPiece.pieceType === PieceType.Pawn && Math.abs(from.row - to.row) > 1;
-        const isEnPassant = movingPiece.pieceType === PieceType.Pawn && from.col !== to.col && this.getPiece(to) === null;
+        const isEnPassant = movingPiece.pieceType === PieceType.Pawn && to.row === this.enPassant?.row && to.col === this.enPassant?.col;
         const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
                 ((movingPiece.color === Color.White && to.row === 0) ||
                 (movingPiece.color === Color.Black && to.row === 7));
@@ -99,16 +99,19 @@ export default class Board {
         // Castling
         if (isCastle && from.col > to.col) {
             const rook = this.getPiece({row: from.row, col: 0});
-            if (!rook) return false;
-            rook.hasMoved = true;
-            this.setPiece({row: from.row, col: to.col+1}, rook);
-            this.setPiece({row: from.row, col: 0}, null);
+            if (rook && rook.pieceType === PieceType.Rook && !rook.hasMoved) {
+                rook.hasMoved = true;
+                this.setPiece({row: from.row, col: to.col+1}, rook);
+                this.setPiece({row: from.row, col: 0}, null);
+            }
         } else if (isCastle && from.col < to.col) {
             const rook = this.getPiece({row: from.row, col: 7});
-            if (!rook) return false;
-            rook.hasMoved = true;
-            this.setPiece({row: from.row, col: to.col-1}, rook);
-            this.setPiece({row: from.row, col: 7}, null);
+            if (rook && rook.pieceType === PieceType.Rook && !rook.hasMoved) {
+                rook.hasMoved = true;
+                this.setPiece({row: from.row, col: to.col-1}, rook);
+                this.setPiece({row: from.row, col: 7}, null);
+            }
+
         }
 
         // En Passant

@@ -1,7 +1,7 @@
 import '../Home/Home.css'
 
 import {useNavigate, useParams} from "react-router";
-import {useContext, useEffect, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import {
     AckStatus,
     Color,
@@ -31,6 +31,10 @@ function Play() {
     const [turnColor, setTurnColor] = useState<Color>(Color.White);
     const [isBluffing, setIsBluffing] = useState<boolean>(false);
 
+    const moveHistory = useRef<Move[]>([]);
+    const [lastMove, setLastMove] = useState<Move | undefined>(undefined);
+    const [animateMove, setAnimateMove] = useState<boolean>(false);
+
     const socket = useContext(SocketContext);
 
     useEffect(() => {
@@ -44,6 +48,21 @@ function Play() {
                 setGameState(gameState);
                 setTurnColor(gameState.turn);
                 setBoard(new BoardClass(gameState.grid, gameState.enPassant));
+
+                const newLastMove = gameState.moveHistory.at(-1);
+                setLastMove(newLastMove);
+                const shouldAnimate = gameState.moveHistory.length > moveHistory.current.length;
+                moveHistory.current = gameState.moveHistory;
+
+                if (shouldAnimate && newLastMove) {
+                    setAnimateMove(true);
+
+                    setTimeout(() => {
+                        setAnimateMove(false);
+                    }, 300)
+                }
+
+
             });
 
             socket.on("playerState", (playerState: PlayerState) => {
@@ -99,6 +118,8 @@ function Play() {
             turn={turnColor}
             isBluffing={isBluffing}
             handleMove={handleMove}
+            lastMove={lastMove}
+            animateMove={animateMove}
         />
         }
         <Group justify={"center"} gap={50} py={10}>

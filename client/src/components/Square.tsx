@@ -10,8 +10,8 @@ const BoardType: Record<string, [string, string]> = {
 
 
 function Square(
-    { row, col, color, piece, hovered, selected, movable, ruleMovable, isBluffing, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
-    {row: number, col: number, color: Color, piece: Piece | null, hovered: boolean, selected: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
+    { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
+    {row: number, col: number, color: Color, piece: Piece | null, hovered: boolean, selected: boolean, highlighted: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
     const pieceString: string = "" + piece?.color + piece?.pieceType;
@@ -44,6 +44,9 @@ function Square(
         >
             {/* Selected Piece highlight */}
             {selected && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 `}/>}
+
+            {/* Last Move highlight */}
+            {highlighted && <div className={`absolute w-full h-full top-0 l eft-0 bg-lime-400/40`}/>}
 
             {/* Showing legal moves: both regular chess (green), and rule-specific (blue) */}
             {(movable || ruleMovable) && !selected && !hovered && <div className={`absolute w-full h-full top-0 left-0 group-hover:hidden 

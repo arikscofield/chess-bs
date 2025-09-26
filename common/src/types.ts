@@ -113,6 +113,7 @@ export interface GameState {
     grid: (Piece | null)[][];
     enPassant: Square | null;
     turn: Color;
+    moveHistory: Move[];
 }
 
 export interface PlayerState {

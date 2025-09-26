@@ -37,7 +37,8 @@ export default class Game {
             gameStatus: this.gameStatus,
             grid: this.board.grid,
             enPassant: this.board.enPassant,
-            turn: this.turnColor
+            turn: this.turnColor,
+            moveHistory: this.moveHistory,
         }
     }
 
@@ -89,6 +90,9 @@ export default class Game {
             if (this.board.applyMove(move)) {
                 this.lastMoveWasBluff = false;
                 this.prevBoard = prevBoard;
+                const moveCopy = structuredClone(move);
+                delete moveCopy.bluff;
+                this.moveHistory.push(moveCopy);
                 return true;
             }
             return false;
@@ -103,6 +107,9 @@ export default class Game {
             if (this.board.applyMove(move)) {
                 this.lastMoveWasBluff = false;
                 this.prevBoard = prevBoard;
+                const moveCopy = structuredClone(move);
+                delete moveCopy.bluff;
+                this.moveHistory.push(moveCopy);
                 return true;
             }
             return false;
@@ -113,6 +120,9 @@ export default class Game {
             if (this.board.applyMove(move)) {
                 this.lastMoveWasBluff = true;
                 this.prevBoard = prevBoard;
+                const moveCopy = structuredClone(move);
+                delete moveCopy.bluff;
+                this.moveHistory.push(moveCopy);
                 return true;
             }
             return false;
