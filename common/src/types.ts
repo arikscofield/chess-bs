@@ -106,6 +106,7 @@ export interface ClientToServerEvents {
     joinGame: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     move: (gameId: string, move: Move, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     callBluff: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string, result?: boolean}) => void) => void;
+    chatMessage: (gameId: string, message: string) => void;
 }
 
 export interface GameState {
@@ -125,4 +126,5 @@ export interface PlayerState {
 export interface ServerToClientEvents {
     gameState: (gameState: GameState) => void;
     playerState: (playerState: PlayerState) => void;
+    chatMessage: (message: string) => void;
 }

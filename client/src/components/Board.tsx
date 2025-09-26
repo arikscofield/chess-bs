@@ -276,7 +276,7 @@ function Board(
     return (
         <div
             ref={mergedBoardRef}
-            className="grid grid-rows-8 grid-cols-8 relative max-w-[750px] aspect-square "
+            className="grid grid-rows-8 grid-cols-8 relative aspect-square w-full h-full "
             style={{ touchAction: "none" }}
             onPointerDown={handlePointerDown}
             onContextMenu={(e) => {

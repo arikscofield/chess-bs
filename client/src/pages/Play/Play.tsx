@@ -15,6 +15,7 @@ import BoardClass from "@chess-bs/common/dist/board.js";
 import {Group} from "@mantine/core";
 import BluffButton from "../../components/BluffButton.tsx";
 import CallBluffButton from "../../components/CallBluffButton.tsx";
+import Chatroom from "../../components/Chatroom.tsx";
 
 
 function Play() {
@@ -83,8 +84,12 @@ function Play() {
 
 
     function handleJoinGame(gameId: string) {
-        console.log("Test");
-        socket?.emit("joinGame", gameId, (response) => {
+        if (!socket) {
+            console.error("Socket not connected");
+            return;
+        }
+
+        socket.emit("joinGame", gameId, (response) => {
             if (response.status === AckStatus.OK) {
                 console.log(`Joined game: ${gameId}`)
             } else {
@@ -95,7 +100,12 @@ function Play() {
     }
 
     function handleMove(move: Move) {
-        socket?.emit("move", gameId || "", move, (response) => {
+        if (!socket) {
+            console.error("Socket not connected");
+            return;
+        }
+
+        socket.emit("move", gameId || "", move, (response) => {
             if (response.status === AckStatus.OK) {
                 console.log("Move successful")
 
@@ -110,23 +120,44 @@ function Play() {
 
     if (!gameId) return;
 
-    return (<div>
-        {board && player && <Board
-            board={board}
-            player={player}
-            view={view || Color.White}
-            turn={turnColor}
-            isBluffing={isBluffing}
-            handleMove={handleMove}
-            lastMove={lastMove}
-            animateMove={animateMove}
-        />
-        }
-        <Group justify={"center"} gap={50} py={10}>
-            <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
-            <CallBluffButton gameId={gameId} />
-        </Group>
+    return (<div className={"flex flex-col h-screen w-screen"}>
+        <div className={"flex flex-row gap-5 justify-center items-center h-[calc(90vh-50px)]"}>
+            <div className={"grid grid-rows-2 w-[300px] h-full gap-2"}>
+                <div className={"flex flex-col rounded-md bg-bg-2"}>
 
+                </div>
+                <div className={"flex flex-col rounded-md bg-bg-2"}>
+
+                </div>
+            </div>
+
+            <div className={"flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
+                {board && player && <Board
+                    board={board}
+                    player={player}
+                    view={view || Color.White}
+                    turn={turnColor}
+                    isBluffing={isBluffing}
+                    handleMove={handleMove}
+                    lastMove={lastMove}
+                    animateMove={animateMove}
+                />
+                }
+                <div className={"flex flex-row justify-center gap-5 py-3"}>
+                    <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
+                    <CallBluffButton gameId={gameId} />
+                </div>
+            </div>
+
+            <div className={"grid grid-rows-2 w-[300px] h-full gap-2 "}>
+                <div className={"flex flex-col rounded-md bg-bg-2"}>
+
+                </div>
+                <Chatroom
+                    gameId={gameId}
+                />
+            </div>
+        </div>
     </div>)
 }
 

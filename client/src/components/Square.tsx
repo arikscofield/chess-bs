@@ -57,7 +57,7 @@ function Square(
             {/* Legal move on-hover-highlight */}
             {hovered && (movable || ruleMovable) && !selected && <div className={`absolute w-full h-full top-0 left-0 ${isBluffing ? "bg-red-600/40" : (ruleMovable ? "bg-blue-600/40" : (movable ? "bg-green-600/40" : ""))}`}/>}
 
-            {piece && <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} draggable={false} className={"z-20 pointer-events-none "} style={{ touchAction: "none" }}/>}
+            {piece && <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} draggable={false} className={"w-full h-full z-20 pointer-events-none "} style={{ touchAction: "none" }}/>}
 
         </div>
     )

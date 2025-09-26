@@ -218,6 +218,19 @@ io.on("connection", (socket) => {
         }
     })
 
+    socket.on("chatMessage", (gameId, message) => {
+        if (message.length > 200) return;
+
+        const game = games.get(gameId);
+        if (!game) {
+            console.log("Chat message received in non-existent game:", gameId);
+            return;
+        }
+
+        socket.to(gameId).emit("chatMessage", message);
+
+    });
+
     socket.on("disconnect", () => {
         console.log("User disconnected:", playerId);
         // TODO: Check if both users disconnected and end/remove game
