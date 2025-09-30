@@ -13,7 +13,7 @@ function Chatroom({gameId, }: {gameId: string}) {
 
     const mounted = useMounted();
     const [inputMessage, setInputMessage] = useInputState("");
-    const [messages, setMessages] = useState<Message[]>([{user: "user1", message: "test message 1"}, {user: "aaa user2", message: "test message 2222"},]);
+    const [messages, setMessages] = useState<Message[]>([]);
 
     const scrollRef = useRef<HTMLDivElement>(null);
 

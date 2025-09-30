@@ -1,8 +1,18 @@
 import Board from "@chess-bs/common/dist/board.js";
-import {Color, type GameState, GameStatus, type Move} from "@chess-bs/common";
+import {
+    BluffPunishment,
+    Color,
+    CreateGameColor,
+    type GameState,
+    GameStatus,
+    type Move,
+    type Rule
+} from "@chess-bs/common";
 // import Player from "@common/src/player.js";
 import Player from "@chess-bs/common/dist/player.js";
 import {parseFen} from "./helper.js";
+import {clearInterval} from "node:timers";
+import {sendGameOver} from "./server.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -11,15 +21,43 @@ export default class Game {
     gameStatus: GameStatus;
     board: Board;
     creatorPlayerId: string;
+    creatorColor: CreateGameColor;
     players: Player[];
+    private usesTimer: boolean;
+    timeLeftMs: Map<Color, number>;
+    lastMoveTimestamp: number;
+    timeIncrementMs: number;
+    private timerInterval: NodeJS.Timeout | null = null;
     private moveHistory: Move[];
     turnColor: Color;
     lastMoveWasBluff: boolean;
     prevBoard: Board | null;
+    ruleCount: number;
+    rulePool: Rule[];
+    bluffPunishment: BluffPunishment;
 
-    constructor(gameId: string, createrPlayerId: string, fen: string = defaultFEN) {
+    constructor(gameId: string, createrPlayerId: string, creatorColor: CreateGameColor, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, timeControlStartMs?: number, timeIncrementMs?: number, fen?: string, ) {
         this.gameId = gameId;
         this.creatorPlayerId = createrPlayerId;
+        this.creatorColor = creatorColor;
+        this.ruleCount = ruleCount;
+        this.rulePool = rulePool;
+        this.bluffPunishment = bluffPunishment;
+
+        if (timeControlStartMs !== undefined && timeIncrementMs !== undefined) {
+            this.usesTimer = true;
+            this.timeIncrementMs = timeIncrementMs;
+            this.timeLeftMs = new Map<Color, number>();
+            for (const c of Object.values(Color)) {
+                this.timeLeftMs.set(c, timeControlStartMs);
+            }
+        } else {
+            this.usesTimer = false;
+            this.timeIncrementMs = 0;
+            this.timeLeftMs = new Map<Color, number>();
+        }
+        this.lastMoveTimestamp = 0;
+
         this.gameStatus = GameStatus.WAITING_FOR_PLAYER;
         this.board = new Board();
         this.players = [];
@@ -28,18 +66,24 @@ export default class Game {
         this.lastMoveWasBluff = false;
         this.prevBoard = new Board();
 
-        this.setFromFEN(fen);
+        this.setFromFEN(fen || defaultFEN);
     }
 
 
     public getState(): GameState {
-        return {
+        let state: GameState = {
             gameStatus: this.gameStatus,
             grid: this.board.grid,
             enPassant: this.board.enPassant,
             turn: this.turnColor,
             moveHistory: this.moveHistory,
+            rulePool: this.rulePool,
         }
+
+        if (this.usesTimer)
+            state.timers = Object.fromEntries(this.timeLeftMs) as Record<Color, number>;
+
+        return state;
     }
 
 
@@ -60,11 +104,13 @@ export default class Game {
             }
         }
 
-        const player =  new Player(playerId, color, 2);
+        const player =  new Player(playerId, color);
+        player.setRandomRules(this.ruleCount, this.rulePool);
         this.players.push(player);
         
         if (this.players.length >= 2) {
             this.gameStatus = GameStatus.RUNNING;
+            if (this.usesTimer) this.startGameTimer();
         }
 
         return player;
@@ -82,6 +128,18 @@ export default class Game {
 
 
     public makeMove(move: Move, player: Player): boolean {
+
+        // Hasn't run out of time
+        const now = Date.now();
+        const elapsed = now - this.lastMoveTimestamp;
+        const newTimeLeft = (this.timeLeftMs.get(this.turnColor) || 0) - elapsed
+        this.timeLeftMs.set(this.turnColor, newTimeLeft);
+
+        if (newTimeLeft <= 0) {
+            this.endGame(this.turnColor === Color.White ? Color.Black : Color.White, "Timeout");
+            return false;
+        }
+
         const prevBoard = this.board.clone();
         const legalMoves: Move[] = this.board.getLegalMoves(move.from, true);
 
@@ -130,6 +188,38 @@ export default class Game {
 
         // Non-legal move
         return false;
+    }
+
+
+    public startGameTimer() {
+        if (this.timerInterval) return;
+
+        this.lastMoveTimestamp = Date.now();
+
+        this.timerInterval = setInterval(() => {
+            const activePlayerTime = this.timeLeftMs.get(this.turnColor);
+            if (activePlayerTime == undefined) return;
+            const elapsedSinceLastMove = Date.now() - this.lastMoveTimestamp;
+
+            if (activePlayerTime - elapsedSinceLastMove <= 0) {
+                this.endGame(this.turnColor === Color.White ? Color.Black : Color.White, "Timeout");
+                return;
+            }
+        }, 1000);
+    }
+
+
+    public endGame(winner: Color, reason: string): void {
+        console.log(`Game ${this.gameId} ended: ${winner} wins. Reason: ${reason}`);
+
+        // Stop Timer
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+
+        this.gameStatus = GameStatus.DONE;
+        sendGameOver(this.gameId, winner, reason);
     }
 
 

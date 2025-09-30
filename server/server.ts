@@ -1,8 +1,16 @@
 import {Server} from "socket.io";
 import Game from "./game.js";
-import {AckStatus, type ClientToServerEvents, Color, GameStatus, type ServerToClientEvents} from "@chess-bs/common";
+import {
+    AckStatus,
+    type ClientToServerEvents,
+    Color,
+    CreateGameColor,
+    GameStatus,
+    type ServerToClientEvents,
+} from "@chess-bs/common";
 import {parse, serialize} from "cookie";
 import {v4 as uuidv4} from 'uuid'
+import Rule from "@common/src/rule.js";
 
 const port = 3000;
 const clientPort = 5173;
@@ -46,19 +54,23 @@ io.on("connection", (socket) => {
             const gameObj = games.get(game);
             if (!gameObj) return;
             io.to(game).emit("gameState", gameObj.getState());
+            console.log("Sending game state");
+            console.log(gameObj.getState());
         } else {
             io.to(game.gameId).emit("gameState", game.getState());
+            console.log("Sending game state");
+            console.log(game.getState());
         }
     }
 
-    socket.on("createGame", (color, callback) => {
+    socket.on("createGame", (color, timeControlStartSeconds, timeControlIncrementSeconds, bluffPunishment, ruleCount, rulePool,  callback) => {
         let gameId = generateGameId(6);
         while (games.get(gameId))
             gameId = Math.random().toString(36).substring(2, 8);
-        const game = new Game(gameId, playerId);
+        const game = new Game(gameId, playerId, color, ruleCount, rulePool.map(r => Rule.from(r)).filter(r => r !== null), bluffPunishment, timeControlStartSeconds !== undefined ? timeControlStartSeconds * 1000 : undefined, timeControlIncrementSeconds !== undefined ? timeControlIncrementSeconds * 1000 : undefined);
 
         games.set(gameId, game);
-        console.log(`Creating game ${gameId} for player ${playerId}`);
+        console.log(`Creating game ${gameId} for player ${playerId} with options: Color: ${color}, timeStart: ${timeControlStartSeconds} * 1000, timeIncrement: ${timeControlIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${JSON.stringify(rulePool.map(r => r.name))}`);
         callback({ status: AckStatus.OK, message: "Successfully created game", gameId: gameId });
 
         function generateGameId(len: number) {
@@ -90,15 +102,21 @@ io.on("connection", (socket) => {
                 return;
             }
             socket.join(gameId);
-            // io.to(gameId).emit("gameState", gameState);
-            sendGameState(game);
             sendAllPlayerStates(gameId);
+            sendGameState(game);
             callback({ status: AckStatus.OK, message: "Successfully rejoined game" });
             return;
         }
 
         // New Player
-        player = game.addPlayer(playerId);
+        const newPlayerColor = game.creatorPlayerId === playerId
+            ? game.creatorColor === CreateGameColor.White
+                ? Color.White
+                : game.creatorColor === CreateGameColor.Black
+                    ? Color.Black
+                    : undefined
+            : undefined
+        player = game.addPlayer(playerId, newPlayerColor);
         if (!player) {
             callback({ status: AckStatus.ERROR, message: "Game is full" });
             return;
@@ -109,7 +127,6 @@ io.on("connection", (socket) => {
         sendGameState(game);
         sendAllPlayerStates(gameId);
         callback({ status: AckStatus.OK, message: "Successfully joined game" });
-        console.log(game.players);
 
 
         function sendAllPlayerStates(gameId: string) {
@@ -124,8 +141,6 @@ io.on("connection", (socket) => {
 
 
     socket.on("move", (gameId, move, callback) => {
-        console.log("Received move:");
-        console.log(move);
         const game = games.get(gameId);
         if (!game) {
             console.log("Unable to make move: game not found");
@@ -154,11 +169,15 @@ io.on("connection", (socket) => {
             return;
         }
 
+
+
         if (!game.makeMove(move, player)) {
             callback({ status: AckStatus.ERROR, message: "Failed to make move"});
             return;
         }
 
+        game.timeLeftMs.set(game.turnColor, (game.timeLeftMs.get(game.turnColor) || 0) + game.timeIncrementMs);
+        game.lastMoveTimestamp = Date.now();
         game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
         sendGameState(game);
         callback({ status: AckStatus.OK, message: "Successfully made move" });
@@ -240,8 +259,15 @@ io.on("connection", (socket) => {
 });
 
 
+export function sendGameOver(gameId: string, winner: Color, reason: string) {
+    io.to(gameId).emit("gameOver", winner, reason);
+    games.delete(gameId);
+}
+
+
 function generateUUID() {
     return crypto.randomUUID?.() ?? uuidv4();
 }
+
 
 console.log(`Server started on port ${port}`);

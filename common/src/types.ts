@@ -93,6 +93,19 @@ export enum GameStatus {
 }
 
 
+export enum CreateGameColor {
+    White = Color.White,
+    Black = Color.Black,
+    Random = "Random",
+}
+
+export enum BluffPunishment {
+    Turn = "turn",
+    Piece = "piece",
+    PieceOpponent = "pieceOpponent",
+    PieceRandom = "pieceRandom",
+}
+
 
 // -------- Socket Events -------------
 
@@ -102,7 +115,10 @@ export enum AckStatus {
 }
 
 export interface ClientToServerEvents {
-    createGame: (color: Color, callback: ({status, message, gameId}: {status: AckStatus, message: string, gameId?: string}) => void) => void;
+    createGame: (color: CreateGameColor, timeControlStartSeconds: number | undefined, timeControlIncrementSeconds: number | undefined, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[], callback: (
+        {status, message, gameId}:
+        {status: AckStatus, message: string, gameId?: string})
+        => void) => void;
     joinGame: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     move: (gameId: string, move: Move, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     callBluff: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string, result?: boolean}) => void) => void;
@@ -115,6 +131,8 @@ export interface GameState {
     enPassant: Square | null;
     turn: Color;
     moveHistory: Move[];
+    rulePool?: Rule[];
+    timers?: Record<Color, number> // Map<Color, number>
 }
 
 export interface PlayerState {
@@ -127,4 +145,5 @@ export interface ServerToClientEvents {
     gameState: (gameState: GameState) => void;
     playerState: (playerState: PlayerState) => void;
     chatMessage: (message: string) => void;
+    gameOver: (winner: Color, reason: string) => void;
 }

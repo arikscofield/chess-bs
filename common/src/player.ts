@@ -4,13 +4,21 @@ import Rule, {allRules} from "./rule";
 class Player implements PlayerType {
     playerId: string;
     color: Color;
-    rules: RuleType[];
+    rules: Rule[];
 
 
-    constructor(playerId: string, color: Color, ruleCount: number) {
+    constructor(playerId: string, color: Color, rules?: Rule[]) {
         this.playerId = playerId;
         this.color = color;
-        this.rules = Rule.getRandomRules(ruleCount);
+        if (rules) {
+            this.rules = rules;
+        } else {
+            this.rules = [];
+        }
+    }
+
+    public setRandomRules(count: number, rulePool: Rule[]) {
+        this.rules = Rule.getRandomRules(count, rulePool);
     }
 
 
@@ -23,32 +31,16 @@ class Player implements PlayerType {
     }
 
 
-
-    public static from(player: Player) {
-        const newRules: Rule[] = [];
-        for (const playerRule of player.rules) {
-            for (const rule of allRules) {
-                if (playerRule.name === rule.name) {
-                    newRules.push(rule);
-                }
-            }
-        }
-
-        const newPlayer = new Player(player.playerId, player.color, player.rules.length);
-        newPlayer.rules = newRules;
-        return newPlayer;
-    }
-
-
     public static fromPlayerState(state: PlayerState): Player {
         const {playerId, color, rules} = state;
-        const player = new Player(playerId, color, rules.length);
+        const player = new Player(playerId, color);
 
         const newRules: Rule[] = [];
-        for (const playerRule of player.rules) {
+        for (const playerRule of rules) {
             for (const rule of allRules) {
                 if (playerRule.name === rule.name) {
-                    newRules.push(rule);
+                    const newRule = new Rule(playerRule.name, playerRule.description, playerRule.pieceType, rule.getLegalMoves);
+                    newRules.push(newRule);
                 }
             }
         }

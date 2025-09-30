@@ -163,8 +163,6 @@ function Board(
 
         if (isOverBoard) {
             setDragReleaseSquare({row, col});
-        } else {
-            deselect();
         }
 
         // console.log(`Pointer Up ${isOverBoard ? "over board" : ""} at x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);

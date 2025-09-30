@@ -11,6 +11,8 @@ import BlackQueen from "./pieces/BlackQueen.svg";
 import WhiteKing from "./pieces/WhiteKing.svg";
 import BlackKing from "./pieces/BlackKing.svg";
 
+import RandomKing from "./pieces/RandomKing.svg";
+
 
 
 
@@ -22,4 +24,5 @@ export const pieceImages: Record<string, string> = {
     WhiteRook, BlackRook,
     WhiteQueen, BlackQueen,
     WhiteKing, BlackKing,
+    RandomKing
 }

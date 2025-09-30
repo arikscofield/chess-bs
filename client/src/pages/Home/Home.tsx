@@ -4,10 +4,10 @@ import {Button, Grid, Group, Stack, TextInput, Title} from "@mantine/core";
 import {useNavigate} from "react-router";
 import {useContext, useEffect, useState} from "react";
 import {
-    AckStatus,
-    Color,
+    AckStatus, BluffPunishment, CreateGameColor, type Rule,
 } from "@chess-bs/common";
 import {SocketContext} from "../../components/Socket/SocketContext.ts";
+import CreateGameModal from "../../components/CreateGameModal.tsx";
 
 
 
@@ -17,6 +17,7 @@ function Home() {
     const [isMounted, setIsMounted] = useState(false);
 
     const [gameCodeInput, setGameCodeInput] = useState<string>("");
+    const [createGameModalOpen, setCreateGameModalOpen] = useState<boolean>(false);
 
     // const socket = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
     const socket = useContext(SocketContext);
@@ -27,12 +28,16 @@ function Home() {
 
 
     function handleCreateGame() {
+        setCreateGameModalOpen(true);
+    }
+
+    function createGame(color: CreateGameColor, timeControlStartSeconds: number | undefined, timeControlIncrementSeconds: number | undefined, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[]) {
         if (!socket) {
             console.error("Socket not connected");
             return;
         }
 
-        socket.emit("createGame", Color.White, (response) => {
+        socket.emit("createGame", color, timeControlStartSeconds, timeControlIncrementSeconds, bluffPunishment, ruleCount, rulePool, (response) => {
             if (response.status === AckStatus.OK && response.gameId) {
                 navigate(`/${response.gameId}`);
                 console.log(`Created game: ${response.gameId}`);
@@ -78,6 +83,12 @@ function Home() {
                 <Button color={"orange"}>Play a Bot</Button>
             </Stack>
         </Grid.Col>
+
+        <CreateGameModal
+            opened={createGameModalOpen}
+            onClose={() => setCreateGameModalOpen(false)}
+            onSubmit={createGame}
+        />
     </Grid>
     )
 }
