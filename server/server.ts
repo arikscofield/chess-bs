@@ -63,7 +63,7 @@ io.on("connection", (socket) => {
         let gameId = generateGameId(6);
         while (games.get(gameId))
             gameId = Math.random().toString(36).substring(2, 8);
-        const game = new Game(gameId, playerId, color, ruleCount, rulePool.map(r => Rule.from(r)).filter(r => r !== null), bluffPunishment, timeControlStartSeconds !== undefined ? timeControlStartSeconds * 1000 : undefined, timeControlIncrementSeconds !== undefined ? timeControlIncrementSeconds * 1000 : undefined);
+        const game = new Game(gameId, playerId, color, ruleCount, rulePool.map(r => Rule.from(r)).filter(r => r !== null), bluffPunishment, timeControlStartSeconds ? timeControlStartSeconds * 1000 : undefined, timeControlIncrementSeconds ? timeControlIncrementSeconds * 1000 : undefined);
 
         games.set(gameId, game);
         console.log(`Creating game ${gameId} for player ${playerId} with options: Color: ${color}, timeStart: ${timeControlStartSeconds} * 1000, timeIncrement: ${timeControlIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${JSON.stringify(rulePool.map(r => r.name))}`);

@@ -83,25 +83,6 @@ function Play() {
                         endTimers();
                         break;
                 }
-
-                // const color = playerRef.current?.color;
-                // if (color && color === newTurn) {
-                //     timerUpdateTimestamp.current = Date.now();
-                //     timerInterval.current = setInterval(() => {
-                //         setTimers(prevTimers => {
-                //             const newTimers = new Map(prevTimers);
-                //             const now = Date.now();
-                //             const elapsed = now - timerUpdateTimestamp.current;
-                //             const current = newTimers.get(color);
-                //             if (current === undefined) return newTimers;
-                //             newTimers.set(color, current - elapsed);
-                //             timerUpdateTimestamp.current = now;
-                //             return newTimers;
-                //         })
-                //     }, 100)
-                // }
-
-
             });
 
             socket.on("playerState", (newPlayerState: PlayerState) => {
