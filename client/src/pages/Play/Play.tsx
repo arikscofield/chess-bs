@@ -2,7 +2,7 @@ import '../Home/Home.css'
 
 import {useNavigate, useParams} from "react-router";
 import {useContext, useEffect, useRef, useState} from "react";
-import {AckStatus, Color, type GameState, type Move, type PlayerState, type Rule,} from "@chess-bs/common";
+import {AckStatus, Color, type GameState, GameStatus, type Move, type PlayerState, type Rule,} from "@chess-bs/common";
 import Player from "@chess-bs/common/dist/player.js";
 import {SocketContext} from "../../components/Socket/SocketContext.ts";
 import Board from "../../components/Board.tsx";
@@ -24,8 +24,10 @@ function Play() {
     const [player, setPlayer] = useState<Player | null>(null);
     const playerRef = useRef<Player | null>(null);
 
+    const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.WAITING_FOR_PLAYER);
     const [view, setView] = useState<Color | null>(null);
-    const [turnColor, setTurnColor] = useState<Color>(Color.White);
+    // const [turnColor, setTurnColor] = useState<Color>(Color.White);
+    const turnColor = useRef<Color>(Color.White);
     const [isBluffing, setIsBluffing] = useState<boolean>(false);
 
     const [rulePool, setRulePool] = useState<Rule[]>([]);
@@ -45,12 +47,15 @@ function Play() {
         if (socket && gameId) {
 
             socket.on("gameState", (gameState: GameState) => {
-                const {/*gameStatus: newGameStatus,*/ grid: newGrid, enPassant: newEnPassant,
+                const {gameStatus: newGameStatus, grid: newGrid, enPassant: newEnPassant,
                     turn: newTurn, moveHistory: newMoveHistory, rulePool: newRulePool, timers: newTimers} = gameState;
+
                 console.log("Received Game State: ");
                 console.log(gameState);
                 setGameState(gameState);
-                setTurnColor(newTurn);
+                setGameStatus(newGameStatus);
+                // setTurnColor(newTurn);
+                turnColor.current = newTurn;
                 setBoard(new BoardClass(newGrid, newEnPassant));
                 if (newRulePool) setRulePool(newRulePool);
                 if (newTimers) setTimers(new Map(Object.entries(newTimers)) as Map<Color, number>);
@@ -68,22 +73,33 @@ function Play() {
                     }, 300)
                 }
 
-                const color = playerRef.current?.color;
-                if (color && color === newTurn) {
-                    timerUpdateTimestamp.current = Date.now();
-                    timerInterval.current = setInterval(() => {
-                        setTimers(prevTimers => {
-                            const newTimers = new Map(prevTimers);
-                            const now = Date.now();
-                            const elapsed = now - timerUpdateTimestamp.current;
-                            const current = newTimers.get(color);
-                            if (current === undefined) return newTimers;
-                            newTimers.set(color, current - elapsed);
-                            timerUpdateTimestamp.current = now;
-                            return newTimers;
-                        })
-                    }, 100)
+                switch (newGameStatus) {
+                    case GameStatus.RUNNING:
+                        startTimers();
+                        break;
+                    case GameStatus.WAITING_FOR_PLAYER:
+                    case GameStatus.PAUSED:
+                    case GameStatus.DONE:
+                        endTimers();
+                        break;
                 }
+
+                // const color = playerRef.current?.color;
+                // if (color && color === newTurn) {
+                //     timerUpdateTimestamp.current = Date.now();
+                //     timerInterval.current = setInterval(() => {
+                //         setTimers(prevTimers => {
+                //             const newTimers = new Map(prevTimers);
+                //             const now = Date.now();
+                //             const elapsed = now - timerUpdateTimestamp.current;
+                //             const current = newTimers.get(color);
+                //             if (current === undefined) return newTimers;
+                //             newTimers.set(color, current - elapsed);
+                //             timerUpdateTimestamp.current = now;
+                //             return newTimers;
+                //         })
+                //     }, 100)
+                // }
 
 
             });
@@ -101,6 +117,7 @@ function Play() {
             socket.on("gameOver", (winner: Color, reason: string) => {
                 console.log("Game Over. Winner:", winner)
                 console.log("Reason:", reason);
+                endTimers();
             })
 
             handleJoinGame(gameId);
@@ -137,14 +154,53 @@ function Play() {
         socket.emit("move", gameId || "", move, (response) => {
             if (response.status === AckStatus.OK) {
                 console.log("Move successful")
-                if (timerInterval.current) {
-                    clearInterval(timerInterval.current);
-                    timerInterval.current = null;
-                }
             } else if (response.status === AckStatus.ERROR) {
                 console.error(response.message);
             }
         })
+    }
+
+    function startTimers() {
+        if (timerInterval.current) return;
+        timerUpdateTimestamp.current = Date.now();
+        timerInterval.current = setInterval(() => {
+            setTimers(prevTimers => {
+                const newTimers = new Map(prevTimers);
+                const now = Date.now();
+                const elapsed = now - timerUpdateTimestamp.current;
+                const current = newTimers.get(turnColor.current);
+                if (current === undefined) return newTimers;
+                newTimers.set(turnColor.current, Math.max(0, current - elapsed));
+                timerUpdateTimestamp.current = now;
+                return newTimers;
+            })
+        }, 100)
+    }
+
+    function endTimers() {
+        if (timerInterval.current)
+            clearInterval(timerInterval.current);
+        timerInterval.current = null;
+    }
+
+
+    function formatTime(timeMs: number | undefined): string {
+        if (timeMs === undefined) return "";
+
+        let result = "";
+        const tenths = Math.floor(timeMs % 1000 / 100);
+        const seconds = Math.floor((timeMs / 1000) % 60);
+        const minutes = Math.floor((timeMs / (60 * 1000)) % 60);
+        const hours = Math.floor((timeMs / (60 * 60 * 1000)) % 60);
+
+        if (hours > 0)
+            result += (hours < 10 ? "0" + hours : hours) + ":";
+        result += (minutes < 10 ? "0" + minutes : minutes) + ":";
+        result += seconds < 10 ? "0" + seconds : seconds;
+        if (hours === 0 && minutes === 0 && seconds < 10)
+            result += "." + tenths;
+
+        return result
     }
 
 
@@ -162,11 +218,16 @@ function Play() {
             </div>
 
             <div className={"flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
+                <div className={"flex flex-row justify-between"}>
+                    <div className={"float-start text-white text-xl"}>Opponent</div>
+
+                    <div className={"float-end text-white text-xl"}>{formatTime(timers?.get(player?.color === Color.White ? Color.Black : Color.White))}</div>
+                </div>
                 {board && player && <Board
                     board={board}
                     player={player}
                     view={view || Color.White}
-                    turn={turnColor}
+                    turn={turnColor.current}
                     isBluffing={isBluffing}
                     handleMove={handleMove}
                     lastMove={lastMove}
@@ -179,7 +240,7 @@ function Play() {
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButton gameId={gameId} />
                     </div>
-                    <div className={"float-end text-white text-xl"}>{timers?.get(player?.color ?? Color.White)}</div>
+                    <div className={"float-end text-white text-xl"}>{formatTime(timers?.get(player?.color ?? Color.White))}</div>
                 </div>
 
             </div>

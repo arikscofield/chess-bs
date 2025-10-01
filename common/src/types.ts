@@ -87,6 +87,7 @@ export interface Player {
 
 export enum GameStatus {
     WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",
+    WAITING_FOR_FIRST_MOVE = "WAITING_FOR_FIRST_MOVE",
     RUNNING = "RUNNING",
     PAUSED = "PAUSED",
     DONE = "DONE",

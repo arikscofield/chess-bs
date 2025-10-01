@@ -23,11 +23,15 @@ export default class Game {
     creatorPlayerId: string;
     creatorColor: CreateGameColor;
     players: Player[];
-    private usesTimer: boolean;
+    playersConnected: number;
+
+    usesTimer: boolean;
     timeLeftMs: Map<Color, number>;
-    lastMoveTimestamp: number;
+    timerUpdateTimestamp: number;
     timeIncrementMs: number;
     private timerInterval: NodeJS.Timeout | null = null;
+    hasMoved: Map<Color, boolean>;
+
     private moveHistory: Move[];
     turnColor: Color;
     lastMoveWasBluff: boolean;
@@ -44,23 +48,27 @@ export default class Game {
         this.rulePool = rulePool;
         this.bluffPunishment = bluffPunishment;
 
+        this.hasMoved = new Map();
         if (timeControlStartMs !== undefined && timeIncrementMs !== undefined) {
             this.usesTimer = true;
             this.timeIncrementMs = timeIncrementMs;
             this.timeLeftMs = new Map<Color, number>();
             for (const c of Object.values(Color)) {
                 this.timeLeftMs.set(c, timeControlStartMs);
+                this.hasMoved.set(c, false);
             }
+            this.timerUpdateTimestamp = Date.now();
         } else {
             this.usesTimer = false;
             this.timeIncrementMs = 0;
             this.timeLeftMs = new Map<Color, number>();
+            this.timerUpdateTimestamp = 0;
         }
-        this.lastMoveTimestamp = 0;
 
         this.gameStatus = GameStatus.WAITING_FOR_PLAYER;
         this.board = new Board();
         this.players = [];
+        this.playersConnected = 0;
         this.moveHistory = [];
         this.turnColor = Color.White;
         this.lastMoveWasBluff = false;
@@ -71,6 +79,8 @@ export default class Game {
 
 
     public getState(): GameState {
+        this.updateTimers();
+
         let state: GameState = {
             gameStatus: this.gameStatus,
             grid: this.board.grid,
@@ -84,6 +94,17 @@ export default class Game {
             state.timers = Object.fromEntries(this.timeLeftMs) as Record<Color, number>;
 
         return state;
+    }
+
+    public updateTimers() {
+        if (this.gameStatus !== GameStatus.RUNNING || this.timerInterval === null) return;
+
+        const now = Date.now();
+        const elapsed = now - this.timerUpdateTimestamp;
+        const current = this.timeLeftMs.get(this.turnColor);
+        if (current === undefined) return;
+        this.timeLeftMs.set(this.turnColor, current - elapsed);
+        this.timerUpdateTimestamp = now;
     }
 
 
@@ -109,8 +130,10 @@ export default class Game {
         this.players.push(player);
         
         if (this.players.length >= 2) {
-            this.gameStatus = GameStatus.RUNNING;
-            if (this.usesTimer) this.startGameTimer();
+            if (this.usesTimer)
+                this.gameStatus = GameStatus.WAITING_FOR_FIRST_MOVE;
+            else
+                this.gameStatus = GameStatus.RUNNING;
         }
 
         return player;
@@ -130,12 +153,9 @@ export default class Game {
     public makeMove(move: Move, player: Player): boolean {
 
         // Hasn't run out of time
-        const now = Date.now();
-        const elapsed = now - this.lastMoveTimestamp;
-        const newTimeLeft = (this.timeLeftMs.get(this.turnColor) || 0) - elapsed
-        this.timeLeftMs.set(this.turnColor, newTimeLeft);
-
-        if (newTimeLeft <= 0) {
+        this.updateTimers();
+        const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
+        if (currentTimeLeft && currentTimeLeft <= 0) {
             this.endGame(this.turnColor === Color.White ? Color.Black : Color.White, "Timeout");
             return false;
         }
@@ -194,14 +214,15 @@ export default class Game {
     public startGameTimer() {
         if (this.timerInterval) return;
 
-        this.lastMoveTimestamp = Date.now();
+        this.gameStatus = GameStatus.RUNNING;
+        this.timerUpdateTimestamp = Date.now();
 
         this.timerInterval = setInterval(() => {
-            const activePlayerTime = this.timeLeftMs.get(this.turnColor);
-            if (activePlayerTime == undefined) return;
-            const elapsedSinceLastMove = Date.now() - this.lastMoveTimestamp;
+            this.updateTimers();
+            const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
+            if (currentTimeLeft == undefined) return;
 
-            if (activePlayerTime - elapsedSinceLastMove <= 0) {
+            if (currentTimeLeft <= 0) {
                 this.endGame(this.turnColor === Color.White ? Color.Black : Color.White, "Timeout");
                 return;
             }

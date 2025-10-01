@@ -54,12 +54,8 @@ io.on("connection", (socket) => {
             const gameObj = games.get(game);
             if (!gameObj) return;
             io.to(game).emit("gameState", gameObj.getState());
-            console.log("Sending game state");
-            console.log(gameObj.getState());
         } else {
             io.to(game.gameId).emit("gameState", game.getState());
-            console.log("Sending game state");
-            console.log(game.getState());
         }
     }
 
@@ -149,7 +145,7 @@ io.on("connection", (socket) => {
         }
 
         // Game is running
-        if (game.gameStatus !== GameStatus.RUNNING) {
+        if (game.gameStatus !== GameStatus.RUNNING && game.gameStatus !== GameStatus.WAITING_FOR_FIRST_MOVE) {
             console.log("Unable to make move: game is not running");
             callback({ status: AckStatus.ERROR, message: "Game not running" });
             return;
@@ -176,8 +172,18 @@ io.on("connection", (socket) => {
             return;
         }
 
-        game.timeLeftMs.set(game.turnColor, (game.timeLeftMs.get(game.turnColor) || 0) + game.timeIncrementMs);
-        game.lastMoveTimestamp = Date.now();
+        // Add Increment
+        if (game.usesTimer) {
+            game.timeLeftMs.set(game.turnColor, (game.timeLeftMs.get(game.turnColor) || 0) + game.timeIncrementMs);
+            game.hasMoved.set(game.turnColor, true);
+
+            // Start the timer of each player has made a move
+            if (game.gameStatus === GameStatus.WAITING_FOR_FIRST_MOVE && Array.from(game.hasMoved.values()).every(v => v)) {
+                console.log("starting timer")
+                game.startGameTimer();
+            }
+        }
+
         game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
         sendGameState(game);
         callback({ status: AckStatus.OK, message: "Successfully made move" });
@@ -253,6 +259,7 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log("User disconnected:", playerId);
         // TODO: Check if both users disconnected and end/remove game
+
     });
 
 
@@ -261,7 +268,12 @@ io.on("connection", (socket) => {
 
 export function sendGameOver(gameId: string, winner: Color, reason: string) {
     io.to(gameId).emit("gameOver", winner, reason);
-    games.delete(gameId);
+
+    // Delete game after 10 minutes
+    setTimeout(() => {
+        games.delete(gameId);
+    }, 1000 * 60 * 10)
+
 }
 
 
