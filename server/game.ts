@@ -2,7 +2,7 @@ import Board from "@chess-bs/common/dist/board.js";
 import {
     BluffPunishment,
     Color,
-    CreateGameColor,
+    CreateGameColor, type GameInfo,
     type GameState,
     GameStatus,
     type Move,
@@ -26,9 +26,10 @@ export default class Game {
     playersConnected: number;
 
     usesTimer: boolean;
+    timeStartMs: number;
+    timeIncrementMs: number;
     timeLeftMs: Map<Color, number>;
     timerUpdateTimestamp: number;
-    timeIncrementMs: number;
     private timerInterval: NodeJS.Timeout | null = null;
     hasMoved: Map<Color, boolean>;
 
@@ -51,6 +52,7 @@ export default class Game {
         this.hasMoved = new Map();
         if (timeControlStartMs !== undefined && timeIncrementMs !== undefined) {
             this.usesTimer = true;
+            this.timeStartMs = timeControlStartMs;
             this.timeIncrementMs = timeIncrementMs;
             this.timeLeftMs = new Map<Color, number>();
             for (const c of Object.values(Color)) {
@@ -60,6 +62,7 @@ export default class Game {
             this.timerUpdateTimestamp = Date.now();
         } else {
             this.usesTimer = false;
+            this.timeStartMs = 0;
             this.timeIncrementMs = 0;
             this.timeLeftMs = new Map<Color, number>();
             this.timerUpdateTimestamp = 0;
@@ -77,6 +80,17 @@ export default class Game {
         this.setFromFEN(fen || defaultFEN);
     }
 
+
+    public getInfo(): GameInfo {
+        return {
+            rulePool: this.rulePool,
+            usesTimer: this.usesTimer,
+            timeStartMs: this.timeStartMs,
+            timeIncrementMs: this.timeIncrementMs,
+            bluffPunishment: this.bluffPunishment,
+            creatorColor: this.creatorColor,
+        }
+    }
 
     public getState(): GameState {
         this.updateTimers();

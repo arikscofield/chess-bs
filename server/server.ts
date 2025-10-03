@@ -59,6 +59,18 @@ io.on("connection", (socket) => {
         }
     }
 
+    function sendGameInfo(game: string): void;
+    function sendGameInfo(game: Game): void;
+    function sendGameInfo(game: string | Game): void {
+        if (typeof game === "string") {
+            const gameObj = games.get(game);
+            if (!gameObj) return;
+            io.to(game).emit("gameInfo", gameObj.getInfo());
+        } else {
+            io.to(game.gameId).emit("gameInfo", game.getInfo());
+        }
+    }
+
     socket.on("createGame", (color, timeControlStartSeconds, timeControlIncrementSeconds, bluffPunishment, ruleCount, rulePool,  callback) => {
         let gameId = generateGameId(6);
         while (games.get(gameId))
@@ -99,6 +111,7 @@ io.on("connection", (socket) => {
             }
             socket.join(gameId);
             sendAllPlayerStates(gameId);
+            sendGameInfo(game);
             sendGameState(game);
             callback({ status: AckStatus.OK, message: "Successfully rejoined game" });
             return;

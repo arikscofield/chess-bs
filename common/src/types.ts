@@ -126,6 +126,16 @@ export interface ClientToServerEvents {
     chatMessage: (gameId: string, message: string) => void;
 }
 
+
+export interface GameInfo {
+    rulePool: Rule[];
+    usesTimer: boolean;
+    timeStartMs: number;
+    timeIncrementMs: number;
+    bluffPunishment: BluffPunishment;
+    creatorColor: CreateGameColor;
+}
+
 export interface GameState {
     gameStatus: GameStatus;
     grid: (Piece | null)[][];
@@ -143,6 +153,7 @@ export interface PlayerState {
 }
 
 export interface ServerToClientEvents {
+    gameInfo: (gameInfo: GameInfo) => void;
     gameState: (gameState: GameState) => void;
     playerState: (playerState: PlayerState) => void;
     chatMessage: (message: string) => void;

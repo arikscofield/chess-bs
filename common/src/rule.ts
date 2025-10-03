@@ -193,6 +193,168 @@ export const allRules: RuleType[] = [
             return moves;
         }
     ),
+    new Rule(
+        "Square Knight",
+        "The knight can move 2x2 in any direction.",
+        PieceType.Knight,
+        (board: Board, square: Square): Move[] => {
+            let moves: Move[] = [];
+            const {row, col} = square;
+
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Knight) return moves;
+
+            const moveOptions = [[2, 2], [2, -2], [-2, 2], [-2, -2]];
+            for (const [dr, dc] of moveOptions) {
+                const destRow = row + dr;
+                const destCol = col + dc;
+                const destPiece = board.getPiece({row: destRow, col: destCol});
+
+                if (destPiece === null || (destPiece && destPiece.color !== piece.color)) {
+                    moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
+                }
+            }
+
+            // Filter out Checks
+            moves = moves.filter((move) => {
+                const movedBoard = board.clone();
+                movedBoard.applyMove(move);
+                const kingSquare = movedBoard.findKing(piece.color);
+                if (!kingSquare) return false;
+
+                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
+                return attackers.length === 0;
+            })
+
+            return moves;
+        }
+    ),
+    new Rule(
+        "Hopping Bishop",
+        "Bishops can hop over one piece of the same color.",
+        PieceType.Bishop,
+        (board: Board, square: Square): Move[] => {
+            let moves: Move[] = [];
+            const {row, col} = square;
+
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Bishop) return moves;
+
+            const moveOptions = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+            for (const [dr, dc] of moveOptions) {
+                let destRow = row+dr;
+                let destCol = col+dc;
+                let piecesHopped = 0;
+                let destPiece = board.getPiece({row: destRow, col: destCol});
+                while (destPiece !== undefined ) {
+                    if (piecesHopped > 0 && destPiece && destPiece.color !== piece.color) {
+                        moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
+                        break
+                    }
+
+                    if (piecesHopped > 0 && destPiece?.color !== piece.color) {
+                        moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
+                    }
+
+                    if (destPiece && destPiece.color === piece.color) {
+                        if (piecesHopped >= 1) {
+                            break;
+                        }
+                        piecesHopped++;
+                    }
+
+                    destRow += dr;
+                    destCol += dc;
+                    destPiece = board.getPiece({row: destRow, col: destCol});
+                }
+            }
+
+            // Filter out Checks
+            moves = moves.filter((move) => {
+                const movedBoard = board.clone();
+                movedBoard.applyMove(move);
+                const kingSquare = movedBoard.findKing(piece.color);
+                if (!kingSquare) return false;
+
+                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
+                return attackers.length === 0;
+            })
+
+            return moves;
+        }
+    ),
+    new Rule(
+        "Pawned Bishop",
+        "The bishop can capture one space in any orthogonal direction.",
+        PieceType.Bishop,
+        (board: Board, square: Square): Move[] => {
+            let moves: Move[] = [];
+            const {row, col} = square;
+
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Bishop) return moves;
+
+            const moveOptions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+            for (const [dr, dc] of moveOptions) {
+                const destRow = row + dr;
+                const destCol = col + dc;
+                const destPiece = board.getPiece({row: destRow, col: destCol});
+
+                if (destPiece && destPiece.color !== piece.color) {
+                    moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
+                }
+            }
+
+            // Filter out Checks
+            moves = moves.filter((move) => {
+                const movedBoard = board.clone();
+                movedBoard.applyMove(move);
+                const kingSquare = movedBoard.findKing(piece.color);
+                if (!kingSquare) return false;
+
+                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
+                return attackers.length === 0;
+            })
+
+            return moves;
+        }
+    ),
+    new Rule(
+        "Aggressive King",
+        "The king can capture two spaces in any orthogonal direction.",
+        PieceType.King,
+        (board: Board, square: Square): Move[] => {
+            let moves: Move[] = [];
+            const {row, col} = square;
+
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.King) return moves;
+
+            const moveOptions = [[2, 0], [-2, 0], [0, 2], [0, -2]];
+            for (const [dr, dc] of moveOptions) {
+                const destRow = row + dr;
+                const destCol = col + dc;
+                const destPiece = board.getPiece({row: destRow, col: destCol});
+
+                if (destPiece && destPiece.color !== piece.color) {
+                    moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
+                }
+            }
+
+            // Filter out Checks
+            moves = moves.filter((move) => {
+                const movedBoard = board.clone();
+                movedBoard.applyMove(move);
+                const kingSquare = movedBoard.findKing(piece.color);
+                if (!kingSquare) return false;
+
+                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
+                return attackers.length === 0;
+            })
+
+            return moves;
+        }
+    ),
 
 ]
 

@@ -2,7 +2,16 @@ import '../Home/Home.css'
 
 import {useNavigate, useParams} from "react-router";
 import {useContext, useEffect, useRef, useState} from "react";
-import {AckStatus, Color, type GameState, GameStatus, type Move, type PlayerState, type Rule,} from "@chess-bs/common";
+import {
+    AckStatus, BluffPunishment,
+    Color, CreateGameColor,
+    type GameInfo,
+    type GameState,
+    GameStatus,
+    type Move,
+    type PlayerState,
+    type Rule,
+} from "@chess-bs/common";
 import Player from "@chess-bs/common/dist/player.js";
 import {SocketContext} from "../../components/Socket/SocketContext.ts";
 import Board from "../../components/Board.tsx";
@@ -11,6 +20,8 @@ import BluffButton from "../../components/BluffButton.tsx";
 import CallBluffButton from "../../components/CallBluffButton.tsx";
 import Chatroom from "../../components/Chatroom.tsx";
 import OwnRules from "../../components/OwnRules.tsx";
+import Timer from "../../components/Timer.tsx";
+import GameLobby from "../../components/GameLobby.tsx";
 
 
 function Play() {
@@ -18,27 +29,34 @@ function Play() {
     const navigate = useNavigate();
 
     const [isMounted, setIsMounted] = useState(false);
-    const [gameState, setGameState] = useState<GameState | null>(null);
+    // const [gameState, setGameState] = useState<GameState | null>(null);
     const [board, setBoard] = useState<BoardClass | null>(null);
-    const [playerState, setPlayerState] = useState<PlayerState | null>(null);
+    // const [playerState, setPlayerState] = useState<PlayerState | null>(null);
     const [player, setPlayer] = useState<Player | null>(null);
     const playerRef = useRef<Player | null>(null);
 
+    // Game Info (non-changing)
+    const [rulePool, setRulePool] = useState<Rule[]>([]);
+    const [usesTimer, setUsesTimer] = useState<boolean>(false);
+    const [timeStartMs, setTimeStartMs] = useState<number | null>(null);
+    const [timeIncrementMs, setTimeIncrementMs] = useState<number | null>(null);
+    const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment | null>(null);
+    const [creatorColor, setCreatorColor] = useState<CreateGameColor | null>(null);
+
+    // Game State (changing)
     const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.WAITING_FOR_PLAYER);
     const [view, setView] = useState<Color | null>(null);
     // const [turnColor, setTurnColor] = useState<Color>(Color.White);
+    const moveHistory = useRef<Move[]>([]);
+    const [lastMove, setLastMove] = useState<Move | undefined>(undefined);
     const turnColor = useRef<Color>(Color.White);
-    const [isBluffing, setIsBluffing] = useState<boolean>(false);
-
-    const [rulePool, setRulePool] = useState<Rule[]>([]);
     const [timers, setTimers] = useState<Map<Color, number>>(new Map());
     const timerInterval = useRef<number | null>(null);
     const timerUpdateTimestamp = useRef<number>(Date.now());
 
-    const moveHistory = useRef<Move[]>([]);
-    const [lastMove, setLastMove] = useState<Move | undefined>(undefined);
+    // UI / Other
+    const [isBluffing, setIsBluffing] = useState<boolean>(false);
     const [animateMove, setAnimateMove] = useState<boolean>(false);
-
     const socket = useContext(SocketContext);
 
     useEffect(() => {
@@ -46,13 +64,24 @@ function Play() {
         console.log(`Attempted to join game ${gameId} from url`);
         if (socket && gameId) {
 
+            socket.on("gameInfo", (gameInfo: GameInfo) => {
+                const {rulePool: newRulePool, usesTimer: newUsesTimer, timeStartMs: newTimeStartMs, timeIncrementMs: newTimeIncrementMs, bluffPunishment: newBluffPunishment, creatorColor: newCreatorColor} = gameInfo;
+
+                setRulePool(newRulePool);
+                setUsesTimer(newUsesTimer);
+                setTimeStartMs(newTimeStartMs)
+                setTimeIncrementMs(newTimeIncrementMs);
+                setBluffPunishment(newBluffPunishment);
+                setCreatorColor(newCreatorColor);
+            })
+
+
             socket.on("gameState", (gameState: GameState) => {
                 const {gameStatus: newGameStatus, grid: newGrid, enPassant: newEnPassant,
                     turn: newTurn, moveHistory: newMoveHistory, rulePool: newRulePool, timers: newTimers} = gameState;
 
                 console.log("Received Game State: ");
                 console.log(gameState);
-                setGameState(gameState);
                 setGameStatus(newGameStatus);
                 // setTurnColor(newTurn);
                 turnColor.current = newTurn;
@@ -88,7 +117,6 @@ function Play() {
             socket.on("playerState", (newPlayerState: PlayerState) => {
                 console.log("Received Player State: ");
                 console.log(newPlayerState);
-                setPlayerState(newPlayerState);
                 setPlayer(Player.fromPlayerState(newPlayerState));
                 // player.current = new Player(newPlayerState.playerId, newPlayerState.color, newPlayerState.rules.length);
                 playerRef.current = Player.fromPlayerState(newPlayerState)
@@ -165,31 +193,23 @@ function Play() {
     }
 
 
-    function formatTime(timeMs: number | undefined): string {
-        if (timeMs === undefined) return "";
-
-        let result = "";
-        const tenths = Math.floor(timeMs % 1000 / 100);
-        const seconds = Math.floor((timeMs / 1000) % 60);
-        const minutes = Math.floor((timeMs / (60 * 1000)) % 60);
-        const hours = Math.floor((timeMs / (60 * 60 * 1000)) % 60);
-
-        if (hours > 0)
-            result += (hours < 10 ? "0" + hours : hours) + ":";
-        result += (minutes < 10 ? "0" + minutes : minutes) + ":";
-        result += seconds < 10 ? "0" + seconds : seconds;
-        if (hours === 0 && minutes === 0 && seconds < 10)
-            result += "." + tenths;
-
-        return result
-    }
-
-
     if (!isMounted || !socket) return;
 
     if (!gameId) return;
 
-    return (<div className={"flex flex-col h-screen w-screen"}>
+    if (gameStatus === GameStatus.WAITING_FOR_PLAYER) {
+        return (<GameLobby
+            gameId={gameId}
+            usesTimer={usesTimer}
+            timeStartMs={timeStartMs}
+            timeIncrementMs={timeIncrementMs}
+            bluffPunishment={bluffPunishment}
+            creatorColor={creatorColor}
+            rulePool={rulePool}
+        />)
+    }
+
+    return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-[calc(90vh-50px)]"}>
             <div className={"grid grid-rows-2 w-[300px] h-full gap-2"}>
                 <div className={"flex flex-col rounded-md bg-bg-2"}>
@@ -202,7 +222,11 @@ function Play() {
                 <div className={"flex flex-row justify-between"}>
                     <div className={"float-start text-white text-xl"}>Opponent</div>
 
-                    <div className={"float-end text-white text-xl"}>{formatTime(timers?.get(player?.color === Color.White ? Color.Black : Color.White))}</div>
+                    <Timer
+                        timeMs={timers?.get(player?.color === Color.White ? Color.Black : Color.White)}
+                        color={player?.color === Color.White ? Color.Black : Color.White}
+                        turn={turnColor.current}
+                    />
                 </div>
                 {board && player && <Board
                     board={board}
@@ -221,7 +245,11 @@ function Play() {
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButton gameId={gameId} />
                     </div>
-                    <div className={"float-end text-white text-xl"}>{formatTime(timers?.get(player?.color ?? Color.White))}</div>
+                    <Timer
+                        timeMs={timers?.get(player?.color ?? Color.White)}
+                        color={player?.color || Color.White}
+                        turn={turnColor.current}
+                    />
                 </div>
 
             </div>
