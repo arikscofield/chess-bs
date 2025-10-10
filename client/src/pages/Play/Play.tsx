@@ -22,6 +22,7 @@ import Chatroom from "../../components/Chatroom.tsx";
 import OwnRules from "../../components/OwnRules.tsx";
 import Timer from "../../components/Timer.tsx";
 import GameLobby from "../../components/GameLobby.tsx";
+import RuleList from "../../components/RuleList.tsx";
 
 
 function Play() {
@@ -66,6 +67,9 @@ function Play() {
 
             socket.on("gameInfo", (gameInfo: GameInfo) => {
                 const {rulePool: newRulePool, usesTimer: newUsesTimer, timeStartMs: newTimeStartMs, timeIncrementMs: newTimeIncrementMs, bluffPunishment: newBluffPunishment, creatorColor: newCreatorColor} = gameInfo;
+
+                console.log("Received Game Info: ");
+                console.log(gameInfo);
 
                 setRulePool(newRulePool);
                 setUsesTimer(newUsesTimer);
@@ -212,8 +216,9 @@ function Play() {
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-[calc(90vh-50px)]"}>
             <div className={"grid grid-rows-2 w-[300px] h-full gap-2"}>
-                <div className={"flex flex-col rounded-md bg-bg-2"}>
-
+                <div className={"flex flex-col rounded-md bg-bg-2 overflow-y-auto"}>
+                    <h3 className={"text-white text-xl font-bold text-center"}>Game Rules</h3>
+                    <RuleList enabledRules={rulePool} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true}/>
                 </div>
                 <OwnRules rules={player?.rules} color={player?.color || Color.White}/>
             </div>

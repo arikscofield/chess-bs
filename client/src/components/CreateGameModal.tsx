@@ -41,7 +41,7 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
             size={"75%"}
             styles={{ title: {fontSize: "2em"}}}
         >
-            <RuleList enabledRules={rulePool} setEnabledRules={setRulePool} />
+            <RuleList enabledRules={rulePool} setEnabledRules={setRulePool} wrapChips={true}/>
             <div className={"flex flex-row justify-center mt-10"}>
                 <Button color={""}
                         onClick={() => setRulePoolModalOpen(false)}
@@ -59,19 +59,24 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
         size={"auto"}
         title={"Create Game"}
         centered
-        classNames={{body: "flex flex-col justify-center items-center"}}
+        classNames={{body: "flex flex-col justify-center items-center "}}
         styles={{ title: {fontSize: "2em"}}}
     >
 
-        <Switch
-            checked={timeControlEnabled}
-            onChange={(event) => setTimeControlEnabled(event.target.checked)}
-            label={"Time Control"}
-            size={"md"}
-            className={"pb-2"}
-        />
+        {/* Enable/Disable Time control switch */}
+        <div className={`${timeControlEnabled ? "" : "mb-5"}`}>
+            <Switch
+                checked={timeControlEnabled}
+                onChange={(event) => setTimeControlEnabled(event.target.checked)}
+                label={"Time Control"}
+                size={"md"}
+                className={""}
+            />
+        </div>
 
-        {timeControlEnabled && <div className={"w-full"}>
+
+        {/* Starting time and Increment sliders */}
+        {timeControlEnabled && <div className={"w-full mb-5"}>
             <Text size={"md"}>Minutes per side: {timeControlStartMinutes}</Text>
             <Slider value={timeControlStartIndex} onChange={(index) => {
                 setTimeControlStartIndex(index)
@@ -111,7 +116,9 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
             />
         </div>}
 
-        <div className={"flex flex-row justify-around items-center w-full"}>
+
+        {/* Rule Count and Rule Pool selection */}
+        <div className={"flex flex-row justify-around items-center w-full pb-5"}>
             <NumberInput
                 value={ruleCount}
                 onChange={setRuleCount}
@@ -143,6 +150,7 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
         </div>
 
 
+        {/* Called Bluff Punishment selection */}
         <Radio.Group
             value={bluffPunishment}
             onChange={(val) => {setBluffPunishment(val as BluffPunishment);}}
@@ -151,7 +159,7 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
             description={"The punishment for getting called out for bluffing, or incorrectly calling a bluff"}
             withAsterisk
             size={"md"}
-            className={"p-2"}
+            className={"px-1 pb-5"}
         >
             <Group>
                 <Radio value={BluffPunishment.Turn} label={"Lose Turn"} className={"pt-2"}/>
@@ -162,7 +170,8 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
         </Radio.Group>
 
 
-        <div className={"flex flex-row items-center"}>
+        {/* Color Selection */}
+        <div className={"flex flex-row items-center pb-5"}>
             <p className={"px-3 text-base"}>Your Color</p>
             <SegmentedControl
                 value={color}
@@ -178,6 +187,7 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
         </div>
 
 
+        {/* Action buttons */}
         <Group justify={"space-around"} className={"w-full"}>
             <Button color={"red"} onClick={onClose} size={"md"}>
                 Cancel
@@ -195,6 +205,8 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
                 Create
             </Button>
         </Group>
+
+
     </Modal>)
 }
 

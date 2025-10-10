@@ -3,19 +3,28 @@
 import {allRules, Color, PieceType, type Rule} from "@chess-bs/common";
 
 import {pieceImages} from "../assets/pieceImages.ts";
-import {Chip, Tooltip} from "@mantine/core";
+import {Chip, type MantineSize, Tooltip} from "@mantine/core";
 
-function RuleList({ enabledRules, color = Color.White, setEnabledRules }: { enabledRules: Rule[], color?: Color, setEnabledRules?: (enabledRules: Rule[]) => void }) {
+function RuleList({ enabledRules, size = "sm", color = Color.White, setEnabledRules, onlyShowEnabled = false, wrapChips = false }: { enabledRules: Rule[], size?: MantineSize, color?: Color, setEnabledRules?: (enabledRules: Rule[]) => void, onlyShowEnabled?: boolean, wrapChips?: boolean }) {
 
-    return (<div className={"@container "}>
-        <div className={"grid divide-x-2 divide-gray-300 @max-4xl:grid-rows-6 @4xl:grid-cols-6 overflow-auto"} >
-            {Object.values(PieceType).map((pieceType) => {
+    return (<div className={"@container h-full "}>
+        <div className={"flex flex-col h-full overflow-auto"} >
+            {Object.values(PieceType).map((pieceType, pieceTypeIndex) => {
                 const pieceString: string = "" + color + pieceType;
 
-                return <div key={pieceType} className={"flex @max-4xl:flex-row @4xl:flex-col flex-1 w-full items-center px-2"}>
-                    <img src={pieceImages[pieceString]} alt={pieceString} />
+                return <div key={pieceType} className={`flex  flex-row flex-1 w-full items-center pl-2
+                ${wrapChips ? "flex-wrap" : ""}
+                border-gray-400/70 ${pieceTypeIndex === 0 ? "border-b-1" : pieceTypeIndex === Object.values(PieceType).length - 1 ? "border-t-1" : "border-y-1"} 
+                `}>
+                    <img src={pieceImages[pieceString]} alt={pieceString}
+                         width={size === "xs" ? "30"
+                             : size === "sm" ? "40"
+                             : size === "md" ? "50"
+                             : "60"
+                        }
+                    />
                     {/* TODO: Sort allrules so that the enabled ones are first */}
-                    {allRules.filter((rule: Rule) => rule.pieceType === pieceType).map((rule: Rule) => (
+                    {allRules.filter((rule: Rule) => rule.pieceType === pieceType && (!onlyShowEnabled || enabledRules.some(r => r.name === rule.name))).map((rule: Rule) => (
                         <div key={rule.name} className={"m-1"}>
                             <Tooltip
                                 label={rule.description}
@@ -25,6 +34,7 @@ function RuleList({ enabledRules, color = Color.White, setEnabledRules }: { enab
                             >
                                 <div>
                                     <Chip
+                                        size={size}
                                         checked={enabledRules.some(r => r.name === rule.name)}
                                         onChange={(checked) => {
                                             if (!setEnabledRules) return;

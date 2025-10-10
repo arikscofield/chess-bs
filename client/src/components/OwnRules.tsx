@@ -15,10 +15,10 @@ function OwnRules({ rules, color }: {rules: Rule[] | undefined, color: Color}) {
 
                 return <div key={index} className={"flex flex-col p-2 rounded-md border border-white"}>
                     <div className={"flex flex-row items-center"}>
-                        <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} draggable={false} className={"w-12 h-12 z-20 pointer-events-none "}/>
-                        <div className={"font-bold text-lg"}>{rule.name}</div>
+                        <img src={pieceImages[pieceString]} alt={pieceString} width={40} height={40} draggable={false} className={"z-20 pointer-events-none "}/>
+                        <div className={"font-bold text-md"}>{rule.name}</div>
                     </div>
-                    <div className={"px-1"}>{rule.description}</div>
+                    <div className={"px-1 text-sm"}>{rule.description}</div>
                 </div>
             })}
         </div>
