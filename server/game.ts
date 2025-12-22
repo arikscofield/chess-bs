@@ -117,7 +117,7 @@ export default class Game {
         const elapsed = now - this.timerUpdateTimestamp;
         const current = this.timeLeftMs.get(this.turnColor);
         if (current === undefined) return;
-        this.timeLeftMs.set(this.turnColor, current - elapsed);
+        this.timeLeftMs.set(this.turnColor, Math.max(0, current - elapsed));
         this.timerUpdateTimestamp = now;
     }
 

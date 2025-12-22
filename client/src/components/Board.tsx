@@ -1,6 +1,14 @@
 import {useEffect, useRef, useState} from "react";
 import Square from "./Square.tsx";
-import {Color, type Move, type Piece, PieceType, type Player, type Square as SquareType} from "@chess-bs/common";
+import {
+    Color,
+    GameStatus,
+    type Move,
+    type Piece,
+    PieceType,
+    type Player,
+    type Square as SquareType
+} from "@chess-bs/common";
 import BoardClass from "@chess-bs/common/dist/board.js";
 import {useElementSize, useMergedRef, useMounted} from "@mantine/hooks";
 import {pieceImages} from "../assets/pieceImages.ts";
@@ -8,8 +16,8 @@ import {Portal} from "@mantine/core";
 
 
 function Board(
-    {board, player, view=Color.White, turn, isBluffing, handleMove, lastMove, animateMove, } :
-    { board: BoardClass, player: Player | null, view: Color, turn: Color, isBluffing: boolean, handleMove: (move: Move) => void, lastMove: Move | undefined, animateMove: boolean }
+    {board, gameStatus, player, view=Color.White, turn, isBluffing, handleMove, lastMove, animateMove, } :
+    { board: BoardClass, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, isBluffing: boolean, handleMove: (move: Move) => void, lastMove: Move | undefined, animateMove: boolean }
 ) {
     const mounted = useMounted();
 
@@ -71,7 +79,7 @@ function Board(
     }, [dragReleaseSquare])
 
     function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-        if (turn !== player?.color) return;
+        if (turn !== player?.color || (gameStatus != GameStatus.RUNNING && gameStatus != GameStatus.WAITING_FOR_FIRST_MOVE)) return;
 
         const boardX = event.nativeEvent.offsetX;
         const boardY = event.nativeEvent.offsetY;

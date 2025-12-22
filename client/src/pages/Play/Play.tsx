@@ -235,6 +235,7 @@ function Play() {
                 </div>
                 {board && player && <Board
                     board={board}
+                    gameStatus={gameStatus}
                     player={player}
                     view={view || Color.White}
                     turn={turnColor.current}
