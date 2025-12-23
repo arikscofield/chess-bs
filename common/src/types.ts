@@ -22,7 +22,7 @@ export const PiecePrefix: Record<string, PieceType> = {
     "k": PieceType.King,
 }
 
-export const RankToIndex: Record<string, number> = {
+export const FileToIndex: Record<string, number> = {
     "a": 0,
     "b": 1,
     "c": 2,
@@ -33,7 +33,7 @@ export const RankToIndex: Record<string, number> = {
     "h": 7,
 }
 
-export const IndexToRank: Record<number, string> = {
+export const IndexToFile: Record<number, string> = {
     0: "a",
     1: "b",
     2: "c",
@@ -90,12 +90,13 @@ export interface Move {
     },
     promotion?: PieceType,
     bluff?: boolean,
-    callingBluff?: boolean,
-    callingBluffSuccess?: boolean,
+    timestamp?: number,
+    notation?: string,
 }
 
 export interface CallBluff {
     successful: boolean,
+    timestamp?: number,
 }
 
 export type Turn = Move | CallBluff

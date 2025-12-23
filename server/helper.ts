@@ -3,7 +3,7 @@
 
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-import {Color, type Piece, PiecePrefix, PieceType, RankToIndex, type Square} from "@chess-bs/common";
+import {Color, type Piece, PiecePrefix, PieceType, FileToIndex, type Square} from "@chess-bs/common";
 import PieceClass from "@chess-bs/common/dist/piece.js"
 
 export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {
@@ -57,7 +57,7 @@ export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, e
 
     if (fenTurn) turn = fenTurn === "w" ? Color.White : Color.Black;
     if (fenEnPassant && fenEnPassant !== "-") {
-        enPassant = {row: parseInt(fenEnPassant[1] || "0"), col: RankToIndex[fenEnPassant[0] || "a"] || 0};
+        enPassant = {row: parseInt(fenEnPassant[1] || "0"), col: FileToIndex[fenEnPassant[0] || "a"] || 0};
     }
     if (fenHalfMove) halfMove = parseInt(fenHalfMove);
     if (fenFullMove) fullMove = parseInt(fenFullMove);

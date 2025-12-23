@@ -1,5 +1,5 @@
 import type {Dispatch, SetStateAction} from "react";
-import {IndexToRank, PieceAscii, type Turn} from "@chess-bs/common";
+import {IndexToFile, PieceAscii, type Turn} from "@chess-bs/common";
 import { FaStepForward, FaFastForward, FaStepBackward, FaFastBackward } from "react-icons/fa";
 
 
@@ -23,7 +23,7 @@ function TurnHistory({ turnHistory, viewMoveIndex, setViewMoveIndex }: { turnHis
                         {/*{'from' in turn ? turn.piece.color + " " + turn.piece.type + " " + IndexToRank[turn.from.col] + turn.from.row + " to " + IndexToRank[turn.to.col] + turn.to.row : turn.successful}*/}
                         {/*TODO: Change away from the hard coded 7 for row/col count*/}
                         {'from' in turn
-                            ? PieceAscii[turn.piece.color][turn.piece.type] + "" + IndexToRank[turn.from.col] + (7-turn.from.row+1) + " to " + IndexToRank[turn.to.col] + (7-turn.to.row+1)
+                            ? PieceAscii[turn.piece.color][turn.piece.type] + "" + IndexToFile[turn.from.col] + (7-turn.from.row+1) + " to " + IndexToFile[turn.to.col] + (7-turn.to.row+1)
                             : turn.successful ? "Successful Call" : "Failed Call"}
                     </li>)
                 })}

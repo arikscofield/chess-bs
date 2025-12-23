@@ -3,7 +3,7 @@ import Square from "./Square.tsx";
 import {
     BoardType,
     Color,
-    GameStatus, IndexToRank,
+    GameStatus, IndexToFile,
     type Move,
     type Piece,
     PieceType,
@@ -18,8 +18,8 @@ import {Portal} from "@mantine/core";
 
 
 function Board(
-    {board, gameStatus, player, view=Color.White, turn, isBluffing, handleMove, lastMove, animateMove, } :
-    { board: BoardClass, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, isBluffing: boolean, handleMove: (move: Move) => void, lastMove: Move | undefined, animateMove: boolean }
+    {board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove, animateMove, } :
+    { board: BoardClass, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, canMove: boolean, isBluffing: boolean, handleMove: (move: Move) => void, highlightedMove: Move | null, animateMove: boolean }
 ) {
     const mounted = useMounted();
 
@@ -42,7 +42,7 @@ function Board(
     const draggedPiece = draggedSquare ? board.getPiece(draggedSquare) : null;
     const draggedPieceString: string = "" + draggedPiece?.color + draggedPiece?.pieceType;
 
-    const lastMovePieceString: string = "" + lastMove?.piece.color + lastMove?.piece.type;
+    const highlightedMovePieceString: string = "" + highlightedMove?.piece.color + highlightedMove?.piece.type;
 
     const numRows: number = board.grid.length;
     const numCols: number = board.grid[0].length;
@@ -69,7 +69,7 @@ function Board(
         setSelectedSquare(null);
         setLegalMoves([]);
         setLegalRuleMoves([]);
-    }, [turn])
+    }, [turn, canMove]);
 
     // handle the "queue" for the square that had a drag-release on it
     // Needed since we can't just call handleSquareAction inside the onPointerUp handler due to state closure
@@ -83,7 +83,7 @@ function Board(
     }, [dragReleaseSquare])
 
     function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-        if (turn !== player?.color || (gameStatus != GameStatus.RUNNING && gameStatus != GameStatus.WAITING_FOR_FIRST_MOVE)) return;
+        if (!canMove || turn !== player?.color || (gameStatus != GameStatus.RUNNING && gameStatus != GameStatus.WAITING_FOR_FIRST_MOVE)) return;
 
         const boardX = event.nativeEvent.offsetX;
         const boardY = event.nativeEvent.offsetY;
@@ -169,6 +169,8 @@ function Board(
     }
 
     function handlePointerUp(event: PointerEvent) {
+        if (!canMove) return; // TODO: Change when adding right-click arrow annotating
+
         const isOverBoard = event.target === boardRef.current;
         const boardX = event.offsetX;
         const boardY = event.offsetY;
@@ -305,7 +307,7 @@ function Board(
                         return <div key={col} className={"w-full h-full relative"}>
                             {i == numRows-1 && (
                                 <span className={`absolute z-20 bottom-0 right-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
-                                    {IndexToRank[col]}
+                                    {IndexToFile[col]}
                                 </span>
                             )}
                             {j == 0 && (
@@ -361,10 +363,10 @@ function Board(
                         }
                         return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
                             <Square row={row} col={col} color={player?.color || Color.White}
-                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && lastMove?.to.row === row && lastMove?.to.col === col) ? null : board?.grid?.[row]?.[col] || null}
+                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && highlightedMove?.to.row === row && highlightedMove?.to.col === col) ? null : board?.grid?.[row]?.[col] || null}
                                     hovered={mouse.row === row && mouse.col === col}
                                     selected={selectedSquare?.row === row && selectedSquare?.col === col}
-                                    highlighted={(lastMove?.to.row === row && lastMove?.to.col === col) || (lastMove?.from.row === row && lastMove?.from.col === col)}
+                                    highlighted={(highlightedMove?.to.row === row && highlightedMove?.to.col === col) || (highlightedMove?.from.row === row && highlightedMove?.from.col === col)}
                                     movable={movable}
                                     ruleMovable={ruleMovable}
                                     isBluffing={isBluffing}
@@ -394,23 +396,23 @@ function Board(
                 }
 
 
-                {lastMove &&
+                {highlightedMove &&
                     <div
                         className={`absolute pointer-events-none z-10 ${animateMove ? "transition-transform duration-300 ease-in-out" : "opacity-0"}`}
                         style={{
                             width: squareSize,
                             height: squareSize,
-                            top: ((player?.color === Color.Black ? numRows - 1 - lastMove?.from.row : lastMove?.from.row) || 0) * squareSize,
-                            left: ((player?.color === Color.Black ? numCols - 1 - lastMove?.from.col : lastMove?.from.col) || 0) * squareSize,
+                            top: ((player?.color === Color.Black ? numRows - 1 - highlightedMove?.from.row : highlightedMove?.from.row) || 0) * squareSize,
+                            left: ((player?.color === Color.Black ? numCols - 1 - highlightedMove?.from.col : highlightedMove?.from.col) || 0) * squareSize,
                             transform: animateMove ? `translate(
-                            ${( (lastMove?.to.col || 0) - (lastMove?.from.col || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px,
-                            ${( (lastMove?.to.row || 0) - (lastMove?.from.row || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px
+                            ${( (highlightedMove?.to.col || 0) - (highlightedMove?.from.col || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px,
+                            ${( (highlightedMove?.to.row || 0) - (highlightedMove?.from.row || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px
                             )`
                             : "translate(0, 0)",
 
                         }}
                     >
-                        <img src={pieceImages[lastMovePieceString]} alt={lastMovePieceString} width={squareSize} height={squareSize} draggable={false} className={"z-10 select-none pointer-events-none "} />
+                        <img src={pieceImages[highlightedMovePieceString]} alt={highlightedMovePieceString} width={squareSize} height={squareSize} draggable={false} className={"z-10 select-none pointer-events-none "} />
                 </div>
                 }
             </div>

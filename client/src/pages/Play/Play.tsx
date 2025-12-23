@@ -52,8 +52,7 @@ function Play() {
     const [view, setView] = useState<Color | null>(null);
     // const [turnColor, setTurnColor] = useState<Color>(Color.White);
     const turnHistory = useRef<Turn[]>([]);
-    const { visibleBoard, viewMoveIndex, setViewMoveIndex } = useGameViewer(startBoard, turnHistory.current)
-    const [lastMove, setLastMove] = useState<Move | undefined>(undefined);
+    const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory.current)
     const turnColor = useRef<Color>(Color.White);
     const [timers, setTimers] = useState<Map<Color, number>>(new Map());
     const timerInterval = useRef<number | null>(null);
@@ -97,19 +96,10 @@ function Play() {
                 if (newRulePool) setRulePool(newRulePool);
                 if (newTimers) setTimers(new Map(Object.entries(newTimers)) as Map<Color, number>);
 
-                // Get the latest move (Not a bluff call)
-                let newLastMove = newTurnHistory.at(-1);
-                let ind = -2
-                while (newLastMove && !('from' in newLastMove)) {
-                    newLastMove = newTurnHistory.at(ind);
-                    ind--;
-                }
-                setLastMove(newLastMove);
-
                 const shouldAnimate = newTurnHistory.length > turnHistory.current.length;
                 turnHistory.current = newTurnHistory;
 
-                if (shouldAnimate && newLastMove) {
+                if (shouldAnimate && highlightedMove) {
                     setAnimateMove(true);
 
                     setTimeout(() => {
@@ -250,9 +240,10 @@ function Play() {
                     player={player}
                     view={view || Color.White}
                     turn={turnColor.current}
+                    canMove={viewMoveIndex == -1}
                     isBluffing={isBluffing}
                     handleMove={handleMove}
-                    lastMove={lastMove}
+                    highlightedMove={highlightedMove}
                     animateMove={animateMove}
                 />
                 }

@@ -27,6 +27,7 @@ export default class Game {
     playersConnected: number;
 
     usesTimer: boolean;
+    gameStartTimestamp: number;
     timeStartMs: number;
     timeIncrementMs: number;
     timeLeftMs: Map<Color, number>;
@@ -37,7 +38,6 @@ export default class Game {
     turnHistory: Turn[];
     turnColor: Color;
     lastMoveWasBluff: boolean;
-    prevBoard: Board | null;
     ruleCount: number;
     rulePool: Rule[];
     bluffPunishment: BluffPunishment;
@@ -53,6 +53,7 @@ export default class Game {
         this.hasMoved = new Map();
         if (timeControlStartMs !== undefined && timeIncrementMs !== undefined) {
             this.usesTimer = true;
+            this.gameStartTimestamp = 0;
             this.timeStartMs = timeControlStartMs;
             this.timeIncrementMs = timeIncrementMs;
             this.timeLeftMs = new Map<Color, number>();
@@ -63,6 +64,7 @@ export default class Game {
             this.timerUpdateTimestamp = Date.now();
         } else {
             this.usesTimer = false;
+            this.gameStartTimestamp = 0;
             this.timeStartMs = 0;
             this.timeIncrementMs = 0;
             this.timeLeftMs = new Map<Color, number>();
@@ -76,7 +78,6 @@ export default class Game {
         this.turnHistory = [];
         this.turnColor = Color.White;
         this.lastMoveWasBluff = false;
-        this.prevBoard = new Board();
 
         this.setFromFEN(fen || defaultFEN);
     }
@@ -168,6 +169,7 @@ export default class Game {
     public makeMove(move: Move, player: Player): boolean {
 
         // Hasn't run out of time
+        const now = Date.now();
         this.updateTimers();
         const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
         if (currentTimeLeft && currentTimeLeft <= 0) {
@@ -175,16 +177,15 @@ export default class Game {
             return false;
         }
 
-        const prevBoard = this.board.clone();
         const legalMoves: Move[] = this.board.getLegalMoves(move.from, true);
 
         if (legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal regular chess move
             if (this.board.applyMove(move)) {
                 this.lastMoveWasBluff = false;
-                this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
+                moveCopy.timestamp = now;
                 this.turnHistory.push(moveCopy);
                 return true;
             }
@@ -199,9 +200,9 @@ export default class Game {
             // Legal special rule move
             if (this.board.applyMove(move)) {
                 this.lastMoveWasBluff = false;
-                this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
+                moveCopy.timestamp = now;
                 this.turnHistory.push(moveCopy);
                 return true;
             }
@@ -212,9 +213,9 @@ export default class Game {
         if (move.bluff) {
             if (this.board.applyMove(move)) {
                 this.lastMoveWasBluff = true;
-                this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
+                moveCopy.timestamp = now;
                 this.turnHistory.push(moveCopy);
                 return true;
             }
@@ -229,8 +230,10 @@ export default class Game {
     public startGameTimer() {
         if (this.timerInterval) return;
 
+        const now = Date.now();
         this.gameStatus = GameStatus.RUNNING;
-        this.timerUpdateTimestamp = Date.now();
+        this.timerUpdateTimestamp = now;
+        this.gameStartTimestamp = now;
 
         this.timerInterval = setInterval(() => {
             this.updateTimers();

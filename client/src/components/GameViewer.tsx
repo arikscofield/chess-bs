@@ -1,10 +1,10 @@
-import type {Board, Piece, Turn} from "@chess-bs/common";
+import type {Board, Move, Piece, Turn} from "@chess-bs/common";
 import {useEffect, useMemo, useState} from "react";
 
 export function useGameViewer(startBoard: Board | null, turnHistory: Turn[]) {
     // The current move index to show in the visible board. -1 means the latest move
     const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
-
+    const [highlightedMove, setHighlightedMove] = useState<Move | null>(null);
 
     useEffect(() => {
         setViewMoveIndex(-1);
@@ -22,11 +22,13 @@ export function useGameViewer(startBoard: Board | null, turnHistory: Turn[]) {
 
         const stateStack: (Piece | null)[][][] = [];
 
+        setHighlightedMove(null);
         for (const event of eventsToApply) {
             // If it's a Move event
             if ('from' in event && 'to' in event) {
                 stateStack.push(newBoard.grid.map(row => [...row]));
                 newBoard.applyMove(event);
+                setHighlightedMove(event);
             }
             // If it's a CallBluff event
             else if ('successful' in event) {
@@ -49,5 +51,6 @@ export function useGameViewer(startBoard: Board | null, turnHistory: Turn[]) {
         visibleBoard,
         viewMoveIndex,
         setViewMoveIndex,
+        highlightedMove,
     }
 }

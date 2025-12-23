@@ -241,15 +241,14 @@ io.on("connection", (socket) => {
         }
 
         // Able to call bluff
-        if (game.prevBoard === null) {
+        const prevTurn = game.turnHistory[game.turnHistory.length-1]
+        if (prevTurn && 'from' in prevTurn && prevTurn.piece?.color !== game.turnColor) {
             callback({ status: AckStatus.ERROR, message: "Unable to call bluff"});
             return;
         }
 
         if (game.lastMoveWasBluff) {
             // Successful call
-            game.board = game.prevBoard;
-            game.prevBoard = null;
             game.board.enPassant = null;
             game.turnHistory.push({successful: true} as CallBluff)
             sendGameState(game);

@@ -334,6 +334,27 @@ export default class Board {
     }
 
 
+    /**
+     * Get the location/squares of all of the pieces of a specific color and piece type
+     * @param type
+     * @param color
+     */
+    public findPieces(type: PieceType, color: Color): Square[] {
+        const squares: Square[] = [];
+
+        for (let [r, row] of this.grid.entries()) {
+            for (let [c, piece] of row.entries()) {
+                if (piece && piece.color === color && piece.pieceType == type) {
+                    squares.push({row: r, col: c})
+                }
+            }
+        }
+
+
+        return squares;
+    }
+
+
     public clone(): Board {
         const newGrid: (Piece | null)[][] = this.grid.map(row => row.map(piece => {
             if (!piece) return null;
