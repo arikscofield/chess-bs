@@ -1,17 +1,14 @@
-import {Color, type Piece, type PieceType} from "@chess-bs/common"
+import {BoardType, Color, type Piece, type PieceType} from "@chess-bs/common"
 import {pieceImages} from "../assets/pieceImages.ts";
 
 
 
-const BoardType: Record<string, [string, string]> = {
-    Brown: ["bg-board-brown-light", "bg-board-brown-dark"],
-    Green: ["bg-board-green-light", "bg-board-green-dark"],
-}
+
 
 
 function Square(
     { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
-    {row: number, col: number, color: Color, piece: Piece | null, hovered: boolean, selected: boolean, highlighted: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, promotionOptionPieceType: PieceType | null, boardType?: [string, string], handleSelectPromotion: (pieceType: PieceType) => void }
+    {row: number, col: number, color: Color, piece: Piece | null, hovered: boolean, selected: boolean, highlighted: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, promotionOptionPieceType: PieceType | null, boardType?: [string, string, string, string], handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
     const pieceString: string = "" + piece?.color + piece?.pieceType;

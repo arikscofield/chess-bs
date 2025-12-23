@@ -6,6 +6,7 @@ import {
     type GameState,
     GameStatus,
     type Move,
+    type Turn,
     type Rule
 } from "@chess-bs/common";
 // import Player from "@common/src/player.js";
@@ -33,7 +34,7 @@ export default class Game {
     private timerInterval: NodeJS.Timeout | null = null;
     hasMoved: Map<Color, boolean>;
 
-    private moveHistory: Move[];
+    turnHistory: Turn[];
     turnColor: Color;
     lastMoveWasBluff: boolean;
     prevBoard: Board | null;
@@ -72,7 +73,7 @@ export default class Game {
         this.board = new Board();
         this.players = [];
         this.playersConnected = 0;
-        this.moveHistory = [];
+        this.turnHistory = [];
         this.turnColor = Color.White;
         this.lastMoveWasBluff = false;
         this.prevBoard = new Board();
@@ -100,7 +101,7 @@ export default class Game {
             grid: this.board.grid,
             enPassant: this.board.enPassant,
             turn: this.turnColor,
-            moveHistory: this.moveHistory,
+            turnHistory: this.turnHistory,
             rulePool: this.rulePool,
         }
 
@@ -184,7 +185,7 @@ export default class Game {
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
-                this.moveHistory.push(moveCopy);
+                this.turnHistory.push(moveCopy);
                 return true;
             }
             return false;
@@ -201,7 +202,7 @@ export default class Game {
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
-                this.moveHistory.push(moveCopy);
+                this.turnHistory.push(moveCopy);
                 return true;
             }
             return false;
@@ -214,7 +215,7 @@ export default class Game {
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
-                this.moveHistory.push(moveCopy);
+                this.turnHistory.push(moveCopy);
                 return true;
             }
             return false;
@@ -266,4 +267,10 @@ export default class Game {
         this.turnColor = turn;
         this.board.enPassant = enPassant;
     }
+
+
+    // public fromString(gameString: string): Game {
+    //     const gameObj = JSON.parse(gameString);
+    //     const newGame = new Game(gameObj.gameId, gameObj.creatorPlayerId, gameObj.creatorColor, gameObj.ruleCount, gameObj.rulePool)
+    // }
 }

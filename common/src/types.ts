@@ -8,6 +8,11 @@ export enum PieceType {
     King = "King",
 }
 
+export enum Color {
+    White = "White",
+    Black = "Black",
+}
+
 export const PiecePrefix: Record<string, PieceType> = {
     "p": PieceType.Pawn,
     "n": PieceType.Knight,
@@ -17,7 +22,7 @@ export const PiecePrefix: Record<string, PieceType> = {
     "k": PieceType.King,
 }
 
-export const RankMap: Record<string, number> = {
+export const RankToIndex: Record<string, number> = {
     "a": 0,
     "b": 1,
     "c": 2,
@@ -28,9 +33,39 @@ export const RankMap: Record<string, number> = {
     "h": 7,
 }
 
-export enum Color {
-    White = "White",
-    Black = "Black",
+export const IndexToRank: Record<number, string> = {
+    0: "a",
+    1: "b",
+    2: "c",
+    3: "d",
+    4: "e",
+    5: "f",
+    6: "g",
+    7: "h",
+}
+
+export const PieceAscii: Record<Color, Record<PieceType, string>> = {
+    [Color.White]: {
+        [PieceType.Pawn]: "♙",
+        [PieceType.Knight]: "♘",
+        [PieceType.Bishop]: "♗",
+        [PieceType.Rook]: "♖",
+        [PieceType.Queen]: "♕",
+        [PieceType.King]: "♔"
+    },
+    [Color.Black]: {
+        [PieceType.Pawn]: "♟",
+        [PieceType.Knight]: "♞",
+        [PieceType.Bishop]: "♝",
+        [PieceType.Rook]: "♜",
+        [PieceType.Queen]: "♛",
+        [PieceType.King]: "♚"
+    }
+}
+
+export const BoardType: Record<string, [string, string, string, string]> = {
+    Brown: ["bg-board-brown-light", "bg-board-brown-dark", "text-board-brown-light", "text-board-brown-dark"],
+    Green: ["bg-board-green-light", "bg-board-green-dark", "text-board-green-light", "text-board-green-dark"],
 }
 
 
@@ -55,7 +90,15 @@ export interface Move {
     },
     promotion?: PieceType,
     bluff?: boolean,
+    callingBluff?: boolean,
+    callingBluffSuccess?: boolean,
 }
+
+export interface CallBluff {
+    successful: boolean,
+}
+
+export type Turn = Move | CallBluff
 
 export interface Rule {
     name: string;
@@ -141,7 +184,7 @@ export interface GameState {
     grid: (Piece | null)[][];
     enPassant: Square | null;
     turn: Color;
-    moveHistory: Move[];
+    turnHistory: Turn[];
     rulePool?: Rule[];
     timers?: Record<Color, number> // Map<Color, number>
 }

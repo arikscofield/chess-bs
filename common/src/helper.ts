@@ -3,8 +3,11 @@
 
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-import {Color, type Piece, PiecePrefix, PieceType, RankToIndex, type Square} from "@chess-bs/common";
-import PieceClass from "@chess-bs/common/dist/piece.js"
+
+import PieceClass from "./piece";
+import {Color, PiecePrefix, Square, PieceType, type Piece, RankToIndex} from "./types";
+
+export const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {
     const grid: (Piece | null)[][] = [];

@@ -1,8 +1,9 @@
 import {useEffect, useRef, useState} from "react";
 import Square from "./Square.tsx";
 import {
+    BoardType,
     Color,
-    GameStatus,
+    GameStatus, IndexToRank,
     type Move,
     type Piece,
     PieceType,
@@ -13,6 +14,7 @@ import BoardClass from "@chess-bs/common/dist/board.js";
 import {useElementSize, useMergedRef, useMounted} from "@mantine/hooks";
 import {pieceImages} from "../assets/pieceImages.ts";
 import {Portal} from "@mantine/core";
+
 
 
 function Board(
@@ -27,6 +29,8 @@ function Board(
     const boardRef = useRef<HTMLElement | null>(null);
 
     const mergedBoardRef = useMergedRef(sizeRef, boardRef);
+
+    const [boardType, setBoardType] = useState<[string, string, string, string]>(BoardType.Brown);
 
     const [selectedSquare, setSelectedSquare] = useState<SquareType | null>(null);
     const [legalMoves, setLegalMoves] = useState<Move[]>([]);
@@ -135,10 +139,15 @@ function Board(
         const x = event.pageX;
         const y = event.pageY;
 
-        let row = Math.floor(boardY / ((boardRef.current?.scrollHeight || 0) / numRows));
+        const width = boardRef.current?.offsetWidth || 0;
+        const height = boardRef.current?.offsetHeight || 0;
+
+        let row = Math.floor(boardY / (height / numRows));
         if (player?.color === Color.Black) row = numRows - 1 - row;
-        let col = Math.floor(boardX / ((boardRef.current?.scrollWidth || 0) / numCols));
+        let col = Math.floor(boardX / (width / numCols));
         if (player?.color === Color.Black) col = numCols - 1 - col;
+
+        // console.log("Over board:", isOverBoard, " boardXY:", boardX, boardY, " xy:", x, y, " row:", row, " col:", col);
 
         const piece = board.getPiece({row, col}) || null;
 
@@ -164,9 +173,12 @@ function Board(
         const boardX = event.offsetX;
         const boardY = event.offsetY;
 
-        let row = Math.floor(boardY / ((boardRef.current?.scrollHeight || 0) / numRows));
+        const width = boardRef.current?.offsetWidth || 0;
+        const height = boardRef.current?.offsetHeight || 0;
+
+        let row = Math.floor(boardY / (height / numRows));
         if (player?.color === Color.Black) row = numRows - 1 - row;
-        let col = Math.floor(boardX / ((boardRef.current?.scrollWidth || 0) / numCols));
+        let col = Math.floor(boardX / (width / numCols));
         if (player?.color === Color.Black) col = numCols - 1 - col;
 
         if (isOverBoard) {
@@ -179,6 +191,7 @@ function Board(
 
     // Select a given square. If its own piece, set the legalMoves
     function select(square: SquareType) {
+        // console.log("Selected square:", square);
         setSelectedSquare(square);
         setLegalMoves(board.getLegalMoves(square, true));
         setPromotionMove(null);
@@ -191,6 +204,7 @@ function Board(
 
     // Deselect a square
     function deselect() {
+        // console.log("Deselect square:", square);
         setSelectedSquare(null);
         setLegalMoves([]);
         setLegalRuleMoves([]);
@@ -242,6 +256,7 @@ function Board(
         const piece = board.getPiece(square)
 
         if (piece === undefined) { // Outside the board
+            // console.log("Deselect due to end drag outside the board")
             deselect();
             return;
         }
@@ -281,98 +296,124 @@ function Board(
 
     return (
         <div
-            ref={mergedBoardRef}
-            className="grid grid-rows-8 grid-cols-8 relative aspect-square w-full h-full "
-            style={{ touchAction: "none" }}
-            onPointerDown={handlePointerDown}
-            onContextMenu={(e) => {
-                e.preventDefault();
-            }}
+            className={"relative aspect-square w-full h-full "}
         >
-            {rows.map((row) => (
-                cols.map((col) => {
-                    let movable = legalMoves.some((move) => move.to.row === row && move.to.col === col);
-                    let ruleMovable = legalRuleMoves.some((move) => move.to.row === row && move.to.col === col);
+            {/* Rank and File labels */}
+            <div className={"absolute w-full h-full grid grid-rows-8 grid-cols-8 aspect-square pointer-events-none"}>
+                {rows.map((row, i) => (
+                    cols.map((col, j) => {
+                        return <div key={col} className={"w-full h-full relative"}>
+                            {i == numRows-1 && (
+                                <span className={`absolute z-20 bottom-0 right-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
+                                    {IndexToRank[col]}
+                                </span>
+                            )}
+                            {j == 0 && (
+                                <span className={`absolute z-20 top-0 left-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
+                                    {numRows-row}
+                                </span>
+                            )}
+                        </div>
+                    })
+                ))}
+            </div>
 
-                    if (isBluffing && selectedSquare !== null) {
-                        movable = !(movable || ruleMovable) && board.grid[row][col]?.color !== player?.color;
-                        ruleMovable = false;
 
-                        // Don't allow bluffing into check (Except if capturing opponents king
-                        if (movable) {
-                            const piece = board.getPiece(selectedSquare);
-                            if (piece && board.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {
-                                const move: Move = {from: selectedSquare, to: {row: row, col: col}, piece: {type: piece.pieceType, color: piece.color}}
-                                const movedBoard: BoardClass = board.clone();
-                                movedBoard.applyMove(move);
-                                const kingSquare = movedBoard.findKing(piece.color);
-                                if (kingSquare && movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White).length > 0) {
-                                    movable = false;
+            <div
+                ref={mergedBoardRef}
+                className="grid grid-rows-8 grid-cols-8 relative aspect-square w-full h-full "
+                style={{ touchAction: "none" }}
+                onPointerDown={handlePointerDown}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                }}
+            >
+                {rows.map((row) => (
+                    cols.map((col) => {
+                        let movable = legalMoves.some((move) => move.to.row === row && move.to.col === col);
+                        let ruleMovable = legalRuleMoves.some((move) => move.to.row === row && move.to.col === col);
+
+                        if (isBluffing && selectedSquare !== null) {
+                            movable = !(movable || ruleMovable) && board.grid[row][col]?.color !== player?.color;
+                            ruleMovable = false;
+
+                            // Don't allow bluffing into check (Except if capturing opponents king
+                            if (movable) {
+                                const piece = board.getPiece(selectedSquare);
+                                if (piece && board.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {
+                                    const move: Move = {from: selectedSquare, to: {row: row, col: col}, piece: {type: piece.pieceType, color: piece.color}}
+                                    const movedBoard: BoardClass = board.clone();
+                                    movedBoard.applyMove(move);
+                                    const kingSquare = movedBoard.findKing(piece.color);
+                                    if (kingSquare && movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White).length > 0) {
+                                        movable = false;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    let promotionOptionPieceType = null;
-                    if (promotionMove && col === promotionMove.to.col) {
-                        const rowDiff = Math.abs(row - promotionMove.to.row);
-                        if (rowDiff < promotionOptions.length) {
-                            promotionOptionPieceType = promotionOptions[rowDiff];
+                        let promotionOptionPieceType = null;
+                        if (promotionMove && col === promotionMove.to.col) {
+                            const rowDiff = Math.abs(row - promotionMove.to.row);
+                            if (rowDiff < promotionOptions.length) {
+                                promotionOptionPieceType = promotionOptions[rowDiff];
+                            }
                         }
-                    }
-                    return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
-                        <Square row={row} col={col} color={player?.color || Color.White}
-                                piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && lastMove?.to.row === row && lastMove?.to.col === col) ? null : board?.grid?.[row]?.[col] || null}
-                                hovered={mouse.row === row && mouse.col === col}
-                                selected={selectedSquare?.row === row && selectedSquare?.col === col}
-                                highlighted={(lastMove?.to.row === row && lastMove?.to.col === col) || (lastMove?.from.row === row && lastMove?.from.col === col)}
-                                movable={movable}
-                                ruleMovable={ruleMovable}
-                                isBluffing={isBluffing}
-                                promotionOptionPieceType={promotionOptionPieceType}
-                                handleSelectPromotion={selectPromotionPiece}
-                        />
-                    </div>
-                })
-            ))}
+                        return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
+                            <Square row={row} col={col} color={player?.color || Color.White}
+                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && lastMove?.to.row === row && lastMove?.to.col === col) ? null : board?.grid?.[row]?.[col] || null}
+                                    hovered={mouse.row === row && mouse.col === col}
+                                    selected={selectedSquare?.row === row && selectedSquare?.col === col}
+                                    highlighted={(lastMove?.to.row === row && lastMove?.to.col === col) || (lastMove?.from.row === row && lastMove?.from.col === col)}
+                                    movable={movable}
+                                    ruleMovable={ruleMovable}
+                                    isBluffing={isBluffing}
+                                    promotionOptionPieceType={promotionOptionPieceType}
+                                    handleSelectPromotion={selectPromotionPiece}
+                                    boardType={boardType}
+                            />
+                        </div>
+                    })
+                ))}
 
-            {draggedSquare && draggedPiece &&
-                <Portal>
-                    <div className={"absolute z-30 pointer-events-none cursor-grabbing"}
-                         style={{
-                             top: `calc(${mouse.y}px - ${squareSize/2}px)`,
-                             left: `calc(${mouse.x}px - ${squareSize/2}px)`,
-                             width: squareSize,
-                             height: squareSize,
-                         }}
+                {draggedSquare && draggedPiece &&
+                    <Portal>
+                        <div className={"absolute z-30 pointer-events-none cursor-grabbing"}
+                             style={{
+                                 top: `calc(${mouse.y}px - ${squareSize/2}px)`,
+                                 left: `calc(${mouse.x}px - ${squareSize/2}px)`,
+                                 width: squareSize,
+                                 height: squareSize,
+                             }}
+                        >
+                            <img src={pieceImages[draggedPieceString]} alt={draggedPieceString} width={squareSize} height={squareSize} draggable={false} className={"z-20 select-none pointer-events-none "} />
+
+                        </div>
+                    </Portal>
+
+                }
+
+
+                {lastMove &&
+                    <div
+                        className={`absolute pointer-events-none z-10 ${animateMove ? "transition-transform duration-300 ease-in-out" : "opacity-0"}`}
+                        style={{
+                            width: squareSize,
+                            height: squareSize,
+                            top: ((player?.color === Color.Black ? numRows - 1 - lastMove?.from.row : lastMove?.from.row) || 0) * squareSize,
+                            left: ((player?.color === Color.Black ? numCols - 1 - lastMove?.from.col : lastMove?.from.col) || 0) * squareSize,
+                            transform: animateMove ? `translate(
+                            ${( (lastMove?.to.col || 0) - (lastMove?.from.col || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px,
+                            ${( (lastMove?.to.row || 0) - (lastMove?.from.row || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px
+                            )`
+                            : "translate(0, 0)",
+
+                        }}
                     >
-                        <img src={pieceImages[draggedPieceString]} alt={draggedPieceString} width={squareSize} height={squareSize} draggable={false} className={"z-20 select-none pointer-events-none "} />
-
-                    </div>
-                </Portal>
-
-            }
-
-
-            {lastMove &&
-                <div
-                    className={`absolute pointer-events-none z-10 ${animateMove ? "transition-transform duration-300 ease-in-out" : "opacity-0"}`}
-                    style={{
-                        width: squareSize,
-                        height: squareSize,
-                        top: ((player?.color === Color.Black ? numRows - 1 - lastMove?.from.row : lastMove?.from.row) || 0) * squareSize,
-                        left: ((player?.color === Color.Black ? numCols - 1 - lastMove?.from.col : lastMove?.from.col) || 0) * squareSize,
-                        transform: animateMove ? `translate(
-                        ${( (lastMove?.to.col || 0) - (lastMove?.from.col || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px,
-                        ${( (lastMove?.to.row || 0) - (lastMove?.from.row || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px
-                        )`
-                        : "translate(0, 0)",
-
-                    }}
-                >
-                    <img src={pieceImages[lastMovePieceString]} alt={lastMovePieceString} width={squareSize} height={squareSize} draggable={false} className={"z-10 select-none pointer-events-none "} />
+                        <img src={pieceImages[lastMovePieceString]} alt={lastMovePieceString} width={squareSize} height={squareSize} draggable={false} className={"z-10 select-none pointer-events-none "} />
+                </div>
+                }
             </div>
-            }
         </div>
     )
 }

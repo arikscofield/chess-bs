@@ -10,7 +10,7 @@ import {
     GameStatus,
     type Move,
     type PlayerState,
-    type Rule,
+    type Rule, type Turn,
 } from "@chess-bs/common";
 import Player from "@chess-bs/common/dist/player.js";
 import {SocketContext} from "../../components/Socket/SocketContext.ts";
@@ -23,6 +23,8 @@ import OwnRules from "../../components/OwnRules.tsx";
 import Timer from "../../components/Timer.tsx";
 import GameLobby from "../../components/GameLobby.tsx";
 import RuleList from "../../components/RuleList.tsx";
+import {useGameViewer} from "../../components/GameViewer.tsx";
+import TurnHistory from "../../components/TurnHistory.tsx";
 
 
 function Play() {
@@ -43,12 +45,14 @@ function Play() {
     const [timeIncrementMs, setTimeIncrementMs] = useState<number | null>(null);
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment | null>(null);
     const [creatorColor, setCreatorColor] = useState<CreateGameColor | null>(null);
+    const [startBoard, setStartBoard] = useState(BoardClass.defaultBoard()) // TODO: Change to be variable based on game settings? If i implement non-standard starting positions
 
     // Game State (changing)
     const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.WAITING_FOR_PLAYER);
     const [view, setView] = useState<Color | null>(null);
     // const [turnColor, setTurnColor] = useState<Color>(Color.White);
-    const moveHistory = useRef<Move[]>([]);
+    const turnHistory = useRef<Turn[]>([]);
+    const { visibleBoard, viewMoveIndex, setViewMoveIndex } = useGameViewer(startBoard, turnHistory.current)
     const [lastMove, setLastMove] = useState<Move | undefined>(undefined);
     const turnColor = useRef<Color>(Color.White);
     const [timers, setTimers] = useState<Map<Color, number>>(new Map());
@@ -82,7 +86,7 @@ function Play() {
 
             socket.on("gameState", (gameState: GameState) => {
                 const {gameStatus: newGameStatus, grid: newGrid, enPassant: newEnPassant,
-                    turn: newTurn, moveHistory: newMoveHistory, rulePool: newRulePool, timers: newTimers} = gameState;
+                    turn: newTurn, turnHistory: newTurnHistory, rulePool: newRulePool, timers: newTimers} = gameState;
 
                 console.log("Received Game State: ");
                 console.log(gameState);
@@ -93,10 +97,17 @@ function Play() {
                 if (newRulePool) setRulePool(newRulePool);
                 if (newTimers) setTimers(new Map(Object.entries(newTimers)) as Map<Color, number>);
 
-                const newLastMove = newMoveHistory.at(-1);
+                // Get the latest move (Not a bluff call)
+                let newLastMove = newTurnHistory.at(-1);
+                let ind = -2
+                while (newLastMove && !('from' in newLastMove)) {
+                    newLastMove = newTurnHistory.at(ind);
+                    ind--;
+                }
                 setLastMove(newLastMove);
-                const shouldAnimate = newMoveHistory.length > moveHistory.current.length;
-                moveHistory.current = newMoveHistory;
+
+                const shouldAnimate = newTurnHistory.length > turnHistory.current.length;
+                turnHistory.current = newTurnHistory;
 
                 if (shouldAnimate && newLastMove) {
                     setAnimateMove(true);
@@ -234,7 +245,7 @@ function Play() {
                     />
                 </div>
                 {board && player && <Board
-                    board={board}
+                    board={visibleBoard}
                     gameStatus={gameStatus}
                     player={player}
                     view={view || Color.White}
@@ -262,7 +273,11 @@ function Play() {
 
             <div className={"grid grid-rows-2 w-[300px] h-full gap-2 "}>
                 <div className={"flex flex-col rounded-md bg-bg-2"}>
-
+                    <TurnHistory
+                        turnHistory={turnHistory.current}
+                        viewMoveIndex={viewMoveIndex}
+                        setViewMoveIndex={setViewMoveIndex}
+                    />
                 </div>
                 <Chatroom
                     gameId={gameId}

@@ -1,22 +1,28 @@
 import {Server} from "socket.io";
 import Game from "./game.js";
 import {
-    AckStatus,
+    AckStatus, type CallBluff,
     type ClientToServerEvents,
     Color,
     CreateGameColor,
     GameStatus,
+    type Move,
+    PieceType,
     type ServerToClientEvents,
 } from "@chess-bs/common";
 import {parse, serialize} from "cookie";
 import {v4 as uuidv4} from 'uuid'
 import Rule from "@common/src/rule.js";
 
+import {Redis} from "ioredis";
+
 const port = 3000;
 const clientPort = 5173;
+
+// TODO: Fix hard coded-ips
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
     cors: {
-        origin: [`http://127.0.0.1:${clientPort}`, `http://localhost:${clientPort}`, `http://192.168.1.90:${clientPort}`, `http://192.168.231.1:${clientPort}`],
+        origin: [`http://127.0.0.1:${clientPort}`, `http://localhost:${clientPort}`, `http://192.168.91.81:${clientPort}`, `http://192.168.231.1:${clientPort}`],
         // origin: "*",
         methods: ["GET", "POST"],
         credentials: true,
@@ -24,6 +30,8 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
 });
 
 const games: Map<string, Game> = new Map();
+
+const redis = new Redis();
 
 
 // Ensure user has a playerId. If not, set a Set-Cookie header
@@ -34,7 +42,7 @@ io.engine.on("headers", (headers, request) => {
         headers["set-cookie"] = serialize("playerId", playerId, {
             httpOnly: true,
             path: '/',
-            sameSite: "strict",
+            // sameSite: "strict",
             maxAge: 60 * 60 * 24 * 30,
         });
         request.headers.cookie += "; playerId=" + playerId;
@@ -190,7 +198,7 @@ io.on("connection", (socket) => {
             game.timeLeftMs.set(game.turnColor, (game.timeLeftMs.get(game.turnColor) || 0) + game.timeIncrementMs);
             game.hasMoved.set(game.turnColor, true);
 
-            // Start the timer of each player has made a move
+            // Start the timer if each player has made a move
             if (game.gameStatus === GameStatus.WAITING_FOR_FIRST_MOVE && Array.from(game.hasMoved.values()).every(v => v)) {
                 console.log("starting timer")
                 game.startGameTimer();
@@ -243,6 +251,7 @@ io.on("connection", (socket) => {
             game.board = game.prevBoard;
             game.prevBoard = null;
             game.board.enPassant = null;
+            game.turnHistory.push({successful: true} as CallBluff)
             sendGameState(game);
             callback({ status: AckStatus.OK, message: "Successfully called bluff", result: true });
             return;
@@ -250,6 +259,7 @@ io.on("connection", (socket) => {
             // Failed call
             game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
             game.board.enPassant = null;
+            game.turnHistory.push({successful: false} as CallBluff)
             sendGameState(game);
             callback({ status: AckStatus.OK, message: "Failed to call bluff", result: false });
             return;

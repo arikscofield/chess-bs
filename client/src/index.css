@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@source "../../common/src";
 
 @theme {
     --color-board-brown-light: #f0d9b5;

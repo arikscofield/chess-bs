@@ -1,5 +1,6 @@
 import {Color, Move, Piece, PieceType, Square} from "./types";
 import PieceClass from "./piece"
+import {defaultFEN, parseFen} from "./helper";
 
 /*
 
@@ -31,6 +32,16 @@ export default class Board {
         }
     }
 
+
+    public static defaultBoard() {
+        const {grid, turn, enPassant, halfMove, fullMove} = parseFen(defaultFEN);
+
+        const newBoard = new Board();
+        newBoard.grid = grid;
+        newBoard.enPassant = enPassant;
+
+        return newBoard;
+    }
 
     /*
     Get the list of squares that can attack the given square.
@@ -77,6 +88,11 @@ export default class Board {
         }
     }
 
+    /**
+     * Applies a move to the board.
+     * Does not do any check for legality
+     * @param move
+     */
     public applyMove(move: Move): boolean {
         const {from, to} = move;
         const movingPiece = this.getPiece(from);
