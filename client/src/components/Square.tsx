@@ -17,18 +17,16 @@ function Square(
     if (promotionOptionPieceType !== null) {
         return (
             <div className={"relative w-full h-full"}>
-                <div className={`relative flex w-full h-full items-center justify-center group bg-white hover:bg-gray-100 cursor-pointer z-30
-            
-            `}
+                <div className={`relative flex w-full h-full items-center justify-center group cursor-pointer z-30 ${hovered ? "bg-gray-200" : "bg-white"}`}
                      onClick={() => {
                          handleSelectPromotion(promotionOptionPieceType);
                      }}
                 >
 
-                    <img src={pieceImages[promotionPieceString]} alt={promotionPieceString} width={90} height={90} className={"z-10"} />
+                    <img src={pieceImages[promotionPieceString]} alt={promotionPieceString} width={90} height={90} className={"z-10 pointer-events-none"} />
                 </div>
-                <span className={"absolute z-20 w-[10px] h-full bottom-0 right-[-10px] bg-linear-to-r from-black/50 from-40% to-black/0"}/>
-                <span className={"absolute z-20 w-full h-[10px] bottom-[-10px] right-0 bg-linear-to-b from-black/50 from-40% to-black/0"}/>
+                <span className={"absolute z-20 w-[10px] h-full bottom-0 right-[-10px] bg-linear-to-r from-black/50 from-40% to-black/0 pointer-events-none"}/>
+                <span className={"absolute z-20 w-full h-[10px] bottom-[-10px] right-0 bg-linear-to-b from-black/50 from-40% to-black/0 pointer-events-none"}/>
             </div>
 
         )

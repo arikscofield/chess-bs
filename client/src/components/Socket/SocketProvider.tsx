@@ -3,9 +3,9 @@ import {io, type Socket} from "socket.io-client";
 import {SocketContext} from "./SocketContext.ts";
 import type {ClientToServerEvents, ServerToClientEvents} from "@chess-bs/common";
 
-// const SERVER_IP = "192.168.1.90";
-const SERVER_IP = "localhost";
-const SERVER_PORT = 3000;
+
+const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP;
+const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT;
 
 function SocketProvider({ children }: { children: ReactNode }) {
 

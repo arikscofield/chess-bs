@@ -9,7 +9,7 @@ function TurnHistory({ turnHistory, viewMoveIndex, setViewMoveIndex }: { turnHis
 
     return (
         <div className={"flex flex-col justify-between h-full text-white text-base p-1"}>
-            <ol className={"flex flex-col justify-between scroll-auto"}>
+            <ol className={"flex flex-col justify-between overflow-y-auto"}>
                 {turnHistory.map((turn: Turn, idx: number) => {
                     return (<li
                     key={idx}
@@ -22,13 +22,16 @@ function TurnHistory({ turnHistory, viewMoveIndex, setViewMoveIndex }: { turnHis
                     >
                         {/*{'from' in turn ? turn.piece.color + " " + turn.piece.type + " " + IndexToRank[turn.from.col] + turn.from.row + " to " + IndexToRank[turn.to.col] + turn.to.row : turn.successful}*/}
                         {/*TODO: Change away from the hard coded 7 for row/col count*/}
-                        {'from' in turn
-                            ? PieceAscii[turn.piece.color][turn.piece.type] + "" + IndexToFile[turn.from.col] + (7-turn.from.row+1) + " to " + IndexToFile[turn.to.col] + (7-turn.to.row+1)
-                            : turn.successful ? "Successful Call" : "Failed Call"}
+                        {'notation' in turn
+                            ? turn.notation
+                            : 'from' in turn
+                                ? PieceAscii[turn.piece.color][turn.piece.type] + "" + IndexToFile[turn.from.col] + (7-turn.from.row+1) + " to " + IndexToFile[turn.to.col] + (7-turn.to.row+1)
+                                : turn.successful ? "Successful Call" : "Failed Call"}
                     </li>)
                 })}
             </ol>
 
+            {/* Button Controls*/}
             <div className={"flex flex-row justify-between"}>
                 <button className={"flex justify-center grow p-1 rounded-md transition-colors hover:bg-blue-500/50 hover:cursor-pointer "}
                         onClick={() => {setViewMoveIndex(0)}}

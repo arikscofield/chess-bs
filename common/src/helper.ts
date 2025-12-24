@@ -5,7 +5,10 @@
 
 
 import PieceClass from "./piece";
-import {Color, PiecePrefix, Square, PieceType, type Piece, FileToIndex, Move, PieceAscii} from "./types";
+import {
+    Color, FileToIndex, IndexToFile, Move, type Piece, PieceAscii, PrefixToPieceType, PieceType, Square,
+    PieceTypeToPrefix
+} from "./types";
 import Board from "./board";
 
 export const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -26,7 +29,7 @@ export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, e
     for (const row of pieces) {
         grid.push([]);
         for (const pieceLetter of row) {
-            const pieceType = PiecePrefix[pieceLetter.toLowerCase()];
+            const pieceType = PrefixToPieceType[pieceLetter.toLowerCase()];
             if (pieceType) {
                 const pieceColor: Color = pieceLetter.toUpperCase() === pieceLetter ? Color.White : Color.Black;
                 const piece = new PieceClass(pieceType, pieceColor);
@@ -70,21 +73,3 @@ export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, e
     return {grid, turn, enPassant, halfMove, fullMove};
 }
 
-
-
-export function getMoveNotation(board: Board, move: Move): string {
-    let notation = "";
-
-    if (move.piece.type != PieceType.Pawn) notation += PieceAscii[move.piece.color][move.piece.type];
-
-    const samePieceSquares = board.findPieces(move.piece.type, move.piece.color);
-
-    if (samePieceSquares.some((square) => {
-        
-    })) {
-
-    }
-
-
-    return notation;
-}

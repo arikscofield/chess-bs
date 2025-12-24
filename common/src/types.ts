@@ -13,13 +13,22 @@ export enum Color {
     Black = "Black",
 }
 
-export const PiecePrefix: Record<string, PieceType> = {
+export const PrefixToPieceType: Record<string, PieceType> = {
     "p": PieceType.Pawn,
     "n": PieceType.Knight,
     "b": PieceType.Bishop,
     "r": PieceType.Rook,
     "q": PieceType.Queen,
     "k": PieceType.King,
+}
+
+export const PieceTypeToPrefix: Record<PieceType, string> = {
+    [PieceType.Pawn]: "p",
+    [PieceType.Knight]: "n",
+    [PieceType.Bishop]: "b",
+    [PieceType.Rook]: "r",
+    [PieceType.Queen]: "q",
+    [PieceType.King]: "k",
 }
 
 export const FileToIndex: Record<string, number> = {

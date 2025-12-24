@@ -88,10 +88,9 @@ export default class Board {
         }
     }
 
-    /**
+    /*
      * Applies a move to the board.
      * Does not do any check for legality
-     * @param move
      */
     public applyMove(move: Move): boolean {
         const {from, to} = move;
@@ -334,10 +333,18 @@ export default class Board {
     }
 
 
-    /**
-     * Get the location/squares of all of the pieces of a specific color and piece type
-     * @param type
-     * @param color
+    /*
+    Return whether the specified color is in check or not
+     */
+    public isInCheck(color: Color): boolean {
+        const kingSquare = this.findKing(color);
+        if (!kingSquare) return false
+
+        return this.attackers(kingSquare, color === Color.White ? Color.Black : Color.White).length > 0
+    }
+
+    /*
+     * Get the location/squares of all the pieces of a specific color and piece type
      */
     public findPieces(type: PieceType, color: Color): Square[] {
         const squares: Square[] = [];

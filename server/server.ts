@@ -15,6 +15,8 @@ import {v4 as uuidv4} from 'uuid'
 import Rule from "@common/src/rule.js";
 
 import {Redis} from "ioredis";
+// import {getMoveNotation} from "@common/src/helper.js";
+import {getMoveNotation} from "./helper.js";
 
 const port = 3000;
 const clientPort = 5173;
@@ -22,7 +24,7 @@ const clientPort = 5173;
 // TODO: Fix hard coded-ips
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
     cors: {
-        origin: [`http://127.0.0.1:${clientPort}`, `http://localhost:${clientPort}`, `http://192.168.91.81:${clientPort}`, `http://192.168.231.1:${clientPort}`],
+        origin: [`http://127.0.0.1:${clientPort}`, `http://localhost:${clientPort}`, `http://192.168.91.81:${clientPort}`, `http://192.168.1.201:${clientPort}`],
         // origin: "*",
         methods: ["GET", "POST"],
         credentials: true,
@@ -42,7 +44,7 @@ io.engine.on("headers", (headers, request) => {
         headers["set-cookie"] = serialize("playerId", playerId, {
             httpOnly: true,
             path: '/',
-            // sameSite: "strict",
+            sameSite: "strict",
             maxAge: 60 * 60 * 24 * 30,
         });
         request.headers.cookie += "; playerId=" + playerId;
@@ -187,7 +189,7 @@ io.on("connection", (socket) => {
         }
 
 
-
+        move.notation = getMoveNotation(game.board, move);
         if (!game.makeMove(move, player)) {
             callback({ status: AckStatus.ERROR, message: "Failed to make move"});
             return;
@@ -242,7 +244,7 @@ io.on("connection", (socket) => {
 
         // Able to call bluff
         const prevTurn = game.turnHistory[game.turnHistory.length-1]
-        if (prevTurn && 'from' in prevTurn && prevTurn.piece?.color !== game.turnColor) {
+        if (!(prevTurn && 'from' in prevTurn && prevTurn.piece?.color !== game.turnColor)) {
             callback({ status: AckStatus.ERROR, message: "Unable to call bluff"});
             return;
         }
