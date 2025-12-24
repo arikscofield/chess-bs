@@ -1,0 +1,41 @@
+Main:
+
+redesign how timers are implemented to be more easily serializable
+Design custom PGN for storing games
+flesh out actually winning -- basically must capture the king AND have it be your turn (since they can try to call a bluff?)
+change to redis for ongoing games, postgresql for past games
+
+add proper algebraic chess notation to game history (+ for checks, x for captures, only show relevant info)
+hovering over promotion option doesn't change color correctly
+if the user tries to make a move while not viewing the latest game state, show some type of indication like the fast-forward button blinking or something
+redesign the moving piece animation system
+
+allow for replaying past games
+
+premoving
+improving UI
+    show the result of calling bluff to both users
+    make it more obvious whose turn it is
+    add ability to set your name (maybe on both home page and settings)
+matchmaking
+playing a bot
+
+
+
+Medium Priority:
+pressing space to toggle bluffing
+add optional "side-effect" moves to the Move type, so can properly animate castling
+more custom themes for the board/pieces
+properly store hove history, with ability to undo moves visually
+bluffing a pawn diagonal move without capture can cause weird captures due to en passant
+add option to skip turn in order to redraw one of your rules
+chatroom during game
+optimize seo
+don't animate dragged moves?
+add square labels a-h 1-8
+
+
+Low Priority:
+right click for drawing arrows
+accounts/friends
+strip down the info sent in GameState

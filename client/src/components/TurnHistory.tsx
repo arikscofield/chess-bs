@@ -7,28 +7,57 @@ function TurnHistory({ turnHistory, viewMoveIndex, setViewMoveIndex }: { turnHis
 }) {
 
 
+    const parsedTurnHistory: ([Turn | null, number])[] = [];
+    for (const [i, turn] of turnHistory.entries()) {
+        parsedTurnHistory.push([turn, i]);
+        if ('successful' in turn && turn.successful) {
+            parsedTurnHistory.push([null, i]);
+        }
+    }
+
+    const turnRows = []
+    let i = 0
+    while (i < parsedTurnHistory.length) {
+        const row = []
+        for (let j=0; j<2; j++) {
+            if (i+j >= parsedTurnHistory.length) {
+                row.push(<div className={"flex-1"}></div>)
+                continue;
+            }
+            const [turn, turnViewIndex] = parsedTurnHistory[i+j];
+            const content = turn === null
+                ? "Skipped"
+                : 'notation' in turn
+                    ? turn.notation
+                    : 'from' in turn
+                        ? PieceAscii[turn.piece.color][turn.piece.type] + "" + IndexToFile[turn.from.col] + (7-turn.from.row+1) + " to " + IndexToFile[turn.to.col] + (7-turn.to.row+1)
+                        : turn.successful ? "Successful Call" : "Failed Call"
+
+            row.push(<div
+                key={i+j}
+                onClick={() => {
+                    console.log("Setting view move index to ", turnViewIndex+1)
+                    setViewMoveIndex(turnViewIndex+1)
+                }}
+                className={`px-1 py-0.5 flex-1 rounded-md transition-colors hover:cursor-pointer ${viewMoveIndex == turnViewIndex+1 ? "bg-blue-500/20" : "hover:bg-blue-500/50"}`}
+            >
+                {content}
+            </div>)
+        }
+        turnRows.push(row)
+        i += 2
+    }
+
     return (
         <div className={"flex flex-col justify-between h-full text-white text-base p-1"}>
             <ol className={"flex flex-col justify-between overflow-y-auto"}>
-                {turnHistory.map((turn: Turn, idx: number) => {
-                    return (<li
-                    key={idx}
-                    onClick={() => {
-                        idx++;
-                        console.log("Setting view move index to ", idx)
-                        setViewMoveIndex(idx)
-                    }}
-                    className={`px-1 py-0.5 rounded-md transition-colors hover:cursor-pointer ${viewMoveIndex == idx+1 ? "bg-blue-500/20" : "hover:bg-blue-500/50"}`}
-                    >
-                        {/*{'from' in turn ? turn.piece.color + " " + turn.piece.type + " " + IndexToRank[turn.from.col] + turn.from.row + " to " + IndexToRank[turn.to.col] + turn.to.row : turn.successful}*/}
-                        {/*TODO: Change away from the hard coded 7 for row/col count*/}
-                        {'notation' in turn
-                            ? turn.notation
-                            : 'from' in turn
-                                ? PieceAscii[turn.piece.color][turn.piece.type] + "" + IndexToFile[turn.from.col] + (7-turn.from.row+1) + " to " + IndexToFile[turn.to.col] + (7-turn.to.row+1)
-                                : turn.successful ? "Successful Call" : "Failed Call"}
-                    </li>)
-                })}
+                {turnRows.map((row, i) => (
+                    <div key={i} className={"flex flex-row justify-between"}>
+                        <div className={"px-1 py-0.5 text-gray-400"}>{i}</div>
+                        {row[0]}
+                        {row[1]}
+                    </div>
+                ))}
             </ol>
 
             {/* Button Controls*/}

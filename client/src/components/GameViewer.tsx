@@ -1,4 +1,4 @@
-import type {Board, Move, Piece, Turn} from "@chess-bs/common";
+import type {Board, Move, Turn} from "@chess-bs/common";
 import {useEffect, useMemo, useState} from "react";
 
 export function useGameViewer(startBoard: Board | null, turnHistory: Turn[]) {
@@ -12,36 +12,35 @@ export function useGameViewer(startBoard: Board | null, turnHistory: Turn[]) {
 
 
     const visibleBoard = useMemo(() => {
-        console.log("Recomputing visible board for index: ", viewMoveIndex);
+        // console.log("Recomputing visible board for index: ", viewMoveIndex);
         if (!startBoard) {return null}
 
-        const newBoard = startBoard.clone();
+        let newBoard = startBoard.clone();
 
         const eventsToApply = turnHistory.slice(0, viewMoveIndex >= 0 ? viewMoveIndex : turnHistory.length);
-        console.log("EventsToApply", eventsToApply);
+        // console.log("EventsToApply", eventsToApply);
 
-        const stateStack: (Piece | null)[][][] = [];
+        const boardStack: Board[] = [];
 
         setHighlightedMove(null);
         for (const event of eventsToApply) {
             // If it's a Move event
             if ('from' in event && 'to' in event) {
-                stateStack.push(newBoard.grid.map(row => [...row]));
+                boardStack.push(newBoard.clone());
                 newBoard.applyMove(event);
                 setHighlightedMove(event);
             }
             // If it's a CallBluff event
             else if ('successful' in event) {
                 if (event.successful) {
-                    const previousGrid = stateStack.pop();
-                    if (previousGrid) {
-                        newBoard.grid = previousGrid;
+                    const previousBoard = boardStack.pop();
+                    if (previousBoard) {
+                        newBoard = previousBoard;
                     }
                 }
             }
         }
 
-        console.log(newBoard);
         return newBoard
     }, [startBoard, turnHistory, viewMoveIndex])
 

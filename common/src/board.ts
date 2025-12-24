@@ -1,4 +1,4 @@
-import {Color, Move, Piece, PieceType, Square} from "./types";
+import {Color, Move, Piece, PieceAscii, PieceType, Square} from "./types";
 import PieceClass from "./piece"
 import {defaultFEN, parseFen} from "./helper";
 
@@ -371,5 +371,23 @@ export default class Board {
         }))
         const newEnPassant: Square | null = this.enPassant ? { row: this.enPassant.row, col: this.enPassant.col } : null;
         return new Board(newGrid, newEnPassant);
+    }
+
+
+    public getString() {
+        let boardString = ""
+        for (const row of this.grid) {
+            let rowString = "";
+            for (const piece of row) {
+                const type = piece?.pieceType;
+                if (type) {
+                    rowString += (PieceAscii[piece.color][type] || " ") + " "
+                } else {
+                    rowString += "  "
+                }
+            }
+            boardString += rowString + "\n"
+        }
+        return boardString;
     }
 }

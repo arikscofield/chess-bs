@@ -24,8 +24,7 @@ const clientPort = 5173;
 // TODO: Fix hard coded-ips
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
     cors: {
-        origin: [`http://127.0.0.1:${clientPort}`, `http://localhost:${clientPort}`, `http://192.168.91.81:${clientPort}`, `http://192.168.1.201:${clientPort}`],
-        // origin: "*",
+        origin: [`http://localhost:${clientPort}`, `http://192.168.1.201:${clientPort}`],
         methods: ["GET", "POST"],
         credentials: true,
     },
@@ -44,7 +43,7 @@ io.engine.on("headers", (headers, request) => {
         headers["set-cookie"] = serialize("playerId", playerId, {
             httpOnly: true,
             path: '/',
-            sameSite: "strict",
+            sameSite: "lax",
             maxAge: 60 * 60 * 24 * 30,
         });
         request.headers.cookie += "; playerId=" + playerId;
@@ -244,13 +243,15 @@ io.on("connection", (socket) => {
 
         // Able to call bluff
         const prevTurn = game.turnHistory[game.turnHistory.length-1]
-        if (!(prevTurn && 'from' in prevTurn && prevTurn.piece?.color !== game.turnColor)) {
+        if (!(prevTurn && 'from' in prevTurn && prevTurn.piece?.color !== game.turnColor) || game.prevBoard === null) {
             callback({ status: AckStatus.ERROR, message: "Unable to call bluff"});
             return;
         }
 
         if (game.lastMoveWasBluff) {
             // Successful call
+            game.board = game.prevBoard;
+            game.prevBoard = null;
             game.board.enPassant = null;
             game.turnHistory.push({successful: true} as CallBluff)
             sendGameState(game);
