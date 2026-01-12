@@ -35,16 +35,8 @@ class Player implements PlayerType {
         const {playerId, color, rules} = state;
         const player = new Player(playerId, color);
 
-        const newRules: Rule[] = [];
-        for (const playerRule of rules) {
-            for (const rule of allRules) {
-                if (playerRule.name === rule.name) {
-                    const newRule = new Rule(playerRule.name, playerRule.description, playerRule.pieceType, rule.getLegalMoves);
-                    newRules.push(newRule);
-                }
-            }
-        }
-        player.rules = newRules;
+        player.rules = rules.map((playerRule) => Rule.getRuleFromId(playerRule.id)).filter((r) => r !== undefined)
+
 
         return player;
     }

@@ -12,8 +12,8 @@ import {
     type Square,
     type Move,
     PieceAscii, IndexToFile, PieceTypeToPrefix
-} from "@chess-bs/common";
-import PieceClass from "@chess-bs/common/dist/piece.js"
+} from "@common/src/index.js";
+import PieceClass from "@common/src/piece.js"
 import Board from "@common/src/board.js";
 
 export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {

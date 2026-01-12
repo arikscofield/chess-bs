@@ -72,7 +72,7 @@ export const PieceAscii: Record<Color, Record<PieceType, string>> = {
     }
 }
 
-export const BoardType: Record<string, [string, string, string, string]> = {
+export const BoardColorType: Record<string, [string, string, string, string]> = {
     Brown: ["bg-board-brown-light", "bg-board-brown-dark", "text-board-brown-light", "text-board-brown-dark"],
     Green: ["bg-board-green-light", "bg-board-green-dark", "text-board-green-light", "text-board-green-dark"],
 }
@@ -111,6 +111,7 @@ export interface CallBluff {
 export type Turn = Move | CallBluff
 
 export interface Rule {
+    id: number,
     name: string;
     description: string;
     pieceType: PieceType;
@@ -181,6 +182,7 @@ export interface ClientToServerEvents {
 
 
 export interface GameInfo {
+    startGrid: (Piece | null)[][];
     rulePool: Rule[];
     usesTimer: boolean;
     timeStartMs: number;
@@ -205,10 +207,22 @@ export interface PlayerState {
     rules: Rule[];
 }
 
+export interface ReplayInfo {
+    startGrid: (Piece | null)[][];
+    rulePool: Rule[];
+    usesTimer: boolean;
+    timerStartMs: number;
+    timerIncrementMs: number;
+    gameStartTimestamp: Date;
+    turnHistory: Turn[];
+    bluffPunishment: BluffPunishment;
+}
+
 export interface ServerToClientEvents {
     gameInfo: (gameInfo: GameInfo) => void;
     gameState: (gameState: GameState) => void;
     playerState: (playerState: PlayerState) => void;
+    replayInfo: (replayInfo: ReplayInfo) => void;
     chatMessage: (message: string) => void;
     gameOver: (winner: Color, reason: string) => void;
 }

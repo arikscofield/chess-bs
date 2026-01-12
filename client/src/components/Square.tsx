@@ -1,4 +1,4 @@
-import {BoardType, Color, type Piece, type PieceType} from "@chess-bs/common"
+import {BoardColorType, Color, type Piece, type PieceType} from "@chess-bs/common"
 import {pieceImages} from "../assets/pieceImages.ts";
 
 
@@ -7,7 +7,7 @@ import {pieceImages} from "../assets/pieceImages.ts";
 
 
 function Square(
-    { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, boardType = BoardType.Brown, handleSelectPromotion } :
+    { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, boardType = BoardColorType.Brown, handleSelectPromotion } :
     {row: number, col: number, color: Color, piece: Piece | null, hovered: boolean, selected: boolean, highlighted: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, promotionOptionPieceType: PieceType | null, boardType?: [string, string, string, string], handleSelectPromotion: (pieceType: PieceType) => void }
 ) {
 
@@ -33,7 +33,7 @@ function Square(
     }
 
     return (
-        <div className={`relative flex w-full h-full items-center justify-center z-10 pointer-events-none ${(row+col) % 2 === 0 ? boardType[0] : boardType[1]} ${piece !== null ? "cursor-grab" : ""}`}
+        <div className={`relative flex w-full h-full items-center justify-center z-10 pointer-events-none ${(row+col) % 2 === 0 ? boardType[0] : boardType[1]} `}
              style={{ touchAction: "none" }}
 
         >

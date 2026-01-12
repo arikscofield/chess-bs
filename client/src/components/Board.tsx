@@ -1,16 +1,16 @@
-import {useEffect, useRef, useState} from "react";
+import {type RefObject, useEffect, useRef, useState} from "react";
 import Square from "./Square.tsx";
 import {
-    BoardType,
+    BoardColorType,
     Color,
     GameStatus, IndexToFile,
     type Move,
     type Piece,
     PieceType,
     type Player,
-    type Square as SquareType
+    type Square as SquareType,
+    type Board as BoardType,
 } from "@chess-bs/common";
-import BoardClass from "@chess-bs/common/dist/board.js";
 import {useElementSize, useMergedRef, useMounted} from "@mantine/hooks";
 import {pieceImages} from "../assets/pieceImages.ts";
 import {Portal} from "@mantine/core";
@@ -19,7 +19,7 @@ import {Portal} from "@mantine/core";
 
 function Board(
     {board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove, animateMove, } :
-    { board: BoardClass, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, canMove: boolean, isBluffing: boolean, handleMove: (move: Move) => void, highlightedMove: Move | null, animateMove: boolean }
+    { board: RefObject<BoardType | null>, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, canMove: boolean, isBluffing: boolean, handleMove: (move: Move) => void, highlightedMove: Move | null, animateMove: boolean }
 ) {
     const mounted = useMounted();
 
@@ -30,7 +30,7 @@ function Board(
 
     const mergedBoardRef = useMergedRef(sizeRef, boardRef);
 
-    const [boardType, setBoardType] = useState<[string, string, string, string]>(BoardType.Brown);
+    const [boardType, setBoardType] = useState<[string, string, string, string]>(BoardColorType.Brown);
 
     const [selectedSquare, setSelectedSquare] = useState<SquareType | null>(null);
     const [legalMoves, setLegalMoves] = useState<Move[]>([]);
@@ -39,13 +39,13 @@ function Board(
     const [dragReleaseSquare, setDragReleaseSquare] = useState<SquareType | null>(null);
     const [promotionMove, setPromotionMove] = useState<Move | null>(null);
 
-    const draggedPiece = draggedSquare ? board.getPiece(draggedSquare) : null;
+    const draggedPiece = draggedSquare ? board.current?.getPiece(draggedSquare) : null;
     const draggedPieceString: string = "" + draggedPiece?.color + draggedPiece?.pieceType;
 
     const highlightedMovePieceString: string = "" + highlightedMove?.piece.color + highlightedMove?.piece.type;
 
-    const numRows: number = board.grid.length;
-    const numCols: number = board.grid[0].length;
+    const numRows: number = board.current?.grid.length || 0;
+    const numCols: number = board.current?.grid[0].length || 0;
     const rows = view === Color.White
         ? Array.from({length: numRows}, (_, i) => i)
         : Array.from({length: numRows}, (_, i) => i).toReversed();
@@ -96,7 +96,7 @@ function Board(
         // console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
 
         const square = {row, col};
-        const piece = board.getPiece(square)
+        const piece = board.current?.getPiece(square)
 
         if (piece === undefined) { // Outside the board
             deselect();
@@ -147,22 +147,22 @@ function Board(
         let col = Math.floor(boardX / (width / numCols));
         if (player?.color === Color.Black) col = numCols - 1 - col;
 
-        // console.log("Over board:", isOverBoard, " boardXY:", boardX, boardY, " xy:", x, y, " row:", row, " col:", col);
 
-        const piece = board.getPiece({row, col}) || null;
+
+        const piece = board.current?.getPiece({row, col}) || null;
+
+        // console.log("Over board:", isOverBoard, " boardXY:", boardX, boardY, " xy:", x, y, " row:", row, " col:", col, " piece:", piece?.pieceType);
 
         if (isOverBoard) {
-            setMouse(prevMouse => {
-                if (piece && !prevMouse.piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
-                    boardRef.current.style.cursor = "grab";
-                } else if (!piece && prevMouse.piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
-                    boardRef.current.style.cursor = "pointer";
-                }
-                return {x, y, row, col, piece}
-            });
+            if (piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
+                boardRef.current.style.cursor = "grab";
+            } else if (!piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
+                boardRef.current.style.cursor = "pointer";
+            }
+            setMouse({x, y, row, col, piece});
         } else {
             setMouse({x, y, row: null, col: null, piece: null});
-            if (boardRef.current) boardRef.current.style.cursor = "pointer";
+            if (boardRef.current) boardRef.current.style.cursor = "default";
         }
 
         // console.log(`Pointer Move ${isOverBoard ? "over board" : ""} at x: ${x} y: ${y} row: ${row}, col: ${col}`);
@@ -194,12 +194,13 @@ function Board(
     // Select a given square. If its own piece, set the legalMoves
     function select(square: SquareType) {
         // console.log("Selected square:", square);
+        if (!board.current) return;
         setSelectedSquare(square);
-        setLegalMoves(board.getLegalMoves(square, true));
+        setLegalMoves(board.current.getLegalMoves(square, true));
         setPromotionMove(null);
         let newLegalRuleMoves: Move[] = [];
         for (const rule of player?.rules || []) {
-            newLegalRuleMoves = newLegalRuleMoves.concat(rule.getLegalMoves(board, square));
+            newLegalRuleMoves = newLegalRuleMoves.concat(rule.getLegalMoves(board.current, square));
         }
         setLegalRuleMoves(newLegalRuleMoves);
     }
@@ -218,7 +219,7 @@ function Board(
     function move(square: SquareType) {
         if (!selectedSquare) return;
 
-        const movingPiece = board.getPiece(selectedSquare)
+        const movingPiece = board.current?.getPiece(selectedSquare)
         if (!movingPiece) return;
 
         const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
@@ -246,7 +247,7 @@ function Board(
 
     function endDrag(square: SquareType) {
         if (boardRef.current) {
-            const piece = board.getPiece(square) || null;
+            const piece = board.current?.getPiece(square) || null;
             if (piece) boardRef.current.style.cursor = "grab";
             else boardRef.current.style.cursor = "pointer";
         }
@@ -255,7 +256,7 @@ function Board(
             return;
         }
 
-        const piece = board.getPiece(square)
+        const piece = board.current?.getPiece(square);
 
         if (piece === undefined) { // Outside the board
             // console.log("Deselect due to end drag outside the board")
@@ -294,7 +295,7 @@ function Board(
     }
 
 
-    if (!board) return;
+    if (board.current === null) return;
 
     return (
         <div
@@ -336,15 +337,16 @@ function Board(
                         let ruleMovable = legalRuleMoves.some((move) => move.to.row === row && move.to.col === col);
 
                         if (isBluffing && selectedSquare !== null) {
-                            movable = !(movable || ruleMovable) && board.grid[row][col]?.color !== player?.color;
+                            movable = !(movable || ruleMovable) && board.current?.grid[row][col]?.color !== player?.color;
                             ruleMovable = false;
 
                             // Don't allow bluffing into check (Except if capturing opponents king
                             if (movable) {
-                                const piece = board.getPiece(selectedSquare);
-                                if (piece && board.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {
+                                const piece = board.current?.getPiece(selectedSquare);
+                                if (piece && board.current?.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {
                                     const move: Move = {from: selectedSquare, to: {row: row, col: col}, piece: {type: piece.pieceType, color: piece.color}}
-                                    const movedBoard: BoardClass = board.clone();
+                                    const movedBoard = board.current?.clone();
+                                    if (!movedBoard) return
                                     movedBoard.applyMove(move);
                                     const kingSquare = movedBoard.findKing(piece.color);
                                     if (kingSquare && movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White).length > 0) {
@@ -363,7 +365,7 @@ function Board(
                         }
                         return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
                             <Square row={row} col={col} color={player?.color || Color.White}
-                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && highlightedMove?.to.row === row && highlightedMove?.to.col === col) ? null : board?.grid?.[row]?.[col] || null}
+                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && highlightedMove?.to.row === row && highlightedMove?.to.col === col) ? null : board.current?.grid?.[row]?.[col] || null}
                                     hovered={mouse.row === row && mouse.col === col}
                                     selected={selectedSquare?.row === row && selectedSquare?.col === col}
                                     highlighted={(highlightedMove?.to.row === row && highlightedMove?.to.col === col) || (highlightedMove?.from.row === row && highlightedMove?.from.col === col)}

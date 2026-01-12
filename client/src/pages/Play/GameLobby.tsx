@@ -1,7 +1,7 @@
 import {Button, CopyButton} from "@mantine/core";
 import {LuClipboard, LuClipboardCheck} from "react-icons/lu";
 import {BluffPunishment, CreateGameColor, type Rule} from "@chess-bs/common";
-import RuleList from "./RuleList.tsx";
+import RuleList from "../../components/RuleList.tsx";
 
 
 function GameLobby(

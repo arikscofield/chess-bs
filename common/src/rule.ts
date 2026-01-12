@@ -2,12 +2,14 @@ import {Board, Color, Move, PieceType, Rule as RuleType, Square} from "./types";
 
 
 class Rule implements RuleType {
+    id: number;
     name: string;
     description: string;
     pieceType: PieceType;
     getLegalMoves: (board: Board, square: Square) => Move[];
 
-    constructor(name: string, description: string, pieceType: PieceType, getLegalMoves: (board: Board, square: Square) => Move[]) {
+    constructor(id: number, name: string, description: string, pieceType: PieceType, getLegalMoves: (board: Board, square: Square) => Move[]) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.pieceType = pieceType;
@@ -29,16 +31,21 @@ class Rule implements RuleType {
         return result;
     }
 
-    public static from(rule: Rule): Rule | null {
-        const fullRule = allRules.find((r) => r.name === rule.name);
-        if (!fullRule) return null;
-        return new Rule(fullRule.name, fullRule.description, fullRule.pieceType, fullRule.getLegalMoves);
+    public static from(rule: Rule): Rule | undefined {
+        return Rule.getRuleFromId(rule.id);
+    }
+
+    public static getRuleFromId(ruleId: number): Rule | undefined {
+        const foundRule = allRules.find((rule) => rule.id === ruleId);
+        if (!foundRule) return undefined;
+        return new Rule(foundRule.id, foundRule.name, foundRule.description, foundRule.pieceType, foundRule.getLegalMoves);
     }
 }
 
 
 export const allRules: RuleType[] = [
     new Rule(
+        1,
         "Knighted Queen",
         "The queen can also move like a knight.",
         PieceType.Queen,
@@ -72,6 +79,7 @@ export const allRules: RuleType[] = [
         }
     ),
     new Rule(
+        2,
         "Backward Pawns",
         "Pawns can move backwards one space, but cannot attack backwards.",
         PieceType.Pawn,
@@ -104,6 +112,7 @@ export const allRules: RuleType[] = [
         }
     ),
     new Rule(
+        3,
         "Hopping Rook",
         "Rooks can hop over one piece of the same color.",
         PieceType.Rook,
@@ -158,6 +167,7 @@ export const allRules: RuleType[] = [
         }
     ),
     new Rule(
+        4,
         "Pawned Rook",
         "The rook can capture one space diagonally in any direction.",
         PieceType.Rook,
@@ -194,6 +204,7 @@ export const allRules: RuleType[] = [
         }
     ),
     new Rule(
+        5,
         "Square Knight",
         "The knight can move 2x2 in any direction.",
         PieceType.Knight,
@@ -230,6 +241,7 @@ export const allRules: RuleType[] = [
         }
     ),
     new Rule(
+        6,
         "Hopping Bishop",
         "Bishops can hop over one piece of the same color.",
         PieceType.Bishop,
@@ -284,6 +296,7 @@ export const allRules: RuleType[] = [
         }
     ),
     new Rule(
+        7,
         "Pawned Bishop",
         "The bishop can capture one space in any orthogonal direction.",
         PieceType.Bishop,
@@ -320,6 +333,7 @@ export const allRules: RuleType[] = [
         }
     ),
     new Rule(
+        8,
         "Aggressive King",
         "The king can capture two spaces in any orthogonal direction.",
         PieceType.King,

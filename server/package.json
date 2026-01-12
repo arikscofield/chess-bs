@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "server.ts",
+  "main": "src/server.ts",
   "scripts": {
-    "dev": "npx tsx server.ts",
-    "start": "ts-node-dev --esm --respawn server.ts"
+    "dev": "npx tsx src/server.ts",
+    "start": "ts-node-dev --esm --respawn src/server.ts"
   },
   "keywords": [],
   "author": "",
@@ -17,17 +17,23 @@
   "dependencies": {
     "@chess-bs/common": "file:../common",
     "cookie": "^1.0.2",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
     "express": "^5.1.0",
     "ioredis": "^5.8.2",
+    "pg": "^8.16.3",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.1",
+    "@types/pg": "^8.16.0",
     "@types/socket.io": "^3.0.1",
+    "drizzle-kit": "^0.31.8",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.2"
   }
 }

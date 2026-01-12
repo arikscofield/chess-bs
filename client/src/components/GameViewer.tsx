@@ -1,19 +1,20 @@
 import type {Board, Move, Turn} from "@chess-bs/common";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 
 export function useGameViewer(startBoard: Board | null, turnHistory: Turn[]) {
     // The current move index to show in the visible board. -1 means the latest move
     const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
     const [highlightedMove, setHighlightedMove] = useState<Move | null>(null);
+    const visibleBoard = useRef<Board | null>(null);
 
     useEffect(() => {
         setViewMoveIndex(-1);
     }, [turnHistory.length]);
 
 
-    const visibleBoard = useMemo(() => {
+    useEffect(() => {
         // console.log("Recomputing visible board for index: ", viewMoveIndex);
-        if (!startBoard) {return null}
+        if (!startBoard) {return;}
 
         let newBoard = startBoard.clone();
 
@@ -41,8 +42,8 @@ export function useGameViewer(startBoard: Board | null, turnHistory: Turn[]) {
             }
         }
 
-        return newBoard
-    }, [startBoard, turnHistory, viewMoveIndex])
+        visibleBoard.current = newBoard;
+    }, [startBoard, turnHistory, viewMoveIndex]);
 
 
 

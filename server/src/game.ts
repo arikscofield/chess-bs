@@ -1,4 +1,4 @@
-import Board from "@chess-bs/common/dist/board.js";
+import Board from "@common/src/board.js";
 import {
     BluffPunishment,
     Color,
@@ -8,9 +8,9 @@ import {
     type Move,
     type Turn,
     type Rule
-} from "@chess-bs/common";
+} from "@common/src/index.js";
 // import Player from "@common/src/player.js";
-import Player from "@chess-bs/common/dist/player.js";
+import Player from "@common/src/player.js";
 import {parseFen} from "./helper.js";
 import {clearInterval} from "node:timers";
 import {sendGameOver} from "./server.js";
@@ -20,20 +20,12 @@ const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 export default class Game {
     gameId: string;
     gameStatus: GameStatus;
-    board: Board;
+    startBoard: Board;
+    currentBoard: Board;
     creatorPlayerId: string;
     creatorColor: CreateGameColor;
     players: Player[];
     playersConnected: number;
-
-    usesTimer: boolean;
-    gameStartTimestamp: number;
-    timeStartMs: number;
-    timeIncrementMs: number;
-    timeLeftMs: Map<Color, number>;
-    timerUpdateTimestamp: number;
-    private timerInterval: NodeJS.Timeout | null = null;
-    hasMoved: Map<Color, boolean>;
 
     turnHistory: Turn[];
     turnColor: Color;
@@ -42,6 +34,16 @@ export default class Game {
     ruleCount: number;
     rulePool: Rule[];
     bluffPunishment: BluffPunishment;
+
+    usesTimer: boolean;
+    gameStartTimestamp: Date;
+    timeStartMs: number;
+    timeIncrementMs: number;
+    timeLeftMs: Map<Color, number>;
+    timerUpdateTimestamp: number;
+    private timerInterval: NodeJS.Timeout | null = null;
+    hasMoved: Map<Color, boolean>;
+
 
     constructor(gameId: string, createrPlayerId: string, creatorColor: CreateGameColor, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, timeControlStartMs?: number, timeIncrementMs?: number, fen?: string, ) {
         this.gameId = gameId;
@@ -54,7 +56,7 @@ export default class Game {
         this.hasMoved = new Map();
         if (timeControlStartMs !== undefined && timeIncrementMs !== undefined) {
             this.usesTimer = true;
-            this.gameStartTimestamp = 0;
+            this.gameStartTimestamp = new Date();
             this.timeStartMs = timeControlStartMs;
             this.timeIncrementMs = timeIncrementMs;
             this.timeLeftMs = new Map<Color, number>();
@@ -65,7 +67,7 @@ export default class Game {
             this.timerUpdateTimestamp = Date.now();
         } else {
             this.usesTimer = false;
-            this.gameStartTimestamp = 0;
+            this.gameStartTimestamp = new Date();
             this.timeStartMs = 0;
             this.timeIncrementMs = 0;
             this.timeLeftMs = new Map<Color, number>();
@@ -73,7 +75,8 @@ export default class Game {
         }
 
         this.gameStatus = GameStatus.WAITING_FOR_PLAYER;
-        this.board = new Board();
+        this.startBoard = Board.defaultBoard(); // TODO: be able to change based on how to user requests in order to have non-standard baord setups
+        this.currentBoard = this.startBoard.clone();
         this.players = [];
         this.playersConnected = 0;
         this.turnHistory = [];
@@ -87,6 +90,7 @@ export default class Game {
 
     public getInfo(): GameInfo {
         return {
+            startGrid: this.startBoard.grid,
             rulePool: this.rulePool,
             usesTimer: this.usesTimer,
             timeStartMs: this.timeStartMs,
@@ -101,8 +105,8 @@ export default class Game {
 
         let state: GameState = {
             gameStatus: this.gameStatus,
-            grid: this.board.grid,
-            enPassant: this.board.enPassant,
+            grid: this.currentBoard.grid,
+            enPassant: this.currentBoard.enPassant,
             turn: this.turnColor,
             turnHistory: this.turnHistory,
             rulePool: this.rulePool,
@@ -175,16 +179,18 @@ export default class Game {
         this.updateTimers();
         const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
         if (currentTimeLeft && currentTimeLeft <= 0) {
-            this.endGame(this.turnColor === Color.White ? Color.Black : Color.White, "Timeout");
+            const winner: Color = this.turnColor === Color.White ? Color.Black : Color.White;
+            const reason = "Timeout";
+            this.endGame(winner, reason);
             return false;
         }
 
-        const prevBoard = this.board.clone();
-        const legalMoves: Move[] = this.board.getLegalMoves(move.from, true);
+        const prevBoard = this.currentBoard.clone();
+        const legalMoves: Move[] = this.currentBoard.getLegalMoves(move.from, true);
 
         if (legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal regular chess move
-            if (this.board.applyMove(move)) {
+            if (this.currentBoard.applyMove(move)) {
                 this.lastMoveWasBluff = false;
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
@@ -198,11 +204,11 @@ export default class Game {
 
         let legalRuleMoves: Move[] = [];
         for (const rule of player.rules) {
-            legalRuleMoves = legalRuleMoves.concat(rule.getLegalMoves(this.board, move.from));
+            legalRuleMoves = legalRuleMoves.concat(rule.getLegalMoves(this.currentBoard, move.from));
         }
         if (legalRuleMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal special rule move
-            if (this.board.applyMove(move)) {
+            if (this.currentBoard.applyMove(move)) {
                 this.lastMoveWasBluff = false;
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
@@ -216,7 +222,7 @@ export default class Game {
 
         // Bluffing
         if (move.bluff) {
-            if (this.board.applyMove(move)) {
+            if (this.currentBoard.applyMove(move)) {
                 this.lastMoveWasBluff = true;
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
@@ -239,7 +245,7 @@ export default class Game {
         const now = Date.now();
         this.gameStatus = GameStatus.RUNNING;
         this.timerUpdateTimestamp = now;
-        this.gameStartTimestamp = now;
+        this.gameStartTimestamp = new Date();
 
         this.timerInterval = setInterval(() => {
             this.updateTimers();
@@ -272,9 +278,9 @@ export default class Game {
     public setFromFEN(fen: string): void {
         const {grid, turn, enPassant, halfMove, fullMove} = parseFen(fen);
 
-        this.board.grid = grid;
+        this.currentBoard.grid = grid;
         this.turnColor = turn;
-        this.board.enPassant = enPassant;
+        this.currentBoard.enPassant = enPassant;
     }
 
 

@@ -1,4 +1,4 @@
-import {Color, Move, Piece, PieceAscii, PieceType, Square} from "./types";
+import {Color, Move, Piece, PieceAscii, PieceType, Square, Board as BoardType} from "./types";
 import PieceClass from "./piece"
 import {defaultFEN, parseFen} from "./helper";
 
@@ -13,7 +13,7 @@ import {defaultFEN, parseFen} from "./helper";
  col     0(a) 1(b) 2(c) ...
 
  */
-export default class Board {
+export default class Board implements BoardType {
     grid: (Piece | null)[][];
     enPassant: Square | null;
 

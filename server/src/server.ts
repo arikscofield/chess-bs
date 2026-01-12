@@ -1,25 +1,28 @@
 import {Server} from "socket.io";
 import Game from "./game.js";
 import {
-    AckStatus, type CallBluff,
+    AckStatus,
+    type CallBluff,
     type ClientToServerEvents,
     Color,
     CreateGameColor,
     GameStatus,
-    type Move,
-    PieceType,
     type ServerToClientEvents,
-} from "@chess-bs/common";
+} from "@common/src/index.js";
 import {parse, serialize} from "cookie";
 import {v4 as uuidv4} from 'uuid'
 import Rule from "@common/src/rule.js";
+import 'dotenv/config';
+
 
 import {Redis} from "ioredis";
 // import {getMoveNotation} from "@common/src/helper.js";
 import {getMoveNotation} from "./helper.js";
+import {getFinishedGameFromId, saveFinishedGame} from "./db/helper.js";
 
-const port = 3000;
-const clientPort = 5173;
+
+const port = parseInt(process.env.PORT || "3000");
+const clientPort = parseInt(process.env.CLIENT_PORT || "5173");
 
 // TODO: Fix hard coded-ips
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
@@ -30,10 +33,56 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(port, {
     },
 });
 
+
+
 const games: Map<string, Game> = new Map();
 
 const redis = new Redis();
 
+
+function sendGameState(game: string | Game): void {
+    if (typeof game === "string") {
+        const gameObj = games.get(game);
+        if (!gameObj) return;
+        io.to(game).emit("gameState", gameObj.getState());
+    } else {
+        io.to(game.gameId).emit("gameState", game.getState());
+    }
+}
+
+function sendGameInfo(game: string | Game): void {
+    if (typeof game === "string") {
+        const gameObj = games.get(game);
+        if (!gameObj) return;
+        io.to(game).emit("gameInfo", gameObj.getInfo());
+    } else {
+        io.to(game.gameId).emit("gameInfo", game.getInfo());
+    }
+}
+
+export function sendGameOver(game: string | Game, winner: Color, reason: string): void {
+    let gameId: string = "";
+    let gameObj: Game | undefined;
+    if (typeof game === "string") {
+        gameId = game;
+        gameObj = games.get(game);
+        if (!gameObj) return;
+        io.to(game).emit("gameOver", winner, reason);
+    } else {
+        gameId = game.gameId;
+        gameObj = game;
+        io.to(game.gameId).emit("gameOver", winner, reason);
+    }
+
+    // Move game to db
+    saveFinishedGame(gameObj).then(r => {
+        games.delete(gameId);
+    });
+
+    // setTimeout(() => {
+    //     games.delete(gameId);
+    // }, 1000 * 60 * 10)
+}
 
 // Ensure user has a playerId. If not, set a Set-Cookie header
 io.engine.on("headers", (headers, request) => {
@@ -56,35 +105,13 @@ io.on("connection", (socket) => {
     console.log("User connected:", playerId);
     socket.join(playerId);
 
-    function sendGameState(game: string): void;
-    function sendGameState(game: Game): void;
-    function sendGameState(game: string | Game): void {
-        if (typeof game === "string") {
-            const gameObj = games.get(game);
-            if (!gameObj) return;
-            io.to(game).emit("gameState", gameObj.getState());
-        } else {
-            io.to(game.gameId).emit("gameState", game.getState());
-        }
-    }
 
-    function sendGameInfo(game: string): void;
-    function sendGameInfo(game: Game): void;
-    function sendGameInfo(game: string | Game): void {
-        if (typeof game === "string") {
-            const gameObj = games.get(game);
-            if (!gameObj) return;
-            io.to(game).emit("gameInfo", gameObj.getInfo());
-        } else {
-            io.to(game.gameId).emit("gameInfo", game.getInfo());
-        }
-    }
 
     socket.on("createGame", (color, timeControlStartSeconds, timeControlIncrementSeconds, bluffPunishment, ruleCount, rulePool,  callback) => {
         let gameId = generateGameId(6);
         while (games.get(gameId))
             gameId = Math.random().toString(36).substring(2, 8);
-        const game = new Game(gameId, playerId, color, ruleCount, rulePool.map(r => Rule.from(r)).filter(r => r !== null), bluffPunishment, timeControlStartSeconds ? timeControlStartSeconds * 1000 : undefined, timeControlIncrementSeconds ? timeControlIncrementSeconds * 1000 : undefined);
+        const game = new Game(gameId, playerId, color, ruleCount, rulePool.map(r => Rule.from(r)).filter(r => r !== undefined), bluffPunishment, timeControlStartSeconds ? timeControlStartSeconds * 1000 : undefined, timeControlIncrementSeconds ? timeControlIncrementSeconds * 1000 : undefined);
 
         games.set(gameId, game);
         console.log(`Creating game ${gameId} for player ${playerId} with options: Color: ${color}, timeStart: ${timeControlStartSeconds} * 1000, timeIncrement: ${timeControlIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${JSON.stringify(rulePool.map(r => r.name))}`);
@@ -100,10 +127,19 @@ io.on("connection", (socket) => {
         }
     })
 
-    socket.on("joinGame", (gameId, callback) => {
+    socket.on("joinGame", async (gameId, callback) => {
         // gameId = gameId.toUpperCase();
         const game = games.get(gameId);
         if (!game) {
+
+            // Check if it is a past game
+            const finishedGame = await getFinishedGameFromId(gameId);
+            if (finishedGame) {
+                io.to(playerId).emit("replayInfo", finishedGame);
+                callback({ status: AckStatus.OK, message: "Successfully sent game replay"});
+                return;
+            }
+
             console.log("Unable to join game: game not found");
             callback({ status: AckStatus.ERROR, message: "Game not found" });
             return;
@@ -188,7 +224,7 @@ io.on("connection", (socket) => {
         }
 
 
-        move.notation = getMoveNotation(game.board, move);
+        move.notation = getMoveNotation(game.currentBoard, move);
         if (!game.makeMove(move, player)) {
             callback({ status: AckStatus.ERROR, message: "Failed to make move"});
             return;
@@ -250,9 +286,9 @@ io.on("connection", (socket) => {
 
         if (game.lastMoveWasBluff) {
             // Successful call
-            game.board = game.prevBoard;
+            game.currentBoard = game.prevBoard;
             game.prevBoard = null;
-            game.board.enPassant = null;
+            game.currentBoard.enPassant = null;
             game.turnHistory.push({successful: true} as CallBluff)
             sendGameState(game);
             callback({ status: AckStatus.OK, message: "Successfully called bluff", result: true });
@@ -260,7 +296,7 @@ io.on("connection", (socket) => {
         } else {
             // Failed call
             game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
-            game.board.enPassant = null;
+            game.currentBoard.enPassant = null;
             game.turnHistory.push({successful: false} as CallBluff)
             sendGameState(game);
             callback({ status: AckStatus.OK, message: "Failed to call bluff", result: false });
@@ -291,15 +327,7 @@ io.on("connection", (socket) => {
 });
 
 
-export function sendGameOver(gameId: string, winner: Color, reason: string) {
-    io.to(gameId).emit("gameOver", winner, reason);
 
-    // Delete game after 10 minutes
-    setTimeout(() => {
-        games.delete(gameId);
-    }, 1000 * 60 * 10)
-
-}
 
 
 function generateUUID() {

@@ -3,14 +3,18 @@ import '../Home/Home.css'
 import {useNavigate, useParams} from "react-router";
 import {useContext, useEffect, useRef, useState} from "react";
 import {
-    AckStatus, BluffPunishment,
-    Color, CreateGameColor,
+    AckStatus,
+    BluffPunishment,
+    Color,
+    CreateGameColor,
     type GameInfo,
     type GameState,
     GameStatus,
     type Move,
     type PlayerState,
-    type Rule, type Turn,
+    type ReplayInfo,
+    type Rule,
+    type Turn,
 } from "@chess-bs/common";
 import Player from "@chess-bs/common/dist/player.js";
 import {SocketContext} from "../../components/Socket/SocketContext.ts";
@@ -21,7 +25,7 @@ import CallBluffButton from "../../components/CallBluffButton.tsx";
 import Chatroom from "../../components/Chatroom.tsx";
 import OwnRules from "../../components/OwnRules.tsx";
 import Timer from "../../components/Timer.tsx";
-import GameLobby from "../../components/GameLobby.tsx";
+import GameLobby from "./GameLobby.tsx";
 import RuleList from "../../components/RuleList.tsx";
 import {useGameViewer} from "../../components/GameViewer.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
@@ -32,9 +36,7 @@ function Play() {
     const navigate = useNavigate();
 
     const [isMounted, setIsMounted] = useState(false);
-    // const [gameState, setGameState] = useState<GameState | null>(null);
-    const [board, setBoard] = useState<BoardClass | null>(null);
-    // const [playerState, setPlayerState] = useState<PlayerState | null>(null);
+    // const [board, setBoard] = useState<BoardClass | null>(null);
     const [player, setPlayer] = useState<Player | null>(null);
     const playerRef = useRef<Player | null>(null);
 
@@ -45,12 +47,11 @@ function Play() {
     const [timeIncrementMs, setTimeIncrementMs] = useState<number | null>(null);
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment | null>(null);
     const [creatorColor, setCreatorColor] = useState<CreateGameColor | null>(null);
-    const [startBoard, setStartBoard] = useState(BoardClass.defaultBoard()) // TODO: Change to be variable based on game settings? If i implement non-standard starting positions
+    const [startBoard, setStartBoard] = useState(BoardClass.defaultBoard());
 
     // Game State (changing)
     const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.WAITING_FOR_PLAYER);
-    const [view, setView] = useState<Color | null>(null);
-    // const [turnColor, setTurnColor] = useState<Color>(Color.White);
+    const [view, setView] = useState<Color | null>(Color.White);
     const turnHistory = useRef<Turn[]>([]);
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory.current)
     const turnColor = useRef<Color>(Color.White);
@@ -61,6 +62,7 @@ function Play() {
     // UI / Other
     const [isBluffing, setIsBluffing] = useState<boolean>(false);
     const [animateMove, setAnimateMove] = useState<boolean>(false);
+    const [viewingReplay, setViewingReplay] = useState<boolean>(false);
     const socket = useContext(SocketContext);
 
     useEffect(() => {
@@ -69,11 +71,12 @@ function Play() {
         if (socket && gameId) {
 
             socket.on("gameInfo", (gameInfo: GameInfo) => {
-                const {rulePool: newRulePool, usesTimer: newUsesTimer, timeStartMs: newTimeStartMs, timeIncrementMs: newTimeIncrementMs, bluffPunishment: newBluffPunishment, creatorColor: newCreatorColor} = gameInfo;
+                const {startGrid: newStartGrid, rulePool: newRulePool, usesTimer: newUsesTimer, timeStartMs: newTimeStartMs, timeIncrementMs: newTimeIncrementMs, bluffPunishment: newBluffPunishment, creatorColor: newCreatorColor} = gameInfo;
 
                 console.log("Received Game Info: ");
                 console.log(gameInfo);
 
+                setStartBoard(new BoardClass(newStartGrid));
                 setRulePool(newRulePool);
                 setUsesTimer(newUsesTimer);
                 setTimeStartMs(newTimeStartMs)
@@ -92,7 +95,7 @@ function Play() {
                 setGameStatus(newGameStatus);
                 // setTurnColor(newTurn);
                 turnColor.current = newTurn;
-                setBoard(new BoardClass(newGrid, newEnPassant));
+                // setBoard(new BoardClass(newGrid, newEnPassant));
                 if (newRulePool) setRulePool(newRulePool);
                 if (newTimers) setTimers(new Map(Object.entries(newTimers)) as Map<Color, number>);
 
@@ -125,7 +128,24 @@ function Play() {
                 setPlayer(Player.fromPlayerState(newPlayerState));
                 // player.current = new Player(newPlayerState.playerId, newPlayerState.color, newPlayerState.rules.length);
                 playerRef.current = Player.fromPlayerState(newPlayerState)
-                if (!view) setView(newPlayerState.color);
+                setView(newPlayerState.color); // TODO: don't always change if the user manually swapped?
+            });
+
+            socket.on("replayInfo", (replayInfo: ReplayInfo) => {
+                const {startGrid: newStartGrid, rulePool: newRulePool, usesTimer: newUsesTimer, timerStartMs: newTimerStartMs, timerIncrementMs: newTimerIncrementMs, bluffPunishment: newBluffPunishment, turnHistory: newTurnHistory} = replayInfo;
+
+                console.log("Received Replay Info: ");
+                console.log(replayInfo);
+
+                setGameStatus(GameStatus.DONE);
+                setStartBoard(new BoardClass(newStartGrid));
+                setRulePool(newRulePool);
+                setUsesTimer(newUsesTimer);
+                setTimeStartMs(newTimerStartMs)
+                setTimeIncrementMs(newTimerIncrementMs);
+                setBluffPunishment(newBluffPunishment);
+                turnHistory.current = newTurnHistory;
+                setViewingReplay(true);
             });
 
             socket.on("gameOver", (winner: Color, reason: string) => {
@@ -168,6 +188,7 @@ function Play() {
         socket.emit("move", gameId || "", move, (response) => {
             if (response.status === AckStatus.OK) {
                 console.log("Move successful")
+                setIsBluffing(false);
             } else if (response.status === AckStatus.ERROR) {
                 console.error(response.message);
             }
@@ -216,17 +237,22 @@ function Play() {
 
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-[calc(90vh-50px)]"}>
+
+            {/* Left Side*/}
             <div className={"grid grid-rows-2 w-[300px] h-full gap-2"}>
                 <div className={"flex flex-col rounded-md bg-bg-2 overflow-y-auto"}>
                     <h3 className={"text-white text-xl font-bold text-center"}>Game Rules</h3>
                     <RuleList enabledRules={rulePool} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true}/>
                 </div>
-                <OwnRules rules={player?.rules} color={player?.color || Color.White}/>
+                {viewingReplay
+                    ? <div></div>
+                    : <OwnRules rules={player?.rules} color={player?.color || Color.White}/>}
             </div>
 
+            {/* Board */}
             <div className={"flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>Opponent</div>
+                    <div className={"float-start text-white text-xl"}>{viewingReplay ? view === Color.White ? "Black" : "White" : "Opponent"}</div>
 
                     <Timer
                         timeMs={timers?.get(player?.color === Color.White ? Color.Black : Color.White)}
@@ -234,13 +260,13 @@ function Play() {
                         turn={turnColor.current}
                     />
                 </div>
-                {board && player && <Board
+                {visibleBoard.current !== null && (player || viewingReplay) && <Board
                     board={visibleBoard}
-                    gameStatus={gameStatus}
+                    gameStatus={viewingReplay ? GameStatus.DONE : gameStatus}
                     player={player}
                     view={view || Color.White}
                     turn={turnColor.current}
-                    canMove={viewMoveIndex == -1}
+                    canMove={viewMoveIndex == -1 && !viewingReplay}
                     isBluffing={isBluffing}
                     handleMove={handleMove}
                     highlightedMove={highlightedMove}
@@ -248,11 +274,11 @@ function Play() {
                 />
                 }
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>You</div>
-                    <div className={"flex flex-row justify-center gap-5 py-3"}>
+                    <div className={"float-start text-white text-xl"}>{viewingReplay ? view === Color.White ? "White" : "Black" : "You"}</div>
+                    {!viewingReplay && <div className={"flex flex-row justify-center gap-5 py-3"}>
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButton gameId={gameId} />
-                    </div>
+                    </div>}
                     <Timer
                         timeMs={timers?.get(player?.color ?? Color.White)}
                         color={player?.color || Color.White}
@@ -262,7 +288,8 @@ function Play() {
 
             </div>
 
-            <div className={"grid grid-rows-2 w-[300px] h-full gap-2 "}>
+            {/* Right Side */}
+            <div className={"hidden lg:grid grid-rows-2 w-[300px] h-full gap-2"}>
                 <div className={"flex flex-col rounded-md bg-bg-2"}>
                     <TurnHistory
                         turnHistory={turnHistory.current}
@@ -270,9 +297,12 @@ function Play() {
                         setViewMoveIndex={setViewMoveIndex}
                     />
                 </div>
-                <Chatroom
-                    gameId={gameId}
-                />
+                {viewingReplay
+                    ? <div></div>
+                    : <Chatroom
+                        gameId={gameId}
+                    />
+                }
             </div>
         </div>
     </div>)
