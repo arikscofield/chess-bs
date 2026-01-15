@@ -26,16 +26,16 @@ class Player implements PlayerType {
         return {
             playerId: this.playerId,
             color: this.color,
-            rules: this.rules,
+            ruleIds: this.rules.map((rule) => rule.id),
         }
     }
 
 
     public static fromPlayerState(state: PlayerState): Player {
-        const {playerId, color, rules} = state;
+        const {playerId, color, ruleIds} = state;
         const player = new Player(playerId, color);
 
-        player.rules = rules.map((playerRule) => Rule.getRuleFromId(playerRule.id)).filter((r) => r !== undefined)
+        player.rules = ruleIds.map((ruleId) => Rule.getRuleFromId(ruleId)).filter((r) => r !== undefined)
 
 
         return player;

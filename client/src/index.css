@@ -7,10 +7,20 @@
     --color-board-green-light: #ffffdd;
     --color-board-green-dark: #86a666;
 
-    --color-fg-1: #9924ff;
-    --color-fg-2: #539987;
-    --color-bg-1: #2d2d2a;
-    --color-bg-2: #3a3442;
+    /*--color-fg-1: #9924ff;*/
+    /*--color-fg-2: #539987;*/
+    /*--color-bg-1: #2d2d2a;*/
+    /*--color-bg-2: #3a3442;*/
+
+    /*--color-bg-1: #37353E;*/
+    /*--color-bg-2: #44444E;*/
+
+    /* https://colorhunt.co/palette/222831393e4600adb5eeeeee */
+    --color-fg-1: #00ADB5;
+    --color-fg-2: #EEEEEE;
+    --color-bg-1: #222831;
+    --color-bg-2: #393E46;
+
 }
 
 :root {

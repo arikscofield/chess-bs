@@ -7,7 +7,7 @@ import {
     GameStatus,
     type Move,
     type Turn,
-    type Rule
+    type Rule, GameResult
 } from "@common/src/index.js";
 // import Player from "@common/src/player.js";
 import Player from "@common/src/player.js";
@@ -179,9 +179,9 @@ export default class Game {
         this.updateTimers();
         const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
         if (currentTimeLeft && currentTimeLeft <= 0) {
-            const winner: Color = this.turnColor === Color.White ? Color.Black : Color.White;
+            const gameResult: GameResult = this.turnColor === Color.White ? GameResult.Black : GameResult.White;
             const reason = "Timeout";
-            this.endGame(winner, reason);
+            this.endGame(gameResult, reason);
             return false;
         }
 
@@ -253,15 +253,15 @@ export default class Game {
             if (currentTimeLeft == undefined) return;
 
             if (currentTimeLeft <= 0) {
-                this.endGame(this.turnColor === Color.White ? Color.Black : Color.White, "Timeout");
+                this.endGame(this.turnColor === Color.White ? GameResult.Black : GameResult.White, "Timeout");
                 return;
             }
         }, 1000);
     }
 
 
-    public endGame(winner: Color, reason: string): void {
-        console.log(`Game ${this.gameId} ended: ${winner} wins. Reason: ${reason}`);
+    public endGame(gameResult: GameResult, reason: string): void {
+        console.log(`Game ${this.gameId} ended: Result: ${gameResult}. Reason: ${reason}`);
 
         // Stop Timer
         if (this.timerInterval) {
@@ -270,7 +270,7 @@ export default class Game {
         }
 
         this.gameStatus = GameStatus.DONE;
-        sendGameOver(this.gameId, winner, reason);
+        sendGameOver(this.gameId, gameResult, reason);
     }
 
 

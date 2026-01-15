@@ -104,6 +104,7 @@ export interface Move {
 }
 
 export interface CallBluff {
+    callerColor: Color,
     successful: boolean,
     timestamp?: number,
 }
@@ -145,6 +146,13 @@ export enum GameStatus {
     RUNNING = "RUNNING",
     PAUSED = "PAUSED",
     DONE = "DONE",
+}
+
+
+export enum GameResult {
+    White = Color.White,
+    Black = Color.Black,
+    Tie = "Tie"
 }
 
 
@@ -204,16 +212,21 @@ export interface GameState {
 export interface PlayerState {
     playerId: string;
     color: Color;
-    rules: Rule[];
+    ruleIds: number[];
+}
+
+
+export interface ReplayTimerInfo {
+    gameStartTimestamp: Date;
+    startMs: number;
+    incrementMs: number;
 }
 
 export interface ReplayInfo {
     startGrid: (Piece | null)[][];
-    rulePool: Rule[];
-    usesTimer: boolean;
-    timerStartMs: number;
-    timerIncrementMs: number;
-    gameStartTimestamp: Date;
+    rulePoolIds: number[];
+    playerRuleIds: Record<Color, number[]>;
+    timerInfo?: ReplayTimerInfo;
     turnHistory: Turn[];
     bluffPunishment: BluffPunishment;
 }
@@ -224,5 +237,5 @@ export interface ServerToClientEvents {
     playerState: (playerState: PlayerState) => void;
     replayInfo: (replayInfo: ReplayInfo) => void;
     chatMessage: (message: string) => void;
-    gameOver: (winner: Color, reason: string) => void;
+    gameOver: (gameResult: GameResult, reason: string) => void;
 }

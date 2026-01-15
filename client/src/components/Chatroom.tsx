@@ -70,6 +70,7 @@ function Chatroom({gameId, }: {gameId: string}) {
 
         <div className={"flex flex-row gap-2"}>
             <TextInput
+                id={"chat-input"}
                 value={inputMessage}
                 onChange={setInputMessage}
                 onKeyDown={(event) => {
@@ -87,6 +88,7 @@ function Chatroom({gameId, }: {gameId: string}) {
             <Button
                 onClick={handleSendMessage}
                 className={""}
+                color={"var(--color-fg-1)"}
             >
                 <IoSend/>
             </Button>

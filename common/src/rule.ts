@@ -68,6 +68,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -101,6 +106,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -156,6 +166,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -193,6 +208,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -230,6 +250,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -285,6 +310,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -322,6 +352,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -359,6 +394,11 @@ export const allRules: RuleType[] = [
             moves = moves.filter((move) => {
                 const movedBoard = board.clone();
                 movedBoard.applyMove(move);
+
+                // Allow a move that puts yourself in check if you are capturing opponents king
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
                 const kingSquare = movedBoard.findKing(piece.color);
                 if (!kingSquare) return false;
 
@@ -367,6 +407,51 @@ export const allRules: RuleType[] = [
             })
 
             return moves;
+        }
+    ),
+    new Rule(
+        9,
+        "Dummy rule 1",
+        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
+        PieceType.King,
+        (board: Board, square: Square): Move[] => {
+            return []
+        }
+    ),
+    new Rule(
+        10,
+        "Dummy rule 2",
+        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
+        PieceType.King,
+        (board: Board, square: Square): Move[] => {
+            return []
+        }
+    ),
+    new Rule(
+        11,
+        "Dummy rule 3",
+        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
+        PieceType.King,
+        (board: Board, square: Square): Move[] => {
+            return []
+        }
+    ),
+    new Rule(
+        12,
+        "Dummy rule 4",
+        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
+        PieceType.King,
+        (board: Board, square: Square): Move[] => {
+            return []
+        }
+    ),
+    new Rule(
+        13,
+        "Dummy rule 5",
+        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
+        PieceType.King,
+        (board: Board, square: Square): Move[] => {
+            return []
         }
     ),
 

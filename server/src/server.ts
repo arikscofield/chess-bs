@@ -6,6 +6,7 @@ import {
     type ClientToServerEvents,
     Color,
     CreateGameColor,
+    GameResult,
     GameStatus,
     type ServerToClientEvents,
 } from "@common/src/index.js";
@@ -60,28 +61,28 @@ function sendGameInfo(game: string | Game): void {
     }
 }
 
-export function sendGameOver(game: string | Game, winner: Color, reason: string): void {
+export function sendGameOver(game: string | Game, gameResult: GameResult, reason: string): void {
     let gameId: string = "";
     let gameObj: Game | undefined;
     if (typeof game === "string") {
         gameId = game;
         gameObj = games.get(game);
         if (!gameObj) return;
-        io.to(game).emit("gameOver", winner, reason);
+        io.to(game).emit("gameOver", gameResult, reason);
     } else {
         gameId = game.gameId;
         gameObj = game;
-        io.to(game.gameId).emit("gameOver", winner, reason);
+        io.to(game.gameId).emit("gameOver", gameResult, reason);
     }
 
     // Move game to db
     saveFinishedGame(gameObj).then(r => {
-        games.delete(gameId);
+        // Delete after 2 minutes to allow for chat messages
+        setTimeout(() => {
+            games.delete(gameId);
+        }, 1000 * 60 * 2)
     });
 
-    // setTimeout(() => {
-    //     games.delete(gameId);
-    // }, 1000 * 60 * 10)
 }
 
 // Ensure user has a playerId. If not, set a Set-Cookie header
@@ -128,18 +129,18 @@ io.on("connection", (socket) => {
     })
 
     socket.on("joinGame", async (gameId, callback) => {
-        // gameId = gameId.toUpperCase();
+
+        // Check if it is a past game
+        const finishedGame = await getFinishedGameFromId(gameId);
+        if (finishedGame) {
+            io.to(playerId).emit("replayInfo", finishedGame);
+            callback({ status: AckStatus.OK, message: "Successfully sent game replay"});
+            return;
+        }
+
+        // Check if it's a running game
         const game = games.get(gameId);
         if (!game) {
-
-            // Check if it is a past game
-            const finishedGame = await getFinishedGameFromId(gameId);
-            if (finishedGame) {
-                io.to(playerId).emit("replayInfo", finishedGame);
-                callback({ status: AckStatus.OK, message: "Successfully sent game replay"});
-                return;
-            }
-
             console.log("Unable to join game: game not found");
             callback({ status: AckStatus.ERROR, message: "Game not found" });
             return;
@@ -242,8 +243,22 @@ io.on("connection", (socket) => {
             }
         }
 
+        // Change turn
         game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
         sendGameState(game);
+
+        // Check for a "checkmate"/win
+        for (const player of game.players) {
+            const playerColor = player.color;
+            const oppColor = player.color === Color.White ? Color.Black : Color.White;
+            if (game.currentBoard.findKing(playerColor) === null) {
+                console.log(`${game.gameId}: ${playerColor} king missing.\n\t${game.turnColor == oppColor}\n\t${game.turnColor == playerColor && !game.lastMoveWasBluff}`)
+                if (game.turnColor === oppColor || (game.turnColor === playerColor && !game.lastMoveWasBluff)) {
+                    game.endGame(oppColor === Color.Black ? GameResult.Black : GameResult.White, "King captured");
+                }
+            }
+        }
+
         callback({ status: AckStatus.OK, message: "Successfully made move" });
 
     })
@@ -289,7 +304,7 @@ io.on("connection", (socket) => {
             game.currentBoard = game.prevBoard;
             game.prevBoard = null;
             game.currentBoard.enPassant = null;
-            game.turnHistory.push({successful: true} as CallBluff)
+            game.turnHistory.push({successful: true, callerColor: player.color, timestamp: Date.now()} as CallBluff)
             sendGameState(game);
             callback({ status: AckStatus.OK, message: "Successfully called bluff", result: true });
             return;
@@ -297,7 +312,7 @@ io.on("connection", (socket) => {
             // Failed call
             game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
             game.currentBoard.enPassant = null;
-            game.turnHistory.push({successful: false} as CallBluff)
+            game.turnHistory.push({successful: false, callerColor: player.color, timestamp: Date.now()} as CallBluff)
             sendGameState(game);
             callback({ status: AckStatus.OK, message: "Failed to call bluff", result: false });
             return;

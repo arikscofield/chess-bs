@@ -1,7 +1,6 @@
-import {Color} from "@chess-bs/common";
 
 
-function Timer({timeMs, color, turn}: {timeMs: number | undefined, color: Color, turn: Color}) {
+function Timer({timeMs, isRunning, }: {timeMs: number | undefined, isRunning: boolean, }) {
 
     function formatTime(timeMs: number): string {
         let result = "";
@@ -25,8 +24,8 @@ function Timer({timeMs, color, turn}: {timeMs: number | undefined, color: Color,
         return;
     }
 
-    return (<div className={`flex justify-center items-center w-[100px] h-[50px] my-1 rounded-md ${color === turn ? ( timeMs <= 0 ? "bg-red-400/30" : "bg-lime-700/50") : "bg-bg-2"}`}>
-        <p className={`text-3xl ${color === turn ? "text-white" : "text-gray-400"} `}>
+    return (<div className={`flex justify-center items-center w-[100px] h-[50px] my-1 px-1 pb-0.5 rounded-md ${isRunning ? ( timeMs <= 0 ? "bg-red-400/30" : "bg-lime-700/50") : "bg-bg-2"}`}>
+        <p className={`text-3xl text-center ${isRunning ? "text-white" : "text-gray-400"} `}>
             {formatTime(timeMs)}
         </p>
     </div>)

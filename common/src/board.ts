@@ -306,10 +306,14 @@ export default class Board implements BoardType {
             moves = moves.filter((move) => {
                 const movedBoard = this.clone();
                 movedBoard.applyMove(move);
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
 
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
+                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
+                if (!opponentKingSquare) return true;
+
+                const ownKingSquare = movedBoard.findKing(piece.color);
+                if (!ownKingSquare) return false;
+
+                const attackers = movedBoard.attackers(ownKingSquare, piece.color === Color.White ? Color.Black : Color.White);
                 return attackers.length === 0;
             })
         }

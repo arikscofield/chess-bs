@@ -7,12 +7,12 @@ import {Chip, type MantineSize, Tooltip} from "@mantine/core";
 
 function RuleList({ enabledRules, size = "sm", color = Color.White, setEnabledRules, onlyShowEnabled = false, wrapChips = false }: { enabledRules: Rule[], size?: MantineSize, color?: Color, setEnabledRules?: (enabledRules: Rule[]) => void, onlyShowEnabled?: boolean, wrapChips?: boolean }) {
 
-    return (<div className={"@container h-full "}>
-        <div className={"flex flex-col h-full overflow-auto"} >
+    return (<div className={"@container h-full overflow-auto"}>
+        <div className={"flex flex-col h-full"} >
             {Object.values(PieceType).map((pieceType, pieceTypeIndex) => {
                 const pieceString: string = "" + color + pieceType;
 
-                return <div key={pieceType} className={`flex  flex-row flex-1 w-full items-center pl-2
+                return <div key={pieceType} className={`flex flex-row flex-1 w-full items-center pl-2 overflow-y-auto 
                 ${wrapChips ? "flex-wrap" : ""}
                 border-gray-400/70 ${pieceTypeIndex === 0 ? "border-b-1" : pieceTypeIndex === Object.values(PieceType).length - 1 ? "border-t-1" : "border-y-1"} 
                 `}>
@@ -46,6 +46,7 @@ function RuleList({ enabledRules, size = "sm", color = Color.White, setEnabledRu
                                         }}
                                         disabled={!setEnabledRules && !enabledRules.some(r => r.name === rule.name)}
                                         styles={{ label: !setEnabledRules ? { cursor: "default"} : {} }}
+                                        color={"var(--color-fg-1)"}
                                     >
                                         {rule.name}
                                     </Chip>

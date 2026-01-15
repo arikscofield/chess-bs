@@ -48,7 +48,7 @@ function GameLobby(
                             <CopyButton value={window.location.href}>
                                 {({ copied, copy }) => (
                                     <Button
-                                        color={copied ? "teal" : "blue"}
+                                        color={copied ? "green" : "var(--color-fg-1)"}
                                         onClick={() => {
                                             copy();
                                         }}
@@ -70,7 +70,7 @@ function GameLobby(
                 <div className={"flex flex-col flex-1 m-5 bg-bg-1 rounded-xl max-h-full overflow-auto"}>
                     <p className={"text-xl text-center mt-1"}>Possible Game Rules</p>
                     <div className={"h-full"}>
-                        <RuleList enabledRules={rulePool} />
+                        <RuleList enabledRules={rulePool} wrapChips={true} />
                     </div>
                 </div>
             </div>

@@ -3,7 +3,7 @@ import {eq} from "drizzle-orm";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "./schema.js";
 import Game from "../game.js";
-import {type ReplayInfo} from "@common/src/index.js";
+import {Color, type ReplayInfo} from "@common/src/index.js";
 import Rule from "@common/src/rule.js";
 
 
@@ -25,16 +25,31 @@ export async function getFinishedGameFromId(gameId: string): Promise<ReplayInfo 
 
     if (!finishedGame) return null;
 
-    return {
-        startGrid: finishedGame.startBoard.grid,
-        rulePool: finishedGame.rulePoolIds.map((ruleId) => Rule.getRuleFromId(ruleId)).filter((rule) => rule !== undefined),
-        usesTimer: finishedGame.usesTimer,
-        timerStartMs: finishedGame.timerStartMs,
-        timerIncrementMs: finishedGame.timerIncrementMs,
-        gameStartTimestamp: finishedGame.startTimestamp,
-        turnHistory: finishedGame.turnHistory,
-        bluffPunishment: finishedGame.bluffPunishment,
+    const playerRuleIds: Record<Color, number[]> = {} as Record<Color, number[]>;
+    for (const player of finishedGame.players) {
+        playerRuleIds[player.color] = player.ruleIds;
     }
+
+    return finishedGame.usesTimer
+        ? {
+            startGrid: finishedGame.startBoard.grid,
+            playerRuleIds: playerRuleIds,
+            rulePoolIds: finishedGame.rulePoolIds,
+            timerInfo: {
+                gameStartTimestamp: finishedGame.startTimestamp,
+                startMs: finishedGame.timerStartMs,
+                incrementMs: finishedGame.timerIncrementMs,
+            },
+            turnHistory: finishedGame.turnHistory,
+            bluffPunishment: finishedGame.bluffPunishment,
+        }
+        : {
+            startGrid: finishedGame.startBoard.grid,
+            playerRuleIds: playerRuleIds,
+            rulePoolIds: finishedGame.rulePoolIds,
+            turnHistory: finishedGame.turnHistory,
+            bluffPunishment: finishedGame.bluffPunishment,
+        }
 }
 
 export async function saveFinishedGame(game: Game): Promise<boolean> {

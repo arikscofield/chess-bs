@@ -1,4 +1,9 @@
-import {type RefObject, useEffect, useRef, useState} from "react";
+import {
+    useEffect,
+    useRef,
+    useState,
+    type PointerEvent as ReactPointerEvent,
+} from "react";
 import Square from "./Square.tsx";
 import {
     BoardColorType,
@@ -19,19 +24,21 @@ import {Portal} from "@mantine/core";
 
 function Board(
     {board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove, animateMove, } :
-    { board: RefObject<BoardType | null>, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, canMove: boolean, isBluffing: boolean, handleMove: (move: Move) => void, highlightedMove: Move | null, animateMove: boolean }
+    { board: BoardType | null, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, canMove: boolean, isBluffing: boolean, handleMove: (move: Move) => void, highlightedMove: Move | null, animateMove: boolean }
 ) {
     const mounted = useMounted();
 
     type mouseState = {x: number; y: number, row: number | null, col: number | null, piece: Piece | null};
     const [mouse, setMouse] = useState<mouseState>({ x: 0, y: 0, row: 0, col: 0, piece: null });
+    // const mouse = useRef<mouseState>({ x: 0, y: 0, row: 0, col: 0, piece: null });
     const { ref: sizeRef, width, height } = useElementSize();
-    const boardRef = useRef<HTMLElement | null>(null);
+    const boardElementRef = useRef<HTMLElement | null>(null);
 
-    const mergedBoardRef = useMergedRef(sizeRef, boardRef);
+    const mergedBoardRef = useMergedRef(sizeRef, boardElementRef);
 
     const [boardType, setBoardType] = useState<[string, string, string, string]>(BoardColorType.Brown);
 
+    const boardRef = useRef<BoardType | null>(board);
     const [selectedSquare, setSelectedSquare] = useState<SquareType | null>(null);
     const [legalMoves, setLegalMoves] = useState<Move[]>([]);
     const [legalRuleMoves, setLegalRuleMoves] = useState<Move[]>([]);
@@ -39,13 +46,13 @@ function Board(
     const [dragReleaseSquare, setDragReleaseSquare] = useState<SquareType | null>(null);
     const [promotionMove, setPromotionMove] = useState<Move | null>(null);
 
-    const draggedPiece = draggedSquare ? board.current?.getPiece(draggedSquare) : null;
+    const draggedPiece = draggedSquare ? board?.getPiece(draggedSquare) : null;
     const draggedPieceString: string = "" + draggedPiece?.color + draggedPiece?.pieceType;
 
     const highlightedMovePieceString: string = "" + highlightedMove?.piece.color + highlightedMove?.piece.type;
 
-    const numRows: number = board.current?.grid.length || 0;
-    const numCols: number = board.current?.grid[0].length || 0;
+    const numRows: number = board?.grid.length || 0;
+    const numCols: number = board?.grid[0].length || 0;
     const rows = view === Color.White
         ? Array.from({length: numRows}, (_, i) => i)
         : Array.from({length: numRows}, (_, i) => i).toReversed();
@@ -65,6 +72,12 @@ function Board(
 
     }, [mounted]);
 
+
+    // useLayoutEffect(() => {})
+    useEffect(() => {
+        boardRef.current = board;
+    }, [board]);
+
     useEffect(() => {
         setSelectedSquare(null);
         setLegalMoves([]);
@@ -82,7 +95,7 @@ function Board(
         setDragReleaseSquare(null);
     }, [dragReleaseSquare])
 
-    function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
         if (!canMove || turn !== player?.color || (gameStatus != GameStatus.RUNNING && gameStatus != GameStatus.WAITING_FOR_FIRST_MOVE)) return;
 
         const boardX = event.nativeEvent.offsetX;
@@ -96,7 +109,7 @@ function Board(
         // console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
 
         const square = {row, col};
-        const piece = board.current?.getPiece(square)
+        const piece = boardRef.current?.getPiece(square)
 
         if (piece === undefined) { // Outside the board
             deselect();
@@ -133,14 +146,14 @@ function Board(
     }
 
     function handlePointerMove(event: PointerEvent) {
-        const isOverBoard = event.target === boardRef.current;
+        const isOverBoard = event.target === boardElementRef.current;
         const boardX = event.offsetX;
         const boardY = event.offsetY;
         const x = event.pageX;
         const y = event.pageY;
 
-        const width = boardRef.current?.offsetWidth || 0;
-        const height = boardRef.current?.offsetHeight || 0;
+        const width = boardElementRef.current?.offsetWidth || 0;
+        const height = boardElementRef.current?.offsetHeight || 0;
 
         let row = Math.floor(boardY / (height / numRows));
         if (player?.color === Color.Black) row = numRows - 1 - row;
@@ -149,20 +162,22 @@ function Board(
 
 
 
-        const piece = board.current?.getPiece({row, col}) || null;
+        const piece = boardRef.current?.getPiece({row, col}) || null;
 
         // console.log("Over board:", isOverBoard, " boardXY:", boardX, boardY, " xy:", x, y, " row:", row, " col:", col, " piece:", piece?.pieceType);
 
         if (isOverBoard) {
-            if (piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
-                boardRef.current.style.cursor = "grab";
-            } else if (!piece && boardRef.current && boardRef.current.style.cursor !== "grabbing") {
-                boardRef.current.style.cursor = "pointer";
+            if (piece && boardElementRef.current && boardElementRef.current.style.cursor !== "grabbing") {
+                boardElementRef.current.style.cursor = "grab";
+            } else if (!piece && boardElementRef.current && boardElementRef.current.style.cursor !== "grabbing") {
+                boardElementRef.current.style.cursor = "pointer";
             }
             setMouse({x, y, row, col, piece});
+            // mouse.current = {x, y, row, col, piece};
         } else {
             setMouse({x, y, row: null, col: null, piece: null});
-            if (boardRef.current) boardRef.current.style.cursor = "default";
+            // mouse.current = {x, y, row: null, col: null, piece: null};
+            if (boardElementRef.current) boardElementRef.current.style.cursor = "default";
         }
 
         // console.log(`Pointer Move ${isOverBoard ? "over board" : ""} at x: ${x} y: ${y} row: ${row}, col: ${col}`);
@@ -171,12 +186,12 @@ function Board(
     function handlePointerUp(event: PointerEvent) {
         if (!canMove) return; // TODO: Change when adding right-click arrow annotating
 
-        const isOverBoard = event.target === boardRef.current;
+        const isOverBoard = event.target === boardElementRef.current;
         const boardX = event.offsetX;
         const boardY = event.offsetY;
 
-        const width = boardRef.current?.offsetWidth || 0;
-        const height = boardRef.current?.offsetHeight || 0;
+        const width = boardElementRef.current?.offsetWidth || 0;
+        const height = boardElementRef.current?.offsetHeight || 0;
 
         let row = Math.floor(boardY / (height / numRows));
         if (player?.color === Color.Black) row = numRows - 1 - row;
@@ -194,13 +209,13 @@ function Board(
     // Select a given square. If its own piece, set the legalMoves
     function select(square: SquareType) {
         // console.log("Selected square:", square);
-        if (!board.current) return;
+        if (!boardRef.current) return;
         setSelectedSquare(square);
-        setLegalMoves(board.current.getLegalMoves(square, true));
+        setLegalMoves(boardRef.current.getLegalMoves(square, true));
         setPromotionMove(null);
         let newLegalRuleMoves: Move[] = [];
         for (const rule of player?.rules || []) {
-            newLegalRuleMoves = newLegalRuleMoves.concat(rule.getLegalMoves(board.current, square));
+            newLegalRuleMoves = newLegalRuleMoves.concat(rule.getLegalMoves(boardRef.current, square));
         }
         setLegalRuleMoves(newLegalRuleMoves);
     }
@@ -219,7 +234,7 @@ function Board(
     function move(square: SquareType) {
         if (!selectedSquare) return;
 
-        const movingPiece = board.current?.getPiece(selectedSquare)
+        const movingPiece = boardRef.current?.getPiece(selectedSquare)
         if (!movingPiece) return;
 
         const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
@@ -242,21 +257,21 @@ function Board(
     function startDrag(square: SquareType) {
         select(square);
         setDraggedSquare(square);
-        if (boardRef.current) boardRef.current.style.cursor = "grabbing";
+        if (boardElementRef.current) boardElementRef.current.style.cursor = "grabbing";
     }
 
     function endDrag(square: SquareType) {
-        if (boardRef.current) {
-            const piece = board.current?.getPiece(square) || null;
-            if (piece) boardRef.current.style.cursor = "grab";
-            else boardRef.current.style.cursor = "pointer";
+        if (boardElementRef.current) {
+            const piece = boardRef.current?.getPiece(square) || null;
+            if (piece) boardElementRef.current.style.cursor = "grab";
+            else boardElementRef.current.style.cursor = "pointer";
         }
 
         if (promotionMove) {
             return;
         }
 
-        const piece = board.current?.getPiece(square);
+        const piece = boardRef.current?.getPiece(square);
 
         if (piece === undefined) { // Outside the board
             // console.log("Deselect due to end drag outside the board")
@@ -295,11 +310,11 @@ function Board(
     }
 
 
-    if (board.current === null) return;
+    if (board === null) return;
 
     return (
         <div
-            className={"relative aspect-square w-full h-full "}
+            className={"relative aspect-square w-full max-w-full "}
         >
             {/* Rank and File labels */}
             <div className={"absolute w-full h-full grid grid-rows-8 grid-cols-8 aspect-square pointer-events-none"}>
@@ -337,15 +352,15 @@ function Board(
                         let ruleMovable = legalRuleMoves.some((move) => move.to.row === row && move.to.col === col);
 
                         if (isBluffing && selectedSquare !== null) {
-                            movable = !(movable || ruleMovable) && board.current?.grid[row][col]?.color !== player?.color;
+                            movable = !(movable || ruleMovable) && board?.grid[row][col]?.color !== player?.color;
                             ruleMovable = false;
 
                             // Don't allow bluffing into check (Except if capturing opponents king
                             if (movable) {
-                                const piece = board.current?.getPiece(selectedSquare);
-                                if (piece && board.current?.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {
+                                const piece = board?.getPiece(selectedSquare);
+                                if (piece && board?.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {
                                     const move: Move = {from: selectedSquare, to: {row: row, col: col}, piece: {type: piece.pieceType, color: piece.color}}
-                                    const movedBoard = board.current?.clone();
+                                    const movedBoard = board?.clone();
                                     if (!movedBoard) return
                                     movedBoard.applyMove(move);
                                     const kingSquare = movedBoard.findKing(piece.color);
@@ -365,7 +380,8 @@ function Board(
                         }
                         return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
                             <Square row={row} col={col} color={player?.color || Color.White}
-                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && highlightedMove?.to.row === row && highlightedMove?.to.col === col) ? null : board.current?.grid?.[row]?.[col] || null}
+                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && highlightedMove?.to.row === row && highlightedMove?.to.col === col) ? null : board?.grid?.[row]?.[col] || null}
+                                    // hovered={mouse.current.row === row && mouse.current.col === col}
                                     hovered={mouse.row === row && mouse.col === col}
                                     selected={selectedSquare?.row === row && selectedSquare?.col === col}
                                     highlighted={(highlightedMove?.to.row === row && highlightedMove?.to.col === col) || (highlightedMove?.from.row === row && highlightedMove?.from.col === col)}
@@ -384,6 +400,8 @@ function Board(
                     <Portal>
                         <div className={"absolute z-30 pointer-events-none cursor-grabbing"}
                              style={{
+                                 // top: `calc(${mouse.current.y}px - ${squareSize/2}px)`,
+                                 // left: `calc(${mouse.current.x}px - ${squareSize/2}px)`,
                                  top: `calc(${mouse.y}px - ${squareSize/2}px)`,
                                  left: `calc(${mouse.x}px - ${squareSize/2}px)`,
                                  width: squareSize,

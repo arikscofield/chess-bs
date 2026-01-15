@@ -8,15 +8,17 @@ import {
     Color,
     CreateGameColor,
     type GameInfo,
+    GameResult,
     type GameState,
     GameStatus,
     type Move,
     type PlayerState,
-    type ReplayInfo,
-    type Rule,
+    type ReplayInfo, type ReplayTimerInfo,
+    // type Rule as RuleType,
     type Turn,
 } from "@chess-bs/common";
 import Player from "@chess-bs/common/dist/player.js";
+import Rule from "@chess-bs/common/src/rule.js";
 import {SocketContext} from "../../components/Socket/SocketContext.ts";
 import Board from "../../components/Board.tsx";
 import BoardClass from "@chess-bs/common/dist/board.js";
@@ -29,6 +31,10 @@ import GameLobby from "./GameLobby.tsx";
 import RuleList from "../../components/RuleList.tsx";
 import {useGameViewer} from "../../components/GameViewer.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
+import {Group, Panel, Separator} from "react-resizable-panels";
+import {MdOutlineDragIndicator} from "react-icons/md";
+import GameoverModal from "../../components/GameoverModal.tsx";
+import Replay from "./Replay.tsx";
 
 
 function Play() {
@@ -36,7 +42,7 @@ function Play() {
     const navigate = useNavigate();
 
     const [isMounted, setIsMounted] = useState(false);
-    // const [board, setBoard] = useState<BoardClass | null>(null);
+    const [currentBoard, setCurrentBoard] = useState<BoardClass | null>(null);
     const [player, setPlayer] = useState<Player | null>(null);
     const playerRef = useRef<Player | null>(null);
 
@@ -64,6 +70,12 @@ function Play() {
     const [animateMove, setAnimateMove] = useState<boolean>(false);
     const [viewingReplay, setViewingReplay] = useState<boolean>(false);
     const socket = useContext(SocketContext);
+
+    const [GameoverModalOpen, setGameoverModalOpen] = useState(false);
+    const [gameResult, setGameResult] = useState<GameResult>(GameResult.Tie);
+    const [gameResultReason, setGameResultReason] = useState<string>("");
+    const [playerRuleIds, setPlayerRuleIds] = useState<Record<Color, number[]>>({} as Record<Color, number[]>);
+    const [replayTimerInfo, setReplayTimerInfo] = useState<ReplayTimerInfo | undefined>(undefined);
 
     useEffect(() => {
         if (isMounted) return;
@@ -95,7 +107,7 @@ function Play() {
                 setGameStatus(newGameStatus);
                 // setTurnColor(newTurn);
                 turnColor.current = newTurn;
-                // setBoard(new BoardClass(newGrid, newEnPassant));
+                setCurrentBoard(new BoardClass(newGrid, newEnPassant));
                 if (newRulePool) setRulePool(newRulePool);
                 if (newTimers) setTimers(new Map(Object.entries(newTimers)) as Map<Color, number>);
 
@@ -132,26 +144,34 @@ function Play() {
             });
 
             socket.on("replayInfo", (replayInfo: ReplayInfo) => {
-                const {startGrid: newStartGrid, rulePool: newRulePool, usesTimer: newUsesTimer, timerStartMs: newTimerStartMs, timerIncrementMs: newTimerIncrementMs, bluffPunishment: newBluffPunishment, turnHistory: newTurnHistory} = replayInfo;
+                const {startGrid: newStartGrid, playerRuleIds: newPlayerRuleIds, rulePoolIds: newRulePoolIds, timerInfo: newTimerInfo, bluffPunishment: newBluffPunishment, turnHistory: newTurnHistory} = replayInfo;
 
                 console.log("Received Replay Info: ");
                 console.log(replayInfo);
 
                 setGameStatus(GameStatus.DONE);
                 setStartBoard(new BoardClass(newStartGrid));
-                setRulePool(newRulePool);
-                setUsesTimer(newUsesTimer);
-                setTimeStartMs(newTimerStartMs)
-                setTimeIncrementMs(newTimerIncrementMs);
+                setPlayerRuleIds(newPlayerRuleIds);
+                setRulePool(newRulePoolIds.map((ruleId) => Rule.getRuleFromId(ruleId)).filter((rule) => rule !== undefined));
+                setReplayTimerInfo(newTimerInfo ? {
+                    gameStartTimestamp: new Date(newTimerInfo?.gameStartTimestamp.toString()),
+                    startMs: newTimerInfo.startMs,
+                    incrementMs: newTimerInfo?.incrementMs,
+                } : undefined);
+
                 setBluffPunishment(newBluffPunishment);
                 turnHistory.current = newTurnHistory;
                 setViewingReplay(true);
             });
 
-            socket.on("gameOver", (winner: Color, reason: string) => {
-                console.log("Game Over. Winner:", winner)
+            socket.on("gameOver", (gameResult: GameResult, reason: string) => {
+                console.log("Game Over. Result:", gameResult)
                 console.log("Reason:", reason);
                 endTimers();
+                setGameStatus(GameStatus.DONE);
+                setGameResult(gameResult);
+                setGameResultReason(reason);
+                setGameoverModalOpen(true);
             })
 
             handleJoinGame(gameId);
@@ -160,6 +180,25 @@ function Play() {
         }
 
         setIsMounted(true);
+    }, [])
+
+    useEffect(() => {
+        function handleKeyDown(e: KeyboardEvent) {
+
+            switch (e.key) {
+                case " ":
+                    if (document.activeElement == document.getElementById("chat-input"))
+                        break;
+                    setIsBluffing((prev) => !prev);
+                    break;
+
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
     }, [])
 
 
@@ -235,38 +274,69 @@ function Play() {
         />)
     }
 
+
+    if (viewingReplay) {
+        return <Replay
+            startBoard={startBoard}
+            turnHistory={turnHistory}
+            playerRuleIds={playerRuleIds}
+            replayTimerInfo={replayTimerInfo}
+        />
+    }
+
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-[calc(90vh-50px)]"}>
 
             {/* Left Side*/}
-            <div className={"grid grid-rows-2 w-[300px] h-full gap-2"}>
-                <div className={"flex flex-col rounded-md bg-bg-2 overflow-y-auto"}>
-                    <h3 className={"text-white text-xl font-bold text-center"}>Game Rules</h3>
-                    <RuleList enabledRules={rulePool} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true}/>
-                </div>
-                {viewingReplay
-                    ? <div></div>
-                    : <OwnRules rules={player?.rules} color={player?.color || Color.White}/>}
+            <div className={"w-[300px] h-full"}>
+                <Group className={""}
+                    // style={{ height: 'calc(90vh-50px)' }}
+                       orientation={"vertical"}
+                       defaultLayout={{
+                           "rule-pool": 1,
+                           "own-rules": 1
+                       }}
+                >
+                    <Panel
+                        id={"rule-pool"}
+                        minSize={"250px"}
+                    >
+                        <div className={"flex flex-col rounded-md h-full bg-bg-2 "}>
+                            <h3 className={"text-white text-xl font-bold text-center"}>Game Rules</h3>
+                            <RuleList enabledRules={rulePool} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true} wrapChips={true}/>
+                        </div>
+                    </Panel>
+
+                    <Separator className={"flex flex-row justify-center h-4 my-1 outline-none bg-bg-2/50 hover:bg-bg-2"}>
+                        <MdOutlineDragIndicator color={"gray"} className={"rotate-90"}/>
+                    </Separator>
+
+                    <Panel
+                        id={"own-rules"}
+                        minSize={"200px"}
+                    >
+                        <OwnRules rules={player?.rules} color={player?.color || Color.White}/>
+                    </Panel>
+                </Group>
             </div>
 
             {/* Board */}
             <div className={"flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{viewingReplay ? view === Color.White ? "Black" : "White" : "Opponent"}</div>
+                    <div className={"float-start text-white text-xl"}>{"Opponent"}</div>
 
                     <Timer
                         timeMs={timers?.get(player?.color === Color.White ? Color.Black : Color.White)}
-                        color={player?.color === Color.White ? Color.Black : Color.White}
-                        turn={turnColor.current}
+                        isRunning={player?.color !== turnColor.current}
                     />
                 </div>
-                {visibleBoard.current !== null && (player || viewingReplay) && <Board
+                {visibleBoard !== null && player && <Board
                     board={visibleBoard}
-                    gameStatus={viewingReplay ? GameStatus.DONE : gameStatus}
+                    gameStatus={gameStatus}
                     player={player}
                     view={view || Color.White}
                     turn={turnColor.current}
-                    canMove={viewMoveIndex == -1 && !viewingReplay}
+                    canMove={viewMoveIndex == -1}
                     isBluffing={isBluffing}
                     handleMove={handleMove}
                     highlightedMove={highlightedMove}
@@ -274,37 +344,68 @@ function Play() {
                 />
                 }
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{viewingReplay ? view === Color.White ? "White" : "Black" : "You"}</div>
-                    {!viewingReplay && <div className={"flex flex-row justify-center gap-5 py-3"}>
+                    <div className={"float-start text-white text-xl"}>{"You"}</div>
+                    <div className={"flex flex-row justify-center gap-5 py-3"}>
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButton gameId={gameId} />
-                    </div>}
+                    </div>
                     <Timer
                         timeMs={timers?.get(player?.color ?? Color.White)}
-                        color={player?.color || Color.White}
-                        turn={turnColor.current}
+                        isRunning={player?.color === turnColor.current}
                     />
                 </div>
 
             </div>
 
             {/* Right Side */}
-            <div className={"hidden lg:grid grid-rows-2 w-[300px] h-full gap-2"}>
-                <div className={"flex flex-col rounded-md bg-bg-2"}>
-                    <TurnHistory
-                        turnHistory={turnHistory.current}
-                        viewMoveIndex={viewMoveIndex}
-                        setViewMoveIndex={setViewMoveIndex}
-                    />
-                </div>
-                {viewingReplay
-                    ? <div></div>
-                    : <Chatroom
-                        gameId={gameId}
-                    />
-                }
+            <div className={"hidden lg:block w-[300px] h-full"}>
+                <Group className={""}
+                       // style={{ height: 'calc(90vh-50px)' }}
+                       orientation={"vertical"}
+                       defaultLayout={{
+                           "turn-history": 1.3,
+                           "chat": 1
+                       }}
+                >
+                    <Panel
+                        id={"turn-history"}
+                        minSize={"100px"}
+                    >
+                        <div className={"flex flex-col rounded-md h-full bg-bg-2"}>
+                            <TurnHistory
+                                turnHistory={turnHistory.current}
+                                viewMoveIndex={viewMoveIndex}
+                                setViewMoveIndex={setViewMoveIndex}
+                            />
+                        </div>
+                    </Panel>
+
+                    <Separator className={"flex flex-row justify-center h-4 my-1 outline-none bg-bg-2/50 hover:bg-bg-2"}>
+                        <MdOutlineDragIndicator color={"gray"} className={"rotate-90"}/>
+                    </Separator>
+
+                    <Panel
+                        id={"chat"}
+                        minSize={"100px"}
+                    >
+                        <Chatroom
+                                gameId={gameId}
+                        />
+                    </Panel>
+                </Group>
+
+
             </div>
         </div>
+
+
+        <GameoverModal
+            opened={GameoverModalOpen}
+            onClose={() => setGameoverModalOpen(false)}
+            playerColor={player?.color || Color.White}
+            gameResult={gameResult}
+            reason={gameResultReason}
+        />
     </div>)
 }
 
