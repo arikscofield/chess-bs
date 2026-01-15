@@ -112,7 +112,7 @@ io.on("connection", (socket) => {
         let gameId = generateGameId(6);
         while (games.get(gameId))
             gameId = Math.random().toString(36).substring(2, 8);
-        const game = new Game(gameId, playerId, color, ruleCount, rulePool.map(r => Rule.from(r)).filter(r => r !== undefined), bluffPunishment, timeControlStartSeconds ? timeControlStartSeconds * 1000 : undefined, timeControlIncrementSeconds ? timeControlIncrementSeconds * 1000 : undefined);
+        const game = new Game(gameId, playerId, color, ruleCount, rulePool.map(r => Rule.from(r)).filter(r => r !== undefined), bluffPunishment, timeControlStartSeconds !== null ? timeControlStartSeconds * 1000 : null, timeControlIncrementSeconds !== null ? timeControlIncrementSeconds * 1000 : null);
 
         games.set(gameId, game);
         console.log(`Creating game ${gameId} for player ${playerId} with options: Color: ${color}, timeStart: ${timeControlStartSeconds} * 1000, timeIncrement: ${timeControlIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${JSON.stringify(rulePool.map(r => r.name))}`);
@@ -179,6 +179,7 @@ io.on("connection", (socket) => {
 
         console.log(`Joining game ${gameId} for player ${playerId}`);
         socket.join(gameId);
+        sendGameInfo(game);
         sendGameState(game);
         sendAllPlayerStates(gameId);
         callback({ status: AckStatus.OK, message: "Successfully joined game" });

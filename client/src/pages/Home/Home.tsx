@@ -31,7 +31,7 @@ function Home() {
         setCreateGameModalOpen(true);
     }
 
-    function createGame(color: CreateGameColor, timeControlStartSeconds: number | undefined, timeControlIncrementSeconds: number | undefined, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[]) {
+    function createGame(color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[]) {
         if (!socket) {
             console.error("Socket not connected");
             return;

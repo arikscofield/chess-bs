@@ -178,7 +178,7 @@ export enum AckStatus {
 }
 
 export interface ClientToServerEvents {
-    createGame: (color: CreateGameColor, timeControlStartSeconds: number | undefined, timeControlIncrementSeconds: number | undefined, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[], callback: (
+    createGame: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[], callback: (
         {status, message, gameId}:
         {status: AckStatus, message: string, gameId?: string})
         => void) => void;

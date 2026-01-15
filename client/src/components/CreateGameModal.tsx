@@ -15,7 +15,7 @@ const TIME_CONTROL_INCREMENT_VALUES = [
     17, 18, 19, 20, 25, 30, 35, 40, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180,
 ];
 
-function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose: () => void, onSubmit: (color: CreateGameColor, timeControlStartSeconds: number | undefined, timeControlIncrementSeconds: number | undefined, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[]) => void}) {
+function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose: () => void, onSubmit: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[]) => void}) {
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
 
 
@@ -195,7 +195,7 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
 
             <Button color={"green"} size={"md"}
                     onClick={() => {
-                        onSubmit(color, timeControlEnabled ? timeControlStartMinutes * 60 : undefined, timeControlEnabled ? timeControlIncrementSeconds : undefined, bluffPunishment, typeof ruleCount === "number" ? ruleCount : 3, rulePool);
+                        onSubmit(color, timeControlEnabled ? timeControlStartMinutes * 60 : null, timeControlEnabled ? timeControlIncrementSeconds : null, bluffPunishment, typeof ruleCount === "number" ? ruleCount : 3, rulePool);
                     }}
                     disabled={
                         (timeControlStartMinutes === 0 && timeControlIncrementSeconds === 0) ||

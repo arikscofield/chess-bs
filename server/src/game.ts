@@ -45,7 +45,7 @@ export default class Game {
     hasMoved: Map<Color, boolean>;
 
 
-    constructor(gameId: string, createrPlayerId: string, creatorColor: CreateGameColor, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, timeControlStartMs?: number, timeIncrementMs?: number, fen?: string, ) {
+    constructor(gameId: string, createrPlayerId: string, creatorColor: CreateGameColor, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, timeControlStartMs: number | null = null, timeIncrementMs: number | null = null, fen?: string, ) {
         this.gameId = gameId;
         this.creatorPlayerId = createrPlayerId;
         this.creatorColor = creatorColor;
@@ -54,7 +54,7 @@ export default class Game {
         this.bluffPunishment = bluffPunishment;
 
         this.hasMoved = new Map();
-        if (timeControlStartMs !== undefined && timeIncrementMs !== undefined) {
+        if (timeControlStartMs !== null && timeIncrementMs !== null) {
             this.usesTimer = true;
             this.gameStartTimestamp = new Date();
             this.timeStartMs = timeControlStartMs;

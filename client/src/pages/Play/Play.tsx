@@ -49,8 +49,8 @@ function Play() {
     // Game Info (non-changing)
     const [rulePool, setRulePool] = useState<Rule[]>([]);
     const [usesTimer, setUsesTimer] = useState<boolean>(false);
-    const [timeStartMs, setTimeStartMs] = useState<number | null>(null);
-    const [timeIncrementMs, setTimeIncrementMs] = useState<number | null>(null);
+    const [timeStartMs, setTimeStartMs] = useState<number | undefined>(undefined);
+    const [timeIncrementMs, setTimeIncrementMs] = useState<number | undefined>(undefined);
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment | null>(null);
     const [creatorColor, setCreatorColor] = useState<CreateGameColor | null>(null);
     const [startBoard, setStartBoard] = useState(BoardClass.defaultBoard());
@@ -91,8 +91,13 @@ function Play() {
                 setStartBoard(new BoardClass(newStartGrid));
                 setRulePool(newRulePool);
                 setUsesTimer(newUsesTimer);
-                setTimeStartMs(newTimeStartMs)
-                setTimeIncrementMs(newTimeIncrementMs);
+                if (!newUsesTimer) {
+                    setTimeStartMs(undefined);
+                    setTimeIncrementMs(undefined);
+                } else {
+                    setTimeStartMs(newTimeStartMs)
+                    setTimeIncrementMs(newTimeIncrementMs);
+                }
                 setBluffPunishment(newBluffPunishment);
                 setCreatorColor(newCreatorColor);
             })
