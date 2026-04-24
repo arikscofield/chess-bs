@@ -1,29 +1,29 @@
 import {Button} from "@mantine/core";
-import {useContext} from "react";
-import {SocketContext} from "./Socket/SocketContext.ts";
-import {AckStatus} from "@chess-bs/common";
+import {useSocket} from "./context/SocketContext.ts";
+import {type GameMoveBluffCallRequest, type GenericCallback} from "@chess-bs/common";
 
 
 function CallBluffButton({ gameId }: {gameId: string}) {
-    const socket = useContext(SocketContext);
+    const socket = useSocket();
 
     function handleCallBluff() {
         if (!socket) {
-            console.error("Socket not connected");
+            console.error("socket not connected");
             return;
         }
 
-        socket.emit("callBluff", gameId, (response) => {
-            if (response.status === AckStatus.OK) {
-                if (response.result) {
-                    console.log("Bluff successful");
-                } else {
-                    console.log("Bluff failed");
-                }
-            } else {
-                console.error(response.message);
+        const payload: GameMoveBluffCallRequest = {
+            gameId: gameId,
+        }
+
+        socket.emit("game:move:bluff:call", payload, ((ok, message) => {
+            if (!ok) {
+                console.error(message);
+                return;
             }
-        })
+
+            console.log(message)
+        }) as GenericCallback)
     }
 
     return <Button

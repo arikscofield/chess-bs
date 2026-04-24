@@ -1,11 +1,18 @@
 
 
-import {allRules, Color, PieceType, type Rule} from "@chess-bs/common";
+import {allRules, Color, PieceType} from "@chess-bs/common";
 
 import {pieceImages} from "../assets/pieceImages.ts";
 import {Chip, type MantineSize, Tooltip} from "@mantine/core";
+import Rule from "@chess-bs/common/src/rule.js";
 
-function RuleList({ enabledRules, size = "sm", color = Color.White, setEnabledRules, onlyShowEnabled = false, wrapChips = false }: { enabledRules: Rule[], size?: MantineSize, color?: Color, setEnabledRules?: (enabledRules: Rule[]) => void, onlyShowEnabled?: boolean, wrapChips?: boolean }) {
+function RuleList(
+    { enabledRuleIds, setEnabledRuleIds, size = "sm", color = Color.White, onlyShowEnabled = false, wrapChips = false }:
+    { enabledRuleIds: number[], setEnabledRuleIds?: (enabledRuleIds: number[]) => void, size?: MantineSize, color?: Color, onlyShowEnabled?: boolean, wrapChips?: boolean }
+) {
+
+    const enabledRules = Rule.getRulesFromIds(enabledRuleIds);
+
 
     return (<div className={"@container h-full overflow-auto"}>
         <div className={"flex flex-col h-full"} >
@@ -37,15 +44,15 @@ function RuleList({ enabledRules, size = "sm", color = Color.White, setEnabledRu
                                         size={size}
                                         checked={enabledRules.some(r => r.name === rule.name)}
                                         onChange={(checked) => {
-                                            if (!setEnabledRules) return;
+                                            if (!setEnabledRuleIds) return;
                                             if (checked) {
-                                                setEnabledRules([...enabledRules, rule]);
+                                                setEnabledRuleIds([...enabledRuleIds, rule.id]);
                                             } else {
-                                                setEnabledRules(enabledRules.filter(r => r.name !== rule.name));
+                                                setEnabledRuleIds(enabledRuleIds.filter(id => id !== rule.id));
                                             }
                                         }}
-                                        disabled={!setEnabledRules && !enabledRules.some(r => r.name === rule.name)}
-                                        styles={{ label: !setEnabledRules ? { cursor: "default"} : {} }}
+                                        disabled={!setEnabledRuleIds && !enabledRuleIds.some(id => id === rule.id)}
+                                        styles={{ label: !setEnabledRuleIds ? { cursor: "default"} : {} }}
                                         color={"var(--color-fg-1)"}
                                     >
                                         {rule.name}

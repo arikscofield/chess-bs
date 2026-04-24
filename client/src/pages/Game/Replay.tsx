@@ -1,19 +1,31 @@
-import {Color, GameStatus, type ReplayTimerInfo, type Turn} from "@chess-bs/common";
+import {Color, GameStatus} from "@chess-bs/common";
 import Timer from "../../components/Timer.tsx";
 import Board from "../../components/Board.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
-import {type RefObject, useState} from "react";
 import {useGameViewer} from "../../components/GameViewer.tsx";
-import BoardClass from "@chess-bs/common/dist/board.js";
 import ReplayPlayerRuleList from "../../components/ReplayPlayerRuleList.tsx";
+import {useAtomValue} from "jotai";
+import {
+    clockInfoAtom,
+    playersAtom,
+    startBoardAtom,
+    turnHistoryAtom,
+    viewAtom
+} from "./atoms.ts";
 
-function Replay(
-    {startBoard, turnHistory, playerRuleIds, replayTimerInfo=undefined}:
-    {startBoard: BoardClass, turnHistory: RefObject<Turn[]>, playerRuleIds: Record<Color, number[]>, replayTimerInfo?: ReplayTimerInfo }) {
-    const [view, setView] = useState<Color>(Color.White);
-    const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove, timersMs } = useGameViewer(startBoard, turnHistory.current, replayTimerInfo);
+function Replay() {
+    const startBoard = useAtomValue(startBoardAtom);
+    const turnHistory = useAtomValue(turnHistoryAtom);
+    const players = useAtomValue(playersAtom);
+    const view = useAtomValue(viewAtom);
+
+    const clockInfo = useAtomValue(clockInfoAtom);
+    // const clockTimes = useAtomValue(clockTimesAtom);
+
+    const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove, clock } = useGameViewer(startBoard, turnHistory, clockInfo);
 
     const oppColor = view === Color.White ? Color.Black : Color.White;
+    const playerRuleIds: Map<Color, number[]> = new Map(players.map(player => [player.color, player.ruleIds ?? []]));
 
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-full"}>
@@ -24,11 +36,11 @@ function Replay(
                     <div className={"float-start text-white text-xl"}>{oppColor}</div>
 
                     <div className={"overflow-auto"}>
-                        <ReplayPlayerRuleList color={oppColor} playerRuleIds={playerRuleIds[oppColor]} className={"pb-1"}/>
+                        <ReplayPlayerRuleList color={oppColor} playerRuleIds={playerRuleIds.get(oppColor) ?? []} className={"pb-1"}/>
                     </div>
 
                     <Timer
-                        timeMs={timersMs?.[oppColor]}
+                        timeMs={clock.get(oppColor)}
                         isRunning={false}
                     />
                 </div>
@@ -42,19 +54,18 @@ function Replay(
                     isBluffing={false}
                     handleMove={() => {}}
                     highlightedMove={highlightedMove}
-                    animateMove={false}
                 />
                 }
                 <div className={"flex flex-row shrink justify-between"}>
                     <div className={"float-start text-white text-xl"}>{view}</div>
 
                     <div className={"overflow-auto"}>
-                        <ReplayPlayerRuleList color={view} playerRuleIds={playerRuleIds[view]} className={"pt-1"}/>
+                        <ReplayPlayerRuleList color={view} playerRuleIds={playerRuleIds.get(view) ?? []} className={"pt-1"}/>
                     </div>
 
 
                     <Timer
-                        timeMs={timersMs?.[view]}
+                        timeMs={clock.get(view)}
                         isRunning={false}
                     />
                 </div>
@@ -65,10 +76,9 @@ function Replay(
             <div className={"w-[300px] h-full "}>
                 <div className={"flex flex-col rounded-md h-full bg-bg-2"}>
                     <TurnHistory
-                        turnHistory={turnHistory.current}
+                        turnHistory={turnHistory}
                         viewMoveIndex={viewMoveIndex}
                         setViewMoveIndex={setViewMoveIndex}
-                        setView={setView}
                     />
                 </div>
             </div>

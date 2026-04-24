@@ -5,10 +5,13 @@ import {Button} from "@mantine/core";
 import FlipBoardButton from "./FlipBoardButton.tsx";
 
 
-function TurnHistory(
-    { turnHistory, viewMoveIndex, setViewMoveIndex, setView }:
-    { turnHistory: Turn[], viewMoveIndex: number, setViewMoveIndex: Dispatch<SetStateAction<number>>, setView?: Dispatch<SetStateAction<Color>> })
-{
+function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, playerColor}: {
+    turnHistory: Turn[],
+    viewMoveIndex: number,
+    setViewMoveIndex: Dispatch<SetStateAction<number>>,
+    setView?: (prev: SetStateAction<Color | undefined>) => void,
+    playerColor: Color,
+}){
 
 
 
@@ -105,7 +108,7 @@ function TurnHistory(
     }
 
     return (
-        <div className={"flex flex-col justify-between h-full text-white text-base p-1"}>
+        <div className={"flex flex-col justify-between h-full text-white text-base"}>
             <ol className={"flex flex-col justify-between overflow-y-auto pb-1"}>
                 {turnRows.map((row, i) => (
                     <div key={i} className={"flex flex-row justify-between"}>
@@ -122,7 +125,7 @@ function TurnHistory(
 
                 {/* Misc Buttons */}
                 <div className={"flex flex-row justify-end "}>
-                    {setView && <FlipBoardButton setView={setView}/>}
+                    {setView && <FlipBoardButton setView={setView} playerColor={playerColor}/>}
                 </div>
 
                 {/* Turn History Button Controls*/}

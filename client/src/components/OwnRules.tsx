@@ -1,10 +1,11 @@
-import {Color, type Rule} from "@chess-bs/common"
+import {Color} from "@chess-bs/common"
 
 import {pieceImages} from "../assets/pieceImages.ts";
+import Rule from "@chess-bs/common/src/rule.js";
 
-function OwnRules({ rules, color }: {rules: Rule[] | undefined, color: Color}) {
+function OwnRules({ ruleIds, color }: {ruleIds: number[], color: Color}) {
 
-
+    const rules = Rule.getRulesFromIds(ruleIds);
 
     return (<div className={"w-full h-full flex flex-col rounded-md p-2 gap-2 bg-bg-2 text-white"}>
         <h2 className={"w-full text-center text-xl font-bold"}>Your Rules</h2>

@@ -2,14 +2,14 @@ import './Home.css'
 
 import {Button, Grid, Group, Stack, TextInput, Title} from "@mantine/core";
 import {useNavigate} from "react-router";
-import {useContext, useEffect, useState} from "react";
-import {
-    AckStatus, BluffPunishment, CreateGameColor, type Rule,
+import {useEffect, useState} from "react";
+import {BluffPunishment, CreateGameColor, type CreateGameRequest, type CreateGameResponse
 } from "@chess-bs/common";
-import {SocketContext} from "../../components/Socket/SocketContext.ts";
+import {useSocket} from "../../components/context/SocketContext.ts";
 import CreateGameModal from "../../components/CreateGameModal.tsx";
 
-
+const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT;
+const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP;
 
 function Home() {
     const navigate = useNavigate();
@@ -19,8 +19,7 @@ function Home() {
     const [gameCodeInput, setGameCodeInput] = useState<string>("");
     const [createGameModalOpen, setCreateGameModalOpen] = useState<boolean>(false);
 
-    // const socket = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
-    const socket = useContext(SocketContext);
+    const socket = useSocket();
 
     useEffect(() => {
         setIsMounted(true);
@@ -31,21 +30,43 @@ function Home() {
         setCreateGameModalOpen(true);
     }
 
-    function createGame(color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[]) {
+    async function createGame(color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) {
         if (!socket) {
-            console.error("Socket not connected");
+            console.error("context not connected");
             return;
         }
 
-        socket.emit("createGame", color, timeControlStartSeconds, timeControlIncrementSeconds, bluffPunishment, ruleCount, rulePool, (response) => {
-            if (response.status === AckStatus.OK && response.gameId) {
-                navigate(`/${response.gameId}`);
-                console.log(`Created game: ${response.gameId}`);
-            } else {
-                navigate("/");
-                console.error(response.message);
-            }
-        });
+        const payload: CreateGameRequest = {
+            color: color,
+            timeControlStartSeconds: timeControlStartSeconds,
+            timeControlIncrementSeconds: timeControlIncrementSeconds,
+            bluffPunishment: bluffPunishment,
+            ruleCount: ruleCount,
+            rulePoolIds: rulePoolIds,
+        }
+
+        const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/games`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+            navigate("/");
+            response.json().then((data) => {
+                console.error(data.error)
+            })
+            return;
+        }
+
+        response.json().then((data: CreateGameResponse) => {
+            const gameId = data.gameId;
+            navigate(`/${gameId}`);
+            console.log(`Created game: ${gameId}`);
+        })
     }
 
     function handleJoinGame(gameId: string) {

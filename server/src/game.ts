@@ -2,18 +2,20 @@ import Board from "@common/src/board.js";
 import {
     BluffPunishment,
     Color,
-    CreateGameColor, type GameInfo,
-    type GameState,
+    type GameClockStateResponse,
+    GameResult,
+    type GameStateResponse,
     GameStatus,
     type Move,
-    type Turn,
-    type Rule, GameResult
+    type Turn
 } from "@common/src/index.js";
+import Rule from "@common/src/rule.js";
 // import Player from "@common/src/player.js";
-import Player from "@common/src/player.js";
+import Player from "./player.js";
 import {parseFen} from "./helper.js";
 import {clearInterval} from "node:timers";
-import {sendGameOver} from "./server.js";
+import type {GameDTO} from "@chess-bs/common";
+import {sendGameOver} from "./socket/index.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -22,10 +24,9 @@ export default class Game {
     gameStatus: GameStatus;
     startBoard: Board;
     currentBoard: Board;
-    creatorPlayerId: string;
-    creatorColor: CreateGameColor;
+    maxPlayers: number = 2;
     players: Player[];
-    playersConnected: number;
+    spectators: Set<string> = new Set<string>()
 
     turnHistory: Turn[];
     turnColor: Color;
@@ -35,30 +36,33 @@ export default class Game {
     rulePool: Rule[];
     bluffPunishment: BluffPunishment;
 
-    usesTimer: boolean;
+    usesClock: boolean;
     gameStartTimestamp: Date;
-    timeStartMs: number;
-    timeIncrementMs: number;
+    clockStartMs: number;
+    clockIncrementMs: number;
     timeLeftMs: Map<Color, number>;
     timerUpdateTimestamp: number;
     private timerInterval: NodeJS.Timeout | null = null;
     hasMoved: Map<Color, boolean>;
 
+    drawOfferedColor: Color | null = null;
+    rematchOfferedColor: Color | null = null;
 
-    constructor(gameId: string, createrPlayerId: string, creatorColor: CreateGameColor, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, timeControlStartMs: number | null = null, timeIncrementMs: number | null = null, fen?: string, ) {
+
+    constructor(gameId: string, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, timeControlStartMs: number | null = null, timeIncrementMs: number | null = null, fen?: string, ) {
         this.gameId = gameId;
-        this.creatorPlayerId = createrPlayerId;
-        this.creatorColor = creatorColor;
+        // this.creatorPlayerId = createrPlayerId;
+        // this.creatorColor = creatorColor;
         this.ruleCount = ruleCount;
         this.rulePool = rulePool;
         this.bluffPunishment = bluffPunishment;
 
         this.hasMoved = new Map();
         if (timeControlStartMs !== null && timeIncrementMs !== null) {
-            this.usesTimer = true;
+            this.usesClock = true;
             this.gameStartTimestamp = new Date();
-            this.timeStartMs = timeControlStartMs;
-            this.timeIncrementMs = timeIncrementMs;
+            this.clockStartMs = timeControlStartMs;
+            this.clockIncrementMs = timeIncrementMs;
             this.timeLeftMs = new Map<Color, number>();
             for (const c of Object.values(Color)) {
                 this.timeLeftMs.set(c, timeControlStartMs);
@@ -66,10 +70,10 @@ export default class Game {
             }
             this.timerUpdateTimestamp = Date.now();
         } else {
-            this.usesTimer = false;
+            this.usesClock = false;
             this.gameStartTimestamp = new Date();
-            this.timeStartMs = 0;
-            this.timeIncrementMs = 0;
+            this.clockStartMs = 0;
+            this.clockIncrementMs = 0;
             this.timeLeftMs = new Map<Color, number>();
             this.timerUpdateTimestamp = 0;
         }
@@ -78,7 +82,6 @@ export default class Game {
         this.startBoard = Board.defaultBoard(); // TODO: be able to change based on how to user requests in order to have non-standard baord setups
         this.currentBoard = this.startBoard.clone();
         this.players = [];
-        this.playersConnected = 0;
         this.turnHistory = [];
         this.turnColor = Color.White;
         this.lastMoveWasBluff = false;
@@ -88,40 +91,39 @@ export default class Game {
     }
 
 
-    public getInfo(): GameInfo {
+
+    public getState(): GameStateResponse {
         return {
-            startGrid: this.startBoard.grid,
-            rulePool: this.rulePool,
-            usesTimer: this.usesTimer,
-            timeStartMs: this.timeStartMs,
-            timeIncrementMs: this.timeIncrementMs,
+            startBoard: this.startBoard,
+            gameStatus: this.gameStatus,
+            rulePoolIds: this.rulePool.map(r => r.id),
+            clock: this.getClockState(),
             bluffPunishment: this.bluffPunishment,
-            creatorColor: this.creatorColor,
-        }
+            turnColor: this.turnColor,
+            turnHistory: this.turnHistory,
+            players: this.players.map(player => ({
+                userId: player.userId,
+                username: player.username,
+                color: player.color,
+            })),
+            drawOfferedColor: this.drawOfferedColor,
+        };
     }
 
-    public getState(): GameState {
+    public getClockState(): GameClockStateResponse {
         this.updateTimers();
 
-        let state: GameState = {
-            gameStatus: this.gameStatus,
-            grid: this.currentBoard.grid,
-            enPassant: this.currentBoard.enPassant,
-            turn: this.turnColor,
-            turnHistory: this.turnHistory,
-            rulePool: this.rulePool,
-        }
-
-        if (this.usesTimer)
-            state.timers = Object.fromEntries(this.timeLeftMs) as Record<Color, number>;
-
-        return state;
+        return {
+            usesClock: this.usesClock,
+            startMs: this.clockStartMs,
+            incrementMs: this.clockIncrementMs,
+            gameStartTimestamp: this.gameStartTimestamp.getTime(),
+        };
     }
 
-    public updateTimers() {
+    public updateTimers(now: number=Date.now()) {
         if (this.gameStatus !== GameStatus.RUNNING || this.timerInterval === null) return;
 
-        const now = Date.now();
         const elapsed = now - this.timerUpdateTimestamp;
         const current = this.timeLeftMs.get(this.turnColor);
         if (current === undefined) return;
@@ -130,7 +132,7 @@ export default class Game {
     }
 
 
-    public addPlayer(playerId: string, color?: Color): Player | null {
+    public addPlayer(playerId: string, color?: Color, username?: string): Player | null {
         if (this.players.length >= 2) {
             return null;
         }
@@ -143,16 +145,16 @@ export default class Game {
             if (this.players.length >= 1) {
                 color = this.players[0]?.color === Color.White ? Color.Black : Color.White;
             } else {
-                color = Color.White
+                color = Object.values(Color)[Math.floor(Math.random() * Object.values(Color).length)] || Color.White
             }
         }
 
-        const player =  new Player(playerId, color);
+        const player =  new Player(playerId, color, undefined, username);
         player.setRandomRules(this.ruleCount, this.rulePool);
         this.players.push(player);
         
-        if (this.players.length >= 2) {
-            if (this.usesTimer)
+        if (this.players.length >= this.maxPlayers) {
+            if (this.usesClock)
                 this.gameStatus = GameStatus.WAITING_FOR_FIRST_MOVE;
             else
                 this.gameStatus = GameStatus.RUNNING;
@@ -164,19 +166,26 @@ export default class Game {
 
     public getPlayer(playerId: string): Player | null {
         for (const player of this.players) {
-            if (player.playerId === playerId) {
+            if (player.userId === playerId) {
                 return player;
             }
         }
         return null;
     }
 
+    public addSpectator(userId: string): void {
+        this.spectators.add(userId);
+    }
 
-    public makeMove(move: Move, player: Player): boolean {
+    public removeSpectator(userId: string): boolean {
+        return this.spectators.delete(userId);
+    }
+
+
+    public makeMove(move: Move, player: Player, appliedAt: number=Date.now()): boolean {
 
         // Hasn't run out of time
-        const now = Date.now();
-        this.updateTimers();
+        this.updateTimers(appliedAt);
         const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
         if (currentTimeLeft && currentTimeLeft <= 0) {
             const gameResult: GameResult = this.turnColor === Color.White ? GameResult.Black : GameResult.White;
@@ -195,7 +204,7 @@ export default class Game {
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
-                moveCopy.timestamp = now;
+                moveCopy.timestamp = appliedAt;
                 this.turnHistory.push(moveCopy);
                 return true;
             }
@@ -213,7 +222,7 @@ export default class Game {
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
-                moveCopy.timestamp = now;
+                moveCopy.timestamp = appliedAt;
                 this.turnHistory.push(moveCopy);
                 return true;
             }
@@ -227,7 +236,7 @@ export default class Game {
                 this.prevBoard = prevBoard;
                 const moveCopy = structuredClone(move);
                 delete moveCopy.bluff;
-                moveCopy.timestamp = now;
+                moveCopy.timestamp = appliedAt;
                 this.turnHistory.push(moveCopy);
                 return true;
             }
@@ -260,7 +269,7 @@ export default class Game {
     }
 
 
-    public endGame(gameResult: GameResult, reason: string): void {
+    public endGame(gameResult: GameResult, reason: string): boolean {
         console.log(`Game ${this.gameId} ended: Result: ${gameResult}. Reason: ${reason}`);
 
         // Stop Timer
@@ -270,7 +279,7 @@ export default class Game {
         }
 
         this.gameStatus = GameStatus.DONE;
-        sendGameOver(this.gameId, gameResult, reason);
+        return sendGameOver(this.gameId, gameResult, reason);
     }
 
 
@@ -282,6 +291,50 @@ export default class Game {
         this.turnColor = turn;
         this.currentBoard.enPassant = enPassant;
     }
+
+
+    public getGameDTO(): GameDTO {
+
+        return {
+            bluffPunishment: this.bluffPunishment,
+            gameStatus: this.gameStatus,
+            rulePoolIds: this.rulePool.map((rule) => rule.id),
+            turnHistory: this.turnHistory,
+            startBoard: this.startBoard.getBoardDTO(),
+            usesClock: this.usesClock,
+            clockIncrementMs: this.clockIncrementMs,
+            clockStartMs: this.clockStartMs,
+            gameId: this.gameId,
+            players: this.players.map(player => ({
+                userId: player.userId,
+                username: player.username,
+                color: player.color,
+                clockMs: this.timeLeftMs.get(player.color),
+            })),
+        };
+    }
+
+    public createRematchGame(newGameId: string): Game {
+        const newGame = new Game(newGameId, this.ruleCount, this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined), this.bluffPunishment, this.clockStartMs, this.clockIncrementMs);
+        newGame.gameStatus = GameStatus.WAITING_FOR_FIRST_MOVE;
+        newGame.players = this.players.map(p => {
+            p.color = p.color === Color.White ? Color.Black : Color.White
+            return p;
+        })
+        newGame.maxPlayers = this.maxPlayers;
+
+        return newGame;
+
+    }
+
+    public clone(): Game {
+        // TODO: Properly set the startBoard to be the same
+        const newGame = new Game(this.gameId, this.ruleCount, this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined), this.bluffPunishment, this.clockStartMs, this.clockIncrementMs);
+
+        return newGame;
+    }
+
+
 
 
     // public fromString(gameString: string): Game {

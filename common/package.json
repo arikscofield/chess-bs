@@ -8,6 +8,9 @@
     "build": "tsc -b"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "5.9.2"
+  },
+  "dependencies": {
+    "zod": "4.3.6"
   }
 }

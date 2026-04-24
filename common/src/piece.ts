@@ -1,7 +1,8 @@
 import {Color, PieceType} from "./types";
+import type {Piece as ZPiece} from "./schemas/common"
 
 
-export default class Piece {
+export default class Piece implements ZPiece {
 
     pieceType: PieceType;
     color: Color;

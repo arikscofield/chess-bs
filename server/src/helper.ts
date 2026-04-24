@@ -5,16 +5,23 @@
 
 import {
     Color,
-    type Piece,
-    PrefixToPieceType,
-    PieceType,
     FileToIndex,
-    type Square,
+    GameStatus,
+    IndexToFile,
     type Move,
-    PieceAscii, IndexToFile, PieceTypeToPrefix
+    type Piece,
+    PieceAscii,
+    PieceType,
+    PrefixToPieceType,
+    type Square
 } from "@common/src/index.js";
 import PieceClass from "@common/src/piece.js"
 import Board from "@common/src/board.js";
+import {v4 as uuidv4} from "uuid";
+import type {Game as FinishedGame, User} from "./db/schema.js";
+import type { GameDTO, UserDTO} from "@common/src/schemas/common.js";
+import {getPlayersFromGameWithUser} from "./db/helper.js";
+import type {PlayerDTO} from "@chess-bs/common";
 
 export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {
     const grid: (Piece | null)[][] = [];
@@ -77,82 +84,53 @@ export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, e
 }
 
 
-export function getMoveNotation(board: Board, move: Move): string {
-    let notation = "";
 
-    // Piece letter/symbol
-    if (move.piece.type != PieceType.Pawn) notation += PieceAscii[move.piece.color][move.piece.type];
 
-    // Piece source square disambiguation
 
-    // Squares with pieces that are of the same type
-    const samePieceSquares = board.findPieces(move.piece.type, move.piece.color);
-    // console.log("samePieceSquares:", samePieceSquares);
-
-    // Squares with pieces that can move to the same destination square
-    const sameMoveSquares = samePieceSquares.filter((square) =>
-        (square.row !== move.from.row && square.col !== move.from.col) && board.getLegalMoves(square, false, false).some((move2) =>
-            move.to.row === move2.to.row && move.to.col == move2.to.col
-        )
-    )
-    // console.log("sameMoveSquares:", sameMoveSquares);
-
-    if (sameMoveSquares.length > 0) {
-        // If none of the ambiguating pieces are on the same file, we can just use the file to disambiguate
-        if (!sameMoveSquares.some((square) => square.col === move.from.col)) {
-            notation += IndexToFile[move.from.col]
-        } else if (!sameMoveSquares.filter((square) => square.col === move.from.col).some((square) => square.row === move.from.row)) {
-            // If the files are the same but the ranks differ, just use the rank
-            notation += "" + (7-move.from.row+1)
-        } else {
-            // Otherwise, use both the file and rank
-            notation += "" + IndexToFile[move.from.col] + (7-move.from.row+1)
-        }
+export function generateGameId(len: number) {
+    const chars: string = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789";
+    let result: string = "";
+    for (let i=0; i < len; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
     }
-
-
-    // Captures
-    // Either the piece directly captures, or en passant
-    const isCapture = board.getPiece(move.to) || (move.piece.type == PieceType.Pawn && move.from.col != move.to.col);
-    if (isCapture) {
-        // Always specify the file if it's a pawn capturing
-        if (move.piece.type === PieceType.Pawn) {
-            notation = "" + IndexToFile[move.from.col] + "x"
-        } else {
-            notation += "x"
-        }
-    }
-
-    // Destination square
-    notation += "" + IndexToFile[move.to.col] + (7-move.to.row+1)
-
-
-    // Pawn Promotion
-    if (move.promotion) {
-        notation += "=" + PieceAscii[move.piece.color][move.promotion];
-    }
-
-
-    // Castling
-    // FIXME: Can incorrectly label a bluffing king move as castling
-    if (move.piece.type === PieceType.King && move.from.row == move.to.row) {
-        // Kingside
-        if (Math.abs(move.from.col - move.to.col) == 2) {
-            notation = "O-O"
-        }
-        // Queenside
-        else if (Math.abs(move.from.col - move.to.col) == 3) {
-            notation = "O-O-O"
-        }
-    }
-
-    // Checks
-    const movedBoard = board.clone();
-    movedBoard.applyMove(move);
-    if (movedBoard.isInCheck(move.piece.color === Color.White ? Color.Black : Color.White)) {
-        notation += "+"
-    }
-
-
-    return notation;
+    return result;
 }
+
+export function generateUUID() {
+    return crypto.randomUUID?.() ?? uuidv4();
+}
+
+export async function getGameDTOFromFinishedGame(finishedGame: FinishedGame): Promise<GameDTO> {
+    const players: PlayerDTO[] = (await getPlayersFromGameWithUser(finishedGame.id)).map(player => ({
+        userId: player.user.id,
+        username: player.user.username,
+        color: player.color,
+        ruleIds: player.ruleIds,
+    }));
+
+    return {
+        gameId: finishedGame.id,
+        gameStatus: GameStatus.DONE,
+        startBoard: finishedGame.startBoard,
+        rulePoolIds: finishedGame.rulePoolIds,
+        turnHistory: finishedGame.turnHistory,
+        usesClock: finishedGame.usesTimer,
+        clockStartMs: finishedGame.timerStartMs,
+        clockIncrementMs: finishedGame.timerIncrementMs,
+        bluffPunishment: finishedGame.bluffPunishment,
+        players: players,
+    }
+}
+
+
+export function getUserDTOFromUser(user: User): UserDTO {
+    return {
+        userId: user.id,
+        username: user.username,
+    }
+}
+
+
+
+
+

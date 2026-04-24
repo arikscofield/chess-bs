@@ -1,6 +1,7 @@
-import {Color, Move, Piece, PieceAscii, PieceType, Square, Board as BoardType} from "./types";
+import {Color, PieceAscii, PieceType} from "./types";
 import PieceClass from "./piece"
 import {defaultFEN, parseFen} from "./helper";
+import type {BoardDTO as BoardDTO, Move, Piece, Square} from "./schemas/common"
 
 /*
 
@@ -13,7 +14,7 @@ import {defaultFEN, parseFen} from "./helper";
  col     0(a) 1(b) 2(c) ...
 
  */
-export default class Board implements BoardType {
+export default class Board {
     grid: (Piece | null)[][];
     enPassant: Square | null;
 
@@ -375,6 +376,14 @@ export default class Board implements BoardType {
         }))
         const newEnPassant: Square | null = this.enPassant ? { row: this.enPassant.row, col: this.enPassant.col } : null;
         return new Board(newGrid, newEnPassant);
+    }
+
+
+    public getBoardDTO(): BoardDTO {
+        return {
+            grid: this.grid,
+            enPassant: this.enPassant
+        }
     }
 
 

@@ -1,55 +1,77 @@
 import { IoSend } from "react-icons/io5";
 import {Button, TextInput} from "@mantine/core";
-import {useInputState, useMounted} from "@mantine/hooks";
-import {useContext, useEffect, useRef, useState} from "react";
-import {SocketContext} from "./Socket/SocketContext.ts";
+import {useInputState} from "@mantine/hooks";
+import {useEffect, useRef, useState} from "react";
+import {useSocket} from "./context/SocketContext.ts";
+import type {GameChatMessageResponse, GameChatSendRequest, GenericCallback} from "@chess-bs/common";
+import {useAuth} from "./context/AuthContext.ts";
 
+
+const PLAYER_COLOR = "text-blue-500";
+const OPPONENT_COLOR = "text-red-500";
+const ERROR_COLOR = "text-red-300/80";
 
 function Chatroom({gameId, }: {gameId: string}) {
     type Message = {
-        user: string;
+        username?: string;
+        usernameColor?: string;
         message: string;
+        messageColor?: string;
     }
 
-    const mounted = useMounted();
     const [inputMessage, setInputMessage] = useInputState("");
     const [messages, setMessages] = useState<Message[]>([]);
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const socket = useContext(SocketContext);
+    const socket = useSocket();
+    const {user} = useAuth();
 
 
     useEffect(() => {
-        if (mounted) return;
 
-        if (socket) {
-            socket.on("chatMessage", (message: string) => {
-                addMessage({user: "Opponent", message: message});
-            })
+        if (!socket) return;
+
+        function onMessage(payload: GameChatMessageResponse) {
+            const message: Message = {
+                username: payload.username,
+                usernameColor: OPPONENT_COLOR,
+                message: payload.message,
+            }
+            setMessages(prevMessages => [...prevMessages, message])
         }
-    }, [mounted])
+
+        socket.on('game:chat:message', onMessage);
+
+        return () => {
+            socket.off('game:chat:message', onMessage);
+        }
+    }, [])
 
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, [messages]);
 
 
-
-    function addMessage(message: Message) {
-        setMessages(prevMessages => [...prevMessages, message])
-        // if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-
     function handleSendMessage() {
         if (!socket) {
-            console.error("Socket not connected");
+            console.error("context not connected");
             return;
         }
 
-        if (inputMessage.trim()) {
-            addMessage({user: "You", message: inputMessage.trim()});
-            socket.emit("chatMessage", gameId, inputMessage.trim());
+        const trimmedMessage = inputMessage.trim();
+        if (trimmedMessage) {
+            const payload: GameChatSendRequest = {
+                gameId: gameId,
+                message: trimmedMessage,
+            }
+            socket.emit("game:chat:send", payload, ((ok, message) => {
+                if (ok) {
+                    setMessages(prevMessages => [...prevMessages, {username: user?.username ?? "You", usernameColor: PLAYER_COLOR, message: trimmedMessage}]);
+                } else {
+                    setMessages(prevMessages => [...prevMessages, {message: "Failed to send message" + message ? `: ${message}` : '', messageColor: ERROR_COLOR}]);
+                }
+            }) as GenericCallback);
         }
 
         setInputMessage("");
@@ -62,8 +84,8 @@ function Chatroom({gameId, }: {gameId: string}) {
         <div ref={scrollRef} className={"flex flex-col grow overflow-auto min-h-0 "}>
             {messages.map((message, index) => (
                 <div key={index} className={"wrap-anywhere "}>
-                    <p className={`inline font-bold ${message.user === "You" ? "text-blue-500" : "text-red-500"}`}>{message.user}: </p>
-                    <p className={"inline"}>{message.message}</p>
+                    <p className={`inline font-bold ${message.usernameColor ?? ''}`}>{message.username ?? ""}: </p>
+                    <p className={`inline ${message.messageColor ?? ""}`}>{message.message}</p>
                 </div>
             ))}
         </div>

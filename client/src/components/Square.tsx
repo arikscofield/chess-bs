@@ -41,7 +41,7 @@ function Square(
             {selected && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 `}/>}
 
             {/* Last Move highlight */}
-            {highlighted && <div className={`absolute w-full h-full top-0 l eft-0 bg-lime-400/40`}/>}
+            {highlighted && <div className={`absolute w-full h-full top-0 left-0 bg-lime-400/40`}/>}
 
             {/* Showing legal moves: both regular chess (green), and rule-specific (blue) */}
             {(movable || ruleMovable) && !selected && !hovered && <div className={`absolute w-full h-full top-0 left-0 group-hover:hidden 

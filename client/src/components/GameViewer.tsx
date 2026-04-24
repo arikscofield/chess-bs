@@ -1,14 +1,24 @@
-import {type Board, Color, type Move, type ReplayTimerInfo, type Turn} from "@chess-bs/common";
+import {Color, type Move, type Turn} from "@chess-bs/common";
 import {type Dispatch, type SetStateAction, useEffect, useState} from "react";
+import Board from "@chess-bs/common/src/board"
 
-export function useGameViewer(startBoard: Board | null, turnHistory: Turn[], replayTimerInfo?: ReplayTimerInfo):
-    {visibleBoard: Board | null, viewMoveIndex: number, setViewMoveIndex: Dispatch<SetStateAction<number>>, highlightedMove: Move | null, timersMs?: Record<Color, number>}
+
+type ClockInfo = {
+    usesClock: boolean,
+    startMs: number,
+    incrementMs: number,
+    gameStartTimestamp: number,
+}
+
+export function useGameViewer(startBoard: Board | null, turnHistory: Turn[], clockInfo: ClockInfo):
+    {visibleBoard: Board | null, viewMoveIndex: number, setViewMoveIndex: Dispatch<SetStateAction<number>>, highlightedMove: Move | null, clock: Map<Color, number>}
 {
     // The current move index to show in the visible board. -1 means the latest move
     const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
     const [highlightedMove, setHighlightedMove] = useState<Move | null>(null);
     const [visibleBoard, setVisibleBoard] = useState<Board | null>(null);
-    const [timersMs, setTimersMs] = useState<Record<Color, number>>({[Color.White]: 0, [Color.Black]: 0}) // FIXME don't hardcode
+    const [clock, setClock] = useState<Map<Color, number>>(new Map())
+
 
     useEffect(() => {
         setViewMoveIndex(-1);
@@ -16,8 +26,8 @@ export function useGameViewer(startBoard: Board | null, turnHistory: Turn[], rep
 
 
     useEffect(() => {
-        // console.log("Recomputing visible board for index: ", viewMoveIndex);
-        // console.log(replayTimerInfo, startBoard, turnHistory, viewMoveIndex)
+        // console.log("GameViewer.tsx: Main useEffect");
+
         if (!startBoard) {return;}
 
         let newBoard = startBoard.clone();
@@ -27,11 +37,9 @@ export function useGameViewer(startBoard: Board | null, turnHistory: Turn[], rep
 
         const boardStack: Board[] = [];
 
-        const newTimersMs = {[Color.White]: 0, [Color.Black]: 0} // FIXME don't hardcode
-        if (replayTimerInfo){
-            newTimersMs[Color.White] = replayTimerInfo.startMs;
-            newTimersMs[Color.Black] = replayTimerInfo.startMs;
-
+        const newClock: Map<Color, number> = new Map();
+        for (const color of Object.values(Color)) {
+            newClock.set(color, clockInfo.startMs ?? 0);
         }
         let prevTurnTimestamp: number = 0;
 
@@ -53,44 +61,37 @@ export function useGameViewer(startBoard: Board | null, turnHistory: Turn[], rep
                     if (previousBoard) {
                         newBoard = previousBoard;
                     }
+                } else {
+                    setHighlightedMove(null);
                 }
                 turnColor = event.callerColor;
             }
             
             // Tick down time between moves
-            if (replayTimerInfo && event.timestamp && event.timestamp > replayTimerInfo.gameStartTimestamp.getTime()) {
-                newTimersMs[turnColor] -= event.timestamp - prevTurnTimestamp;
+            if (clockInfo.usesClock && event.timestamp && event.timestamp > clockInfo.gameStartTimestamp) {
+                newClock.set(turnColor, (newClock.get(turnColor) ?? 0) - (event.timestamp - prevTurnTimestamp))
             }
             
             // Add Increment
-            if (replayTimerInfo) {
-                newTimersMs[turnColor] += replayTimerInfo.incrementMs;
+            if (clockInfo.usesClock) {
+                newClock.set(turnColor, (newClock.get(turnColor) ?? 0) + clockInfo.incrementMs)
             }
 
             prevTurnTimestamp = event.timestamp || 0;
 
-            // console.log(newTimersMs);
+            // console.log(newClock);
         }
 
 
         setVisibleBoard(newBoard);
-        setTimersMs(newTimersMs);
-    }, [replayTimerInfo, startBoard, turnHistory, viewMoveIndex]);
+        setClock(newClock);
+    }, [clockInfo, startBoard, turnHistory, viewMoveIndex]);
 
-
-
-    return replayTimerInfo
-    ? {
+    return {
         visibleBoard,
         viewMoveIndex,
         setViewMoveIndex,
         highlightedMove,
-        timersMs,
-    }
-    : {
-        visibleBoard,
-        viewMoveIndex,
-        setViewMoveIndex,
-        highlightedMove,
+        clock: clock
     }
 }

@@ -1,4 +1,6 @@
-import {Board, Color, Move, PieceType, Rule as RuleType, Square} from "./types";
+import {Color, PieceType} from "./types";
+import type {Move, Rule as RuleType, Square} from "./schemas/common";
+import Board from "./board"
 
 
 class Rule implements RuleType {
@@ -40,10 +42,14 @@ class Rule implements RuleType {
         if (!foundRule) return undefined;
         return new Rule(foundRule.id, foundRule.name, foundRule.description, foundRule.pieceType, foundRule.getLegalMoves);
     }
+
+    public static getRulesFromIds(ruleIds: number[]): Rule[] {
+        return ruleIds.map(id => this.getRuleFromId(id)).filter(rule => rule !== undefined);
+    }
 }
 
 
-export const allRules: RuleType[] = [
+export const allRules: Rule[] = [
     new Rule(
         1,
         "Knighted Queen",

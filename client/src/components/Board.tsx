@@ -2,7 +2,7 @@ import {
     useEffect,
     useRef,
     useState,
-    type PointerEvent as ReactPointerEvent,
+    type PointerEvent as ReactPointerEvent, useCallback,
 } from "react";
 import Square from "./Square.tsx";
 import {
@@ -10,46 +10,66 @@ import {
     Color,
     GameStatus, IndexToFile,
     type Move,
-    type Piece,
-    PieceType,
-    type Player,
+    PieceType, type PlayerDTO,
     type Square as SquareType,
-    type Board as BoardType,
 } from "@chess-bs/common";
-import {useElementSize, useMergedRef, useMounted} from "@mantine/hooks";
+import {useElementSize, useMergedRef} from "@mantine/hooks";
 import {pieceImages} from "../assets/pieceImages.ts";
 import {Portal} from "@mantine/core";
+import BoardClass from "@chess-bs/common/src/board"
+import Rule from "@chess-bs/common/src/rule.js";
 
 
 
-function Board(
-    {board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove, animateMove, } :
-    { board: BoardType | null, gameStatus: GameStatus, player: Player | null, view: Color, turn: Color, canMove: boolean, isBluffing: boolean, handleMove: (move: Move) => void, highlightedMove: Move | null, animateMove: boolean }
-) {
-    const mounted = useMounted();
+function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove}: {
+    board: BoardClass | null,
+    gameStatus: GameStatus,
+    player: PlayerDTO | null,
+    view: Color,
+    turn: Color,
+    canMove: boolean,
+    isBluffing: boolean,
+    handleMove: (move: Move) => void,
+    highlightedMove: Move | null
+}) {
 
-    type mouseState = {x: number; y: number, row: number | null, col: number | null, piece: Piece | null};
-    const [mouse, setMouse] = useState<mouseState>({ x: 0, y: 0, row: 0, col: 0, piece: null });
-    // const mouse = useRef<mouseState>({ x: 0, y: 0, row: 0, col: 0, piece: null });
-    const { ref: sizeRef, width, height } = useElementSize();
-    const boardElementRef = useRef<HTMLElement | null>(null);
 
-    const mergedBoardRef = useMergedRef(sizeRef, boardElementRef);
-
-    const [boardType, setBoardType] = useState<[string, string, string, string]>(BoardColorType.Brown);
-
-    const boardRef = useRef<BoardType | null>(board);
+    // State
     const [selectedSquare, setSelectedSquare] = useState<SquareType | null>(null);
     const [legalMoves, setLegalMoves] = useState<Move[]>([]);
     const [legalRuleMoves, setLegalRuleMoves] = useState<Move[]>([]);
     const [draggedSquare, setDraggedSquare] = useState<SquareType | null>(null);
     const [dragReleaseSquare, setDragReleaseSquare] = useState<SquareType | null>(null);
     const [promotionMove, setPromotionMove] = useState<Move | null>(null);
+    const [hovered, setHovered] = useState<{row: number | null; col: number | null}>({row: null, col: null});
+
+    const [boardType, ] = useState<[string, string, string, string]>(BoardColorType.Brown);
+
+    const { ref: sizeRef, width, height } = useElementSize();
+    const boardElementRef = useRef<HTMLElement | null>(null);
+    const mergedBoardRef = useMergedRef(sizeRef, boardElementRef);
+
+    // Ref versions of state
+    const viewRef = useRef<Color>(view);
+    const hoveredRef = useRef({row: -1, col: -1});
+    const canMoveRef = useRef(canMove);
+    const boardRef = useRef<BoardClass | null>(board);
+    const draggedPiecePortalRef = useRef<HTMLDivElement | null>(null);
+
+    const isDraggingRef = useRef<boolean>(false);
+    const lastPointerPosRef = useRef({x: 0, y: 0});
+
+    // Sync refs with state/props
+    useEffect(() => {
+        viewRef.current = view;
+        boardRef.current = board;
+        canMoveRef.current = canMove;
+    }, [view, board, canMove]);
+
+    const playerRules = Rule.getRulesFromIds(player?.ruleIds ?? []);
 
     const draggedPiece = draggedSquare ? board?.getPiece(draggedSquare) : null;
     const draggedPieceString: string = "" + draggedPiece?.color + draggedPiece?.pieceType;
-
-    const highlightedMovePieceString: string = "" + highlightedMove?.piece.color + highlightedMove?.piece.type;
 
     const numRows: number = board?.grid.length || 0;
     const numCols: number = board?.grid[0].length || 0;
@@ -59,67 +79,67 @@ function Board(
     const cols = view === Color.White
         ? Array.from({length: numCols}, (_, i) => i)
         : Array.from({length: numCols}, (_, i) => i).toReversed();
-
     const promotionOptions = [PieceType.Queen, PieceType.Knight, PieceType.Rook, PieceType.Bishop];
-
     const squareSize = width / 8;
 
-    useEffect(() => {
-        if (mounted) {
-            window.addEventListener("pointermove", handlePointerMove);
-            window.addEventListener("pointerup", handlePointerUp);
+
+    // Helper to calculate row/col from pointer event
+    const getRowColFromEvent = (e: PointerEvent) => {
+        if (!boardElementRef.current) return {row: -1, col: -1};
+        const w = boardElementRef.current.offsetWidth;
+        const h = boardElementRef.current.offsetHeight;
+        const r = Math.floor(e.offsetY / (h / numRows));
+        const c = Math.floor(e.offsetX / (w / numCols));
+        return viewRef.current === Color.Black ? {row: numRows - 1 - r, col: numCols - 1 - c} : {row: r, col: c};
+    };
+
+    const handlePointerMove = useCallback((e: PointerEvent) => {
+        lastPointerPosRef.current = {x: e.pageX, y: e.pageY};
+
+        if (!boardElementRef.current) return;
+
+        const {row, col} = getRowColFromEvent(e);
+
+        if (draggedPiecePortalRef.current) {
+            const squareSize = boardElementRef.current.offsetWidth / 8;
+            draggedPiecePortalRef.current.style.left = `${e.pageX - squareSize / 2}px`;
+            draggedPiecePortalRef.current.style.top = `${e.pageY - squareSize / 2}px`;
         }
 
-    }, [mounted]);
+        if (hoveredRef.current.row !== row || hoveredRef.current.col !== col) {
+            hoveredRef.current = {row, col};
+            setHovered({row, col});
+        }
 
-
-    // useLayoutEffect(() => {})
-    useEffect(() => {
-        boardRef.current = board;
-    }, [board]);
-
-    useEffect(() => {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        setLegalRuleMoves([]);
-    }, [turn, canMove]);
-
-    // handle the "queue" for the square that had a drag-release on it
-    // Needed since we can't just call handleSquareAction inside the onPointerUp handler due to state closure
-    useEffect(() => {
-        if (dragReleaseSquare === null) return;
-
-        endDrag(dragReleaseSquare);
-
-        setDraggedSquare(null);
-        setDragReleaseSquare(null);
-    }, [dragReleaseSquare])
+        if (isDraggingRef.current) {
+            boardElementRef.current.style.cursor = "grabbing";
+        } else {
+            const piece = boardRef.current?.getPiece({row, col}) || null;
+            boardElementRef.current.style.cursor = piece ? "grab" : "pointer";
+        }
+    }, []);
 
     function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-        if (!canMove || turn !== player?.color || (gameStatus != GameStatus.RUNNING && gameStatus != GameStatus.WAITING_FOR_FIRST_MOVE)) return;
+        if (!canMove || turn !== player?.color || (gameStatus !== GameStatus.RUNNING && gameStatus !== GameStatus.WAITING_FOR_FIRST_MOVE)) return;
 
-        const boardX = event.nativeEvent.offsetX;
-        const boardY = event.nativeEvent.offsetY;
+        const {row, col} = getRowColFromEvent(event.nativeEvent as unknown as PointerEvent);
 
-        let row = Math.floor(boardY / (height / numRows));
-        if (player?.color === Color.Black) row = numRows - 1 - row;
-        let col = Math.floor(boardX / (width / numCols));
-        if (player?.color === Color.Black) col = numCols - 1 - col;
-
-        // console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
+        console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
 
         const square = {row, col};
-        const piece = boardRef.current?.getPiece(square)
+        const piece = boardRef.current?.getPiece(square);
 
         if (piece === undefined) { // Outside the board
             deselect();
             return;
         }
 
-        window.addEventListener("contextmenu", () => {
-            deselect();
-            setDraggedSquare(null);
-        });
+        lastPointerPosRef.current = {x: event.pageX, y: event.pageY};
+
+        // window.addEventListener("contextmenu", () => {
+        //     deselect();
+        //     setDraggedSquare(null);
+        // });
 
         if (promotionMove && col === promotionMove.to.col) {
             const rowDiff = Math.abs(row - promotionMove.to.row);
@@ -135,89 +155,101 @@ function Board(
 
         if (isLegalMove) {
             move(square);
+        } else if (piece && piece.color === player?.color) {
+            startDrag(square);
         } else {
-            if (piece && piece.color === player?.color) {
-                startDrag(square);
-            } else {
-                deselect();
-            }
+            deselect();
         }
 
     }
 
-    function handlePointerMove(event: PointerEvent) {
-        const isOverBoard = event.target === boardElementRef.current;
-        const boardX = event.offsetX;
-        const boardY = event.offsetY;
-        const x = event.pageX;
-        const y = event.pageY;
-
-        const width = boardElementRef.current?.offsetWidth || 0;
-        const height = boardElementRef.current?.offsetHeight || 0;
-
-        let row = Math.floor(boardY / (height / numRows));
-        if (player?.color === Color.Black) row = numRows - 1 - row;
-        let col = Math.floor(boardX / (width / numCols));
-        if (player?.color === Color.Black) col = numCols - 1 - col;
-
-
-
-        const piece = boardRef.current?.getPiece({row, col}) || null;
-
-        // console.log("Over board:", isOverBoard, " boardXY:", boardX, boardY, " xy:", x, y, " row:", row, " col:", col, " piece:", piece?.pieceType);
-
-        if (isOverBoard) {
-            if (piece && boardElementRef.current && boardElementRef.current.style.cursor !== "grabbing") {
-                boardElementRef.current.style.cursor = "grab";
-            } else if (!piece && boardElementRef.current && boardElementRef.current.style.cursor !== "grabbing") {
-                boardElementRef.current.style.cursor = "pointer";
-            }
-            setMouse({x, y, row, col, piece});
-            // mouse.current = {x, y, row, col, piece};
-        } else {
-            setMouse({x, y, row: null, col: null, piece: null});
-            // mouse.current = {x, y, row: null, col: null, piece: null};
-            if (boardElementRef.current) boardElementRef.current.style.cursor = "default";
-        }
-
-        // console.log(`Pointer Move ${isOverBoard ? "over board" : ""} at x: ${x} y: ${y} row: ${row}, col: ${col}`);
-    }
-
-    function handlePointerUp(event: PointerEvent) {
-        if (!canMove) return; // TODO: Change when adding right-click arrow annotating
-
-        const isOverBoard = event.target === boardElementRef.current;
-        const boardX = event.offsetX;
-        const boardY = event.offsetY;
-
-        const width = boardElementRef.current?.offsetWidth || 0;
-        const height = boardElementRef.current?.offsetHeight || 0;
-
-        let row = Math.floor(boardY / (height / numRows));
-        if (player?.color === Color.Black) row = numRows - 1 - row;
-        let col = Math.floor(boardX / (width / numCols));
-        if (player?.color === Color.Black) col = numCols - 1 - col;
+    const handlePointerUp = useCallback((e: PointerEvent) => {
+        isDraggingRef.current = false;
+        if (!canMoveRef.current) return; // TODO: Change when adding right-click arrow annotating
+        const isOverBoard = e.target === boardElementRef.current;
+        const {row, col} = getRowColFromEvent(e);
 
         if (isOverBoard) {
             setDragReleaseSquare({row, col});
         }
-
         // console.log(`Pointer Up ${isOverBoard ? "over board" : ""} at x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
-        // console.log(event);
-    }
+    }, []);
+
+    useEffect(() => {
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", handlePointerUp);
+
+        return () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", handlePointerUp);
+        }
+    }, [handlePointerMove, handlePointerUp]);
+
+    // Reset selected squares on move
+    useEffect(() => {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        setLegalRuleMoves([]);
+    }, [turn, canMove]);
+
+    // handle the "queue" for the square that had a drag-release on it
+    // Needed since we can't just call handleSquareAction inside the onPointerUp handler due to state closure
+    useEffect(() => {
+        // console.log("Board.tsx: Drag release");
+
+        function endDrag(square: SquareType) {
+            const piece = boardRef.current?.getPiece(square);
+
+            if (boardElementRef.current) {
+                boardElementRef.current.style.cursor = piece ? "grab" : "pointer";
+            }
+
+            if (promotionMove) return;
+
+            if (piece === undefined) { // Outside the board
+                deselect();
+                return;
+            }
+
+            const isLegalMove = isBluffing
+                ? (piece === null || piece.color !== player?.color) && !legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col)
+                : legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col);
+
+            if (isLegalMove) {
+                move(square)
+                return;
+            }
+
+            // Ensure that just clicking a piece maintains selection
+            if (piece && piece.color === player?.color && square.row === selectedSquare?.row && square.col === selectedSquare.col) {
+                return;
+            }
+
+            deselect();
+        }
+
+
+        if (dragReleaseSquare === null) return;
+
+        endDrag(dragReleaseSquare);
+
+        setDraggedSquare(null);
+        setDragReleaseSquare(null);
+    }, [dragReleaseSquare])
 
     // Select a given square. If its own piece, set the legalMoves
     function select(square: SquareType) {
         // console.log("Selected square:", square);
-        if (!boardRef.current) return;
+        if (!boardRef.current)
+            return;
         setSelectedSquare(square);
         setLegalMoves(boardRef.current.getLegalMoves(square, true));
         setPromotionMove(null);
         let newLegalRuleMoves: Move[] = [];
-        for (const rule of player?.rules || []) {
+        for (const rule of playerRules || []) {
             newLegalRuleMoves = newLegalRuleMoves.concat(rule.getLegalMoves(boardRef.current, square));
         }
-        setLegalRuleMoves(newLegalRuleMoves);
+        setLegalRuleMoves(playerRules?.flatMap(rule => rule.getLegalMoves(boardRef.current, square)) || []);
     }
 
     // Deselect a square
@@ -257,44 +289,19 @@ function Board(
     function startDrag(square: SquareType) {
         select(square);
         setDraggedSquare(square);
+        isDraggingRef.current = true;
         if (boardElementRef.current) boardElementRef.current.style.cursor = "grabbing";
+        requestAnimationFrame(() => {
+            if (draggedPiecePortalRef.current && boardElementRef.current) {
+                const squareSize = boardElementRef.current.offsetWidth / 8;
+                const {x, y} = lastPointerPosRef.current;
+                draggedPiecePortalRef.current.style.left = `${x - squareSize / 2}px`;
+                draggedPiecePortalRef.current.style.top = `${y - squareSize / 2}px`;
+            }
+        });
     }
 
-    function endDrag(square: SquareType) {
-        if (boardElementRef.current) {
-            const piece = boardRef.current?.getPiece(square) || null;
-            if (piece) boardElementRef.current.style.cursor = "grab";
-            else boardElementRef.current.style.cursor = "pointer";
-        }
 
-        if (promotionMove) {
-            return;
-        }
-
-        const piece = boardRef.current?.getPiece(square);
-
-        if (piece === undefined) { // Outside the board
-            // console.log("Deselect due to end drag outside the board")
-            deselect();
-            return;
-        }
-
-        const isLegalMove = isBluffing
-            ? (piece === null || piece.color !== player?.color) && !legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col)
-            : legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col);
-
-        if (isLegalMove) {
-            move(square)
-            return;
-        }
-
-        // Ensure that just clicking a piece maintains selection
-        if (piece && piece.color === player?.color && square.row === selectedSquare?.row && square.col === selectedSquare.col) {
-            return;
-        }
-
-        deselect();
-    }
 
     function selectPromotionPiece(pieceType: PieceType) {
         setSelectedSquare(null);
@@ -321,12 +328,12 @@ function Board(
                 {rows.map((row, i) => (
                     cols.map((col, j) => {
                         return <div key={col} className={"w-full h-full relative"}>
-                            {i == numRows-1 && (
+                            {i === numRows-1 && (
                                 <span className={`absolute z-20 bottom-0 right-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
                                     {IndexToFile[col]}
                                 </span>
                             )}
-                            {j == 0 && (
+                            {j === 0 && (
                                 <span className={`absolute z-20 top-0 left-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
                                     {numRows-row}
                                 </span>
@@ -380,9 +387,8 @@ function Board(
                         }
                         return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
                             <Square row={row} col={col} color={player?.color || Color.White}
-                                    piece={(draggedSquare?.row === row && draggedSquare?.col === col) || (animateMove && highlightedMove?.to.row === row && highlightedMove?.to.col === col) ? null : board?.grid?.[row]?.[col] || null}
-                                    // hovered={mouse.current.row === row && mouse.current.col === col}
-                                    hovered={mouse.row === row && mouse.col === col}
+                                    piece={draggedSquare?.row === row && draggedSquare?.col === col ? null : board?.grid?.[row]?.[col] || null}
+                                    hovered={hovered.row === row && hovered.col === col}
                                     selected={selectedSquare?.row === row && selectedSquare?.col === col}
                                     highlighted={(highlightedMove?.to.row === row && highlightedMove?.to.col === col) || (highlightedMove?.from.row === row && highlightedMove?.from.col === col)}
                                     movable={movable}
@@ -398,12 +404,14 @@ function Board(
 
                 {draggedSquare && draggedPiece &&
                     <Portal>
-                        <div className={"absolute z-30 pointer-events-none cursor-grabbing"}
+                        <div
+                            ref={draggedPiecePortalRef}
+                            className={"absolute z-30 pointer-events-none cursor-grabbing"}
                              style={{
                                  // top: `calc(${mouse.current.y}px - ${squareSize/2}px)`,
                                  // left: `calc(${mouse.current.x}px - ${squareSize/2}px)`,
-                                 top: `calc(${mouse.y}px - ${squareSize/2}px)`,
-                                 left: `calc(${mouse.x}px - ${squareSize/2}px)`,
+                                 // top: `calc(${mouse.y}px - ${squareSize/2}px)`,
+                                 // left: `calc(${mouse.x}px - ${squareSize/2}px)`,
                                  width: squareSize,
                                  height: squareSize,
                              }}
@@ -413,27 +421,6 @@ function Board(
                         </div>
                     </Portal>
 
-                }
-
-
-                {highlightedMove &&
-                    <div
-                        className={`absolute pointer-events-none z-10 ${animateMove ? "transition-transform duration-300 ease-in-out" : "opacity-0"}`}
-                        style={{
-                            width: squareSize,
-                            height: squareSize,
-                            top: ((player?.color === Color.Black ? numRows - 1 - highlightedMove?.from.row : highlightedMove?.from.row) || 0) * squareSize,
-                            left: ((player?.color === Color.Black ? numCols - 1 - highlightedMove?.from.col : highlightedMove?.from.col) || 0) * squareSize,
-                            transform: animateMove ? `translate(
-                            ${( (highlightedMove?.to.col || 0) - (highlightedMove?.from.col || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px,
-                            ${( (highlightedMove?.to.row || 0) - (highlightedMove?.from.row || 0) ) * squareSize * (player?.color === Color.Black ? -1 : 1)}px
-                            )`
-                            : "translate(0, 0)",
-
-                        }}
-                    >
-                        <img src={pieceImages[highlightedMovePieceString]} alt={highlightedMovePieceString} width={squareSize} height={squareSize} draggable={false} className={"z-10 select-none pointer-events-none "} />
-                </div>
                 }
             </div>
         </div>

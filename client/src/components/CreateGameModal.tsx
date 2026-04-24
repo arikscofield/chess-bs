@@ -1,6 +1,6 @@
 import {Button, Center, Group, Modal, NumberInput, Radio, SegmentedControl, Slider, Switch, Text} from "@mantine/core";
 import {useState} from "react";
-import {allRules, BluffPunishment, CreateGameColor, type Rule} from "@chess-bs/common";
+import {allRules, BluffPunishment, CreateGameColor} from "@chess-bs/common";
 
 import {pieceImages} from "../assets/pieceImages.ts";
 import RuleList from "./RuleList.tsx";
@@ -15,13 +15,13 @@ const TIME_CONTROL_INCREMENT_VALUES = [
     17, 18, 19, 20, 25, 30, 35, 40, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180,
 ];
 
-function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose: () => void, onSubmit: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[]) => void}) {
+function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose: () => void, onSubmit: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) => void}) {
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
 
 
     const [ruleCount, setRuleCount] = useState<number | string>(3);
     const [rulePoolModalOpen, setRulePoolModalOpen] = useState<boolean>(false);
-    const [rulePool, setRulePool] = useState<Rule[]>([...allRules]);
+    const [rulePoolIds, setRulePoolIds] = useState<number[]>(allRules.map(rule => rule.id));
 
     const [timeControlEnabled, setTimeControlEnabled] = useState<boolean>(false);
     const [timeControlStartMinutes, setTimeControlStartMinutes] = useState<number>(5);
@@ -41,7 +41,7 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
             size={"75%"}
             styles={{ title: {fontSize: "2em"}}}
         >
-            <RuleList enabledRules={rulePool} setEnabledRules={setRulePool} wrapChips={true}/>
+            <RuleList enabledRuleIds={rulePoolIds} setEnabledRuleIds={setRulePoolIds} wrapChips={true}/>
             <div className={"flex flex-row justify-center mt-10"}>
                 <Button color={""}
                         onClick={() => setRulePoolModalOpen(false)}
@@ -128,11 +128,11 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
                 allowDecimal={false}
                 allowNegative={false}
                 min={0}
-                max={rulePool.length}
+                max={rulePoolIds.length}
                 required
                 error={typeof ruleCount === "string"
                     ? "Invalid Rule Count"
-                    : ruleCount > rulePool.length
+                    : ruleCount > rulePoolIds.length
                         ? "Rule Count greater than number of enabled rules"
                         : ""
                 }
@@ -195,11 +195,11 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
 
             <Button color={"green"} size={"md"}
                     onClick={() => {
-                        onSubmit(color, timeControlEnabled ? timeControlStartMinutes * 60 : null, timeControlEnabled ? timeControlIncrementSeconds : null, bluffPunishment, typeof ruleCount === "number" ? ruleCount : 3, rulePool);
+                        onSubmit(color, timeControlEnabled ? timeControlStartMinutes * 60 : null, timeControlEnabled ? timeControlIncrementSeconds : null, bluffPunishment, typeof ruleCount === "number" ? ruleCount : 3, rulePoolIds);
                     }}
                     disabled={
                         (timeControlStartMinutes === 0 && timeControlIncrementSeconds === 0) ||
-                        (typeof ruleCount === "string" || ruleCount > rulePool.length)
+                        (typeof ruleCount === "string" || ruleCount > rulePoolIds.length)
                     }
             >
                 Create

@@ -1,3 +1,23 @@
+import {z} from "zod";
+import {
+    GameAbortedResponse,
+    GameChatMessageResponse,
+    GameChatSendRequest, GameClockStateResponse, GameDrawAcceptRequest, GameDrawCancelledResponse,
+    GameDrawCancelOfferRequest,
+    GameDrawDeclinedResponse, GameDrawDeclineRequest, GameDrawOfferedResponse, GameDrawOfferRequest,
+    GameJoinRequest, GameMoveAcceptedResponse,
+    GameMoveAppliedResponse, GameMoveBluffCallFailedResponse, GameMoveBluffCallRequest, GameMoveBluffCallResultResponse,
+    GameMoveBluffCallSucceededResponse, GameMoveBluffChoosePieceRequest, GameMoveBluffLostPieceResponse,
+    GameMoveRejectedResponse,
+    GameMoveSendRequest, GameOverResponse,
+    GamePlayerJoinedResponse,
+    GamePlayerStateResponse, GameRematchAcceptedResponse, GameRematchAcceptRequest,
+    GameRematchCancelledResponse, GameRematchCancelOfferRequest, GameRematchDeclinedResponse, GameRematchDeclineRequest,
+    GameRematchOfferedResponse, GameRematchOfferRequest,
+    GameRequestStateRequest, GameResignRequest,
+    GameSpectateRequest, GameStartedResponse, GameStateResponse
+} from "./schemas/socket";
+import type {Square, Piece, Move, CallBluff, Turn, Rule, } from "./schemas/common";
 
 export enum PieceType {
     Pawn = "Pawn",
@@ -11,6 +31,12 @@ export enum PieceType {
 export enum Color {
     White = "White",
     Black = "Black",
+}
+
+export enum UserType {
+    Guest = "guest",
+    User = "user",
+    Admin = "admin",
 }
 
 export const PrefixToPieceType: Record<string, PieceType> = {
@@ -78,66 +104,68 @@ export const BoardColorType: Record<string, [string, string, string, string]> = 
 }
 
 
-export interface Piece {
-    pieceType: PieceType;
-    color: Color;
-    hasMoved: boolean;
-}
+// TODO: Remove and replace with zod schemas/types
+// export interface Piece {
+//     pieceType: PieceType;
+//     color: Color;
+//     hasMoved: boolean;
+// }
+//
+// export interface Square {
+//     row: number,
+//     col: number,
+// }
+//
+//
+// export interface Move {
+//     from: Square,
+//     to: Square,
+//     piece: {
+//         type: PieceType,
+//         color: Color,
+//     },
+//     promotion?: PieceType,
+//     bluff?: boolean,
+//     timestamp?: number,
+//     notation?: string,
+// }
+//
+// export interface CallBluff {
+//     callerColor: Color,
+//     successful: boolean,
+//     timestamp?: number,
+// }
+//
+// export type Turn = Move | CallBluff
+//
+// export interface Rule {
+//     id: number,
+//     name: string;
+//     description: string;
+//     pieceType: PieceType;
+//
+//     getLegalMoves(board: Board, square: Square): Move[];
+// }
 
-export interface Square {
-    row: number,
-    col: number,
-}
+// export interface Board {
+//     grid: (Piece | null)[][];
+//     enPassant: Square | null;
+//
+//     attackers(square: Square, color: Color): Square[];
+//     getPiece(square: Square): Piece | null | undefined;
+//     setPiece(square: Square, piece: Piece | null): boolean;
+//     applyMove(move: Move): boolean;
+//     getLegalMoves(square: Square, validateChecks: boolean): Move[];
+//     findKing(color: Color): Square | null;
+//     clone(): Board;
+// }
 
-
-export interface Move {
-    from: Square,
-    to: Square,
-    piece: {
-        type: PieceType,
-        color: Color,
-    },
-    promotion?: PieceType,
-    bluff?: boolean,
-    timestamp?: number,
-    notation?: string,
-}
-
-export interface CallBluff {
-    callerColor: Color,
-    successful: boolean,
-    timestamp?: number,
-}
-
-export type Turn = Move | CallBluff
-
-export interface Rule {
-    id: number,
-    name: string;
-    description: string;
-    pieceType: PieceType;
-
-    getLegalMoves(board: Board, square: Square): Move[];
-}
-
-export interface Board {
-    grid: (Piece | null)[][];
-    enPassant: Square | null;
-
-    attackers(square: Square, color: Color): Square[];
-    getPiece(square: Square): Piece | null | undefined;
-    setPiece(square: Square, piece: Piece | null): boolean;
-    applyMove(move: Move): boolean;
-    getLegalMoves(square: Square, validateChecks: boolean): Move[];
-    findKing(color: Color): Square | null;
-    clone(): Board;
-}
-
-export interface Player {
-    playerId: string;
-    color: Color;
-    rules: Rule[];
-}
+// export interface Player {
+//     userId: string;
+//     username: string;
+//     color: Color;
+//     rules: Rule[];
+// }
 
 
 export enum GameStatus {
@@ -152,7 +180,7 @@ export enum GameStatus {
 export enum GameResult {
     White = Color.White,
     Black = Color.Black,
-    Tie = "Tie"
+    Draw = "Draw"
 }
 
 
@@ -170,22 +198,83 @@ export enum BluffPunishment {
 }
 
 
-// -------- Socket Events -------------
+// -------- context Events -------------
 
 export enum AckStatus {
     OK = "OK",
     ERROR = "ERROR",
 }
 
-export interface ClientToServerEvents {
-    createGame: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[], callback: (
-        {status, message, gameId}:
-        {status: AckStatus, message: string, gameId?: string})
-        => void) => void;
+export interface ClientToServerEventsOld {
+    // createGame: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[], callback: (
+    //     {status, message, gameId}:
+    //     {status: AckStatus, message: string, gameId?: string})
+    //     => void) => void;
     joinGame: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     move: (gameId: string, move: Move, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
     callBluff: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string, result?: boolean}) => void) => void;
     chatMessage: (gameId: string, message: string) => void;
+    rematch: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
+}
+
+export type GenericCallback = (ok: boolean, message?: string, data?: any) => void;
+
+export interface ClientToServerEvents {
+    "game:join": (payload: GameJoinRequest, callback: GenericCallback) => void;
+    "game:spectate": (payload: GameSpectateRequest, callback: GenericCallback) => void;
+    // "game:leave": (payload: any) => void;
+
+    "game:request-state": (payload: GameRequestStateRequest, callback: GenericCallback) => void;
+
+    "game:chat:send": (payload: GameChatSendRequest, callback: GenericCallback) => void;
+
+    "game:move:send": (payload: GameMoveSendRequest, callback: GenericCallback) => void;
+    "game:move:bluff:call": (payload: GameMoveBluffCallRequest, callback: GenericCallback) => void;
+    "game:move:bluff:choose-piece": (payload: GameMoveBluffChoosePieceRequest) => void;
+
+    "game:resign": (payload: GameResignRequest, callback: GenericCallback) => void;
+
+    "game:draw:offer": (payload: GameDrawOfferRequest, callback: GenericCallback) => void;
+    "game:draw:cancel-offer": (payload: GameDrawCancelOfferRequest, callback: GenericCallback) => void;
+    "game:draw:accept": (payload: GameDrawAcceptRequest, callback: GenericCallback) => void;
+    "game:draw:decline": (payload: GameDrawDeclineRequest, callback: GenericCallback) => void;
+
+    "game:rematch:offer": (payload: GameRematchOfferRequest, callback: GenericCallback) => void;
+    "game:rematch:cancel-offer": (payload: GameRematchCancelOfferRequest, callback: GenericCallback) => void;
+    "game:rematch:accept": (payload: GameRematchAcceptRequest, callback: GenericCallback) => void;
+    "game:rematch:decline": (payload: GameRematchDeclineRequest, callback: GenericCallback) => void;
+}
+
+export interface ServerToClientEvents {
+    "game:chat:message": (payload: GameChatMessageResponse) => void;
+
+    "game:player:joined": (payload: GamePlayerJoinedResponse) => void;
+    "game:player:state": (payload: GamePlayerStateResponse) => void;
+
+    "game:aborted": (payload: GameAbortedResponse) => void;
+
+    "game:state": (payload: GameStateResponse) => void;
+    "game:started": (payload: GameStartedResponse) => void;
+
+    // "game:move:accepted": (payload: GameMoveAcceptedResponse) => void; // Only sent back to the sender of the move (due to UI prediction)
+    // "game:move:rejected": (payload: GameMoveRejectedResponse) => void;
+    "game:move:applied": (payload: GameMoveAppliedResponse) => void;
+    "game:move:bluff:call-succeeded": (payload: GameMoveBluffCallSucceededResponse) => void;
+    "game:move:bluff:call-failed": (payload: GameMoveBluffCallFailedResponse) => void;
+    "game:move:bluff:lost-piece": (payload: GameMoveBluffLostPieceResponse) => void;
+
+    "game:clock:state": (payload: GameClockStateResponse) => void;
+
+    "game:draw:offered": (payload: GameDrawOfferedResponse) => void;
+    "game:draw:cancelled": (payload: GameDrawCancelledResponse) => void;
+    "game:draw:declined": (payload: GameDrawDeclinedResponse) => void;
+
+    "game:rematch:offered": (payload: GameRematchOfferedResponse) => void;
+    "game:rematch:cancelled": (payload: GameRematchCancelledResponse) => void;
+    "game:rematch:accepted": (payload: GameRematchAcceptedResponse) => void;
+    "game:rematch:declined": (payload: GameRematchDeclinedResponse) => void;
+
+    "game:over": (payload: GameOverResponse) => void;
 }
 
 
@@ -238,4 +327,5 @@ export interface ServerToClientEvents {
     replayInfo: (replayInfo: ReplayInfo) => void;
     chatMessage: (message: string) => void;
     gameOver: (gameResult: GameResult, reason: string) => void;
+    gameRedirect: (gameId: string) => void;
 }
