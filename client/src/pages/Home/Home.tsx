@@ -30,7 +30,7 @@ function Home() {
         setCreateGameModalOpen(true);
     }
 
-    async function createGame(color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) {
+    async function createGame(color: CreateGameColor, clockStartSeconds: number | null, clockIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) {
         if (!socket) {
             console.error("context not connected");
             return;
@@ -38,8 +38,8 @@ function Home() {
 
         const payload: CreateGameRequest = {
             color: color,
-            timeControlStartSeconds: timeControlStartSeconds,
-            timeControlIncrementSeconds: timeControlIncrementSeconds,
+            clockStartSeconds: clockStartSeconds,
+            clockIncrementSeconds: clockIncrementSeconds,
             bluffPunishment: bluffPunishment,
             ruleCount: ruleCount,
             rulePoolIds: rulePoolIds,

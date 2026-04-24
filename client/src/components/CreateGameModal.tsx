@@ -6,16 +6,20 @@ import {pieceImages} from "../assets/pieceImages.ts";
 import RuleList from "./RuleList.tsx";
 
 
-const TIME_CONTROL_START_VALUES = [
+const CLOCK_START_VALUES = [
     0, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 25, 30, 35, 40, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180,
 ];
-const TIME_CONTROL_INCREMENT_VALUES = [
+const CLOCK_INCREMENT_VALUES = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 25, 30, 35, 40, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180,
 ];
 
-function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose: () => void, onSubmit: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) => void}) {
+function CreateGameModal({opened, onClose, onSubmit}: {
+    opened: boolean,
+    onClose: () => void,
+    onSubmit: (color: CreateGameColor, clockStartSeconds: number | null, clockIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) => void
+}) {
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
 
 
@@ -23,11 +27,11 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
     const [rulePoolModalOpen, setRulePoolModalOpen] = useState<boolean>(false);
     const [rulePoolIds, setRulePoolIds] = useState<number[]>(allRules.map(rule => rule.id));
 
-    const [timeControlEnabled, setTimeControlEnabled] = useState<boolean>(false);
-    const [timeControlStartMinutes, setTimeControlStartMinutes] = useState<number>(5);
-    const [timeControlStartIndex, setTimeControlStartIndex] = useState(TIME_CONTROL_START_VALUES.indexOf(timeControlStartMinutes));
-    const [timeControlIncrementSeconds, setTimeControlIncrementSeconds] = useState<number>(3)
-    const [timeControlIncrementIndex, setTimeControlIncrementIndex] = useState(TIME_CONTROL_INCREMENT_VALUES.indexOf(timeControlIncrementSeconds));
+    const [clockEnabled, setClockEnabled] = useState<boolean>(false);
+    const [clockStartMinutes, setClockStartMinutes] = useState<number>(5);
+    const [clockStartIndex, setClockStartIndex] = useState(CLOCK_START_VALUES.indexOf(clockStartMinutes));
+    const [clockIncrementSeconds, setClockIncrementSeconds] = useState<number>(3)
+    const [clockIncrementIndex, setClockIncrementIndex] = useState(CLOCK_INCREMENT_VALUES.indexOf(clockIncrementSeconds));
 
     const [color, setColor] = useState<CreateGameColor>(CreateGameColor.White);
 
@@ -64,10 +68,10 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
     >
 
         {/* Enable/Disable Time control switch */}
-        <div className={`${timeControlEnabled ? "" : "mb-5"}`}>
+        <div className={`${clockEnabled ? "" : "mb-5"}`}>
             <Switch
-                checked={timeControlEnabled}
-                onChange={(event) => setTimeControlEnabled(event.target.checked)}
+                checked={clockEnabled}
+                onChange={(event) => setClockEnabled(event.target.checked)}
                 label={"Time Control"}
                 size={"md"}
                 className={""}
@@ -76,43 +80,43 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
 
 
         {/* Starting time and Increment sliders */}
-        {timeControlEnabled && <div className={"w-full mb-5"}>
-            <Text size={"md"}>Minutes per side: {timeControlStartMinutes}</Text>
-            <Slider value={timeControlStartIndex} onChange={(index) => {
-                setTimeControlStartIndex(index)
-                setTimeControlStartMinutes(TIME_CONTROL_START_VALUES[index])
+        {clockEnabled && <div className={"w-full mb-5"}>
+            <Text size={"md"}>Minutes per side: {clockStartMinutes}</Text>
+            <Slider value={clockStartIndex} onChange={(index) => {
+                setClockStartIndex(index)
+                setClockStartMinutes(CLOCK_START_VALUES[index])
             }}
-                    label={timeControlStartMinutes}
+                    label={clockStartMinutes}
                     min={0}
-                    max={TIME_CONTROL_START_VALUES.length - 1}
+                    max={CLOCK_START_VALUES.length - 1}
                     step={1}
                     size={"lg"}
                     restrictToMarks
-                    marks={TIME_CONTROL_START_VALUES.map((_, index) => ({
+                    marks={CLOCK_START_VALUES.map((_, index) => ({
                         value: index,
                     }))}
                     styles={{
                         mark: { display: 'none' },
-                        root: { backgroundColor: timeControlStartMinutes === 0 && timeControlIncrementSeconds === 0 ? "rgba(255,0,0,0.22)" : ""},
+                        root: { backgroundColor: clockStartMinutes === 0 && clockIncrementSeconds === 0 ? "rgba(255,0,0,0.22)" : ""},
                     }}
 
             />
 
-            <div>Increment in seconds: {timeControlIncrementSeconds}</div>
-            <Slider value={timeControlIncrementIndex} onChange={(index) => {
-                setTimeControlIncrementIndex(index)
-                setTimeControlIncrementSeconds(TIME_CONTROL_INCREMENT_VALUES[index])
+            <div>Increment in seconds: {clockIncrementSeconds}</div>
+            <Slider value={clockIncrementIndex} onChange={(index) => {
+                setClockIncrementIndex(index)
+                setClockIncrementSeconds(CLOCK_INCREMENT_VALUES[index])
             }}
-                    label={TIME_CONTROL_INCREMENT_VALUES[timeControlIncrementIndex]}
+                    label={CLOCK_INCREMENT_VALUES[clockIncrementIndex]}
                     min={0}
-                    max={TIME_CONTROL_INCREMENT_VALUES.length - 1}
+                    max={CLOCK_INCREMENT_VALUES.length - 1}
                     step={1}
                     size={"lg"}
                     restrictToMarks
-                    marks={TIME_CONTROL_INCREMENT_VALUES.map((_, index) => ({
+                    marks={CLOCK_INCREMENT_VALUES.map((_, index) => ({
                         value: index,
                     }))}
-                    styles={{ mark: { display: 'none' }, root: { backgroundColor: timeControlStartMinutes === 0 && timeControlIncrementSeconds === 0 ? "rgba(255,0,0,0.22)" : ""} }}
+                    styles={{ mark: { display: 'none' }, root: { backgroundColor: clockStartMinutes === 0 && clockIncrementSeconds === 0 ? "rgba(255,0,0,0.22)" : ""} }}
             />
         </div>}
 
@@ -195,10 +199,10 @@ function CreateGameModal({opened, onClose, onSubmit}: {opened: boolean, onClose:
 
             <Button color={"green"} size={"md"}
                     onClick={() => {
-                        onSubmit(color, timeControlEnabled ? timeControlStartMinutes * 60 : null, timeControlEnabled ? timeControlIncrementSeconds : null, bluffPunishment, typeof ruleCount === "number" ? ruleCount : 3, rulePoolIds);
+                        onSubmit(color, clockEnabled ? clockStartMinutes * 60 : null, clockEnabled ? clockIncrementSeconds : null, bluffPunishment, typeof ruleCount === "number" ? ruleCount : 3, rulePoolIds);
                     }}
                     disabled={
-                        (timeControlStartMinutes === 0 && timeControlIncrementSeconds === 0) ||
+                        (clockStartMinutes === 0 && clockIncrementSeconds === 0) ||
                         (typeof ruleCount === "string" || ruleCount > rulePoolIds.length)
                     }
             >

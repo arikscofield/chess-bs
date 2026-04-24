@@ -57,7 +57,7 @@ export default function moveHandler(io: Server) {
 
         // Increment
         if (game.usesClock) {
-            game.timeLeftMs.set(game.turnColor, (game.timeLeftMs.get(game.turnColor) || 0) + game.clockIncrementMs);
+            game.clocksMs.set(game.turnColor, (game.clocksMs.get(game.turnColor) || 0) + game.clockIncrementMs);
             game.hasMoved.set(game.turnColor, true);
 
             // Start the timer if each player has made a move

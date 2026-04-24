@@ -40,7 +40,7 @@ export default class Game {
     gameStartTimestamp: Date;
     clockStartMs: number;
     clockIncrementMs: number;
-    timeLeftMs: Map<Color, number>;
+    clocksMs: Map<Color, number>;
     timerUpdateTimestamp: number;
     private timerInterval: NodeJS.Timeout | null = null;
     hasMoved: Map<Color, boolean>;
@@ -49,23 +49,21 @@ export default class Game {
     rematchOfferedColor: Color | null = null;
 
 
-    constructor(gameId: string, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, timeControlStartMs: number | null = null, timeIncrementMs: number | null = null, fen?: string, ) {
+    constructor(gameId: string, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, clockStartMs: number | null = null, clockIncrementMs: number | null = null, fen?: string, ) {
         this.gameId = gameId;
-        // this.creatorPlayerId = createrPlayerId;
-        // this.creatorColor = creatorColor;
         this.ruleCount = ruleCount;
         this.rulePool = rulePool;
         this.bluffPunishment = bluffPunishment;
 
         this.hasMoved = new Map();
-        if (timeControlStartMs !== null && timeIncrementMs !== null) {
+        if (clockStartMs !== null && clockIncrementMs !== null) {
             this.usesClock = true;
             this.gameStartTimestamp = new Date();
-            this.clockStartMs = timeControlStartMs;
-            this.clockIncrementMs = timeIncrementMs;
-            this.timeLeftMs = new Map<Color, number>();
+            this.clockStartMs = clockStartMs;
+            this.clockIncrementMs = clockIncrementMs;
+            this.clocksMs = new Map<Color, number>();
             for (const c of Object.values(Color)) {
-                this.timeLeftMs.set(c, timeControlStartMs);
+                this.clocksMs.set(c, clockStartMs);
                 this.hasMoved.set(c, false);
             }
             this.timerUpdateTimestamp = Date.now();
@@ -74,7 +72,7 @@ export default class Game {
             this.gameStartTimestamp = new Date();
             this.clockStartMs = 0;
             this.clockIncrementMs = 0;
-            this.timeLeftMs = new Map<Color, number>();
+            this.clocksMs = new Map<Color, number>();
             this.timerUpdateTimestamp = 0;
         }
 
@@ -125,9 +123,9 @@ export default class Game {
         if (this.gameStatus !== GameStatus.RUNNING || this.timerInterval === null) return;
 
         const elapsed = now - this.timerUpdateTimestamp;
-        const current = this.timeLeftMs.get(this.turnColor);
+        const current = this.clocksMs.get(this.turnColor);
         if (current === undefined) return;
-        this.timeLeftMs.set(this.turnColor, Math.max(0, current - elapsed));
+        this.clocksMs.set(this.turnColor, Math.max(0, current - elapsed));
         this.timerUpdateTimestamp = now;
     }
 
@@ -186,7 +184,7 @@ export default class Game {
 
         // Hasn't run out of time
         this.updateTimers(appliedAt);
-        const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
+        const currentTimeLeft = this.clocksMs.get(this.turnColor);
         if (currentTimeLeft && currentTimeLeft <= 0) {
             const gameResult: GameResult = this.turnColor === Color.White ? GameResult.Black : GameResult.White;
             const reason = "Timeout";
@@ -258,7 +256,7 @@ export default class Game {
 
         this.timerInterval = setInterval(() => {
             this.updateTimers();
-            const currentTimeLeft = this.timeLeftMs.get(this.turnColor);
+            const currentTimeLeft = this.clocksMs.get(this.turnColor);
             if (currentTimeLeft == undefined) return;
 
             if (currentTimeLeft <= 0) {
@@ -309,7 +307,7 @@ export default class Game {
                 userId: player.userId,
                 username: player.username,
                 color: player.color,
-                clockMs: this.timeLeftMs.get(player.color),
+                clockMs: this.clocksMs.get(player.color),
             })),
         };
     }

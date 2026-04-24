@@ -114,9 +114,9 @@ export async function getGameDTOFromFinishedGame(finishedGame: FinishedGame): Pr
         startBoard: finishedGame.startBoard,
         rulePoolIds: finishedGame.rulePoolIds,
         turnHistory: finishedGame.turnHistory,
-        usesClock: finishedGame.usesTimer,
-        clockStartMs: finishedGame.timerStartMs,
-        clockIncrementMs: finishedGame.timerIncrementMs,
+        usesClock: finishedGame.usesClock,
+        clockStartMs: finishedGame.clockStartMs,
+        clockIncrementMs: finishedGame.clockIncrementMs,
         bluffPunishment: finishedGame.bluffPunishment,
         players: players,
     }

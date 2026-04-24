@@ -53,10 +53,10 @@ export const games = pgTable("finished_games", {
     turnHistory: jsonb("turn_history").$type<Turn[]>().notNull(),
     bluffPunishment: bluffPunishmentEnum("bluff_punishment").notNull(),
 
-    usesTimer: boolean("uses_timer").default(false).notNull(),
+    usesClock: boolean("uses_clock").default(false).notNull(),
     startTimestamp: timestamp("start_timestamp", { withTimezone: true }).defaultNow().notNull(),
-    timerStartMs: integer("timer_start_ms").default(0).notNull(),
-    timerIncrementMs: integer("timer_increment_ms").default(0).notNull(),
+    clockStartMs: integer("clock_start_ms").default(0).notNull(),
+    clockIncrementMs: integer("clock_increment_ms").default(0).notNull(),
 }, (table) => [
     index("games_start_timestamp_idx").on(table.startTimestamp, table.id)
 ]);

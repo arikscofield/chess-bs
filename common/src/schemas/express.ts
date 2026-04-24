@@ -24,8 +24,8 @@ export type LoginRequest = z.infer<typeof LoginSchema>;
 
 export const CreateGameSchema = z.object({
     color: ZCreateGameColorEnum,
-    timeControlStartSeconds: z.coerce.number().int().positive().nullable(),
-    timeControlIncrementSeconds: z.coerce.number().int().positive().nullable(),
+    clockStartSeconds: z.coerce.number().int().positive().nullable(),
+    clockIncrementSeconds: z.coerce.number().int().positive().nullable(),
     bluffPunishment: ZBluffPunishmentEnum,
     ruleCount: z.coerce.number().int().positive().default(DEFAULT_RULE_COUNT),
     rulePoolIds: z.array(z.coerce.number().int().positive()),

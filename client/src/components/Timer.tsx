@@ -1,6 +1,6 @@
 
 
-function Timer({timeMs, isRunning, }: {timeMs: number | undefined, isRunning: boolean, }) {
+function Timer({clockMs, isRunning, }: {clockMs: number | undefined, isRunning: boolean, }) {
 
     function formatTime(timeMs: number): string {
         let result = "";
@@ -20,13 +20,13 @@ function Timer({timeMs, isRunning, }: {timeMs: number | undefined, isRunning: bo
     }
 
 
-    if (typeof timeMs !== "number") {
+    if (typeof clockMs !== "number") {
         return;
     }
 
-    return (<div className={`flex justify-center items-center w-[100px] h-[50px] my-1 px-1 pb-0.5 rounded-md ${isRunning ? ( timeMs <= 0 ? "bg-red-400/30" : "bg-lime-700/50") : "bg-bg-2"}`}>
+    return (<div className={`flex justify-center items-center w-[100px] h-[50px] my-1 px-1 pb-0.5 rounded-md ${isRunning ? ( clockMs <= 0 ? "bg-red-400/30" : "bg-lime-700/50") : "bg-bg-2"}`}>
         <p className={`text-3xl text-center ${isRunning ? "text-white" : "text-gray-400"} `}>
-            {formatTime(timeMs)}
+            {formatTime(clockMs)}
         </p>
     </div>)
 }

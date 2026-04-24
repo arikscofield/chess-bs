@@ -151,7 +151,7 @@ function Play() {
                     <div className={"float-start text-white text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</div>
 
                     <Timer
-                        timeMs={players.find(p => p.color === topColor)?.clockMs}
+                        clockMs={players.find(p => p.color === topColor)?.clockMs}
                         isRunning={(view && view !== turnColor) || (view === undefined && player?.color !== turnColor)}
                     />
                 </div>
@@ -174,7 +174,7 @@ function Play() {
                         <CallBluffButton gameId={gameId} />
                     </div>
                     <Timer
-                        timeMs={players.find(p => p.color === bottomColor)?.clockMs}
+                        clockMs={players.find(p => p.color === bottomColor)?.clockMs}
                         isRunning={(view === turnColor) || (view === undefined && player?.color === turnColor)}
                     />
                 </div>

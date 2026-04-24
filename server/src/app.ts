@@ -279,17 +279,17 @@ app.post('/api/auth/login', validate({ body: LoginSchema }), async (req, res) =>
 app.post('/api/games', validate({ body: CreateGameSchema }), requireAuth, async (req, res) => {
 
     const user = req.user!;
-    const { color, timeControlStartSeconds, timeControlIncrementSeconds, bluffPunishment, ruleCount, rulePoolIds } = req.body as CreateGameRequest;
+    const { color, clockStartSeconds, clockIncrementSeconds, bluffPunishment, ruleCount, rulePoolIds } = req.body as CreateGameRequest;
     const rulePool = rulePoolIds.map(ruleId => Rule.getRuleFromId(ruleId)).filter(rule => rule !== undefined);
 
 
     let gameId = generateGameId(6);
     while (gameRepository.getById(gameId))
         gameId = Math.random().toString(36).substring(2, 8);
-    const game = new Game(gameId, ruleCount, rulePool, bluffPunishment, timeControlStartSeconds !== null ? timeControlStartSeconds * 1000 : null, timeControlIncrementSeconds !== null ? timeControlIncrementSeconds * 1000 : null);
+    const game = new Game(gameId, ruleCount, rulePool, bluffPunishment, clockStartSeconds !== null ? clockStartSeconds * 1000 : null, clockIncrementSeconds !== null ? clockIncrementSeconds * 1000 : null);
 
     gameRepository.save(game);
-    console.log(`Creating game ${gameId} for player ${user.id} with options: Color: ${color}, timeStart: ${timeControlStartSeconds} * 1000, timeIncrement: ${timeControlIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${rulePoolIds}`);
+    console.log(`Creating game ${gameId} for player ${user.id} with options: Color: ${color}, timeStart: ${clockStartSeconds} * 1000, timeIncrement: ${clockIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${rulePoolIds}`);
 
     const response = CreateGameResponseSchema.safeParse({ gameId });
     if (!response.success) {

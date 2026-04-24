@@ -71,7 +71,7 @@ function Spectate() {
                     <div className={"float-start text-white text-xl"}>{"Opponent"}</div>
 
                     <Timer
-                        timeMs={timers?.get(view === undefined ? (player?.color === Color.White ? Color.Black : Color.White) : (view === Color.White ? Color.Black : Color.White))}
+                        clockMs={timers?.get(view === undefined ? (player?.color === Color.White ? Color.Black : Color.White) : (view === Color.White ? Color.Black : Color.White))}
                         isRunning={(view && view !== turnColor) || (view === undefined && player?.color !== turnColor)}
                     />
                 </div>
@@ -94,7 +94,7 @@ function Spectate() {
                         <CallBluffButton gameId={gameId} />
                     </div>
                     <Timer
-                        timeMs={timers?.get(view === undefined ? (player?.color ?? Color.White) : view)}
+                        clockMs={timers?.get(view === undefined ? (player?.color ?? Color.White) : view)}
                         isRunning={(view === turnColor) || (view === undefined && player?.color === turnColor)}
                     />
                 </div>

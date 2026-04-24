@@ -12,8 +12,7 @@ import {count, desc, eq} from "drizzle-orm";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "./schema.js";
 import Game from "../game.js";
-import {Color, type ReplayInfo, UserType} from "@common/src/index.js";
-import Rule from "@common/src/rule.js";
+import {Color, UserType} from "@common/src/index.js";
 
 
 
@@ -138,10 +137,10 @@ export async function saveFinishedGame(game: Game): Promise<boolean> {
         turnHistory: game.turnHistory,
         bluffPunishment: game.bluffPunishment,
 
-        usesTimer: game.usesClock,
+        usesClock: game.usesClock,
         startTimestamp: game.gameStartTimestamp,
-        timerStartMs: game.clockStartMs,
-        timerIncrementMs: game.clockIncrementMs,
+        clockStartMs: game.clockStartMs,
+        clockIncrementMs: game.clockIncrementMs,
     }
 
     try {

@@ -40,7 +40,7 @@ function Replay() {
                     </div>
 
                     <Timer
-                        timeMs={clock.get(oppColor)}
+                        clockMs={clock.get(oppColor)}
                         isRunning={false}
                     />
                 </div>
@@ -65,7 +65,7 @@ function Replay() {
 
 
                     <Timer
-                        timeMs={clock.get(view)}
+                        clockMs={clock.get(view)}
                         isRunning={false}
                     />
                 </div>

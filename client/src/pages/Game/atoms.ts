@@ -74,7 +74,7 @@ export const clockInfoAtom = atom(
         set(gameStartTimestampAtom, clockInfo.gameStartTimestamp);
     }
 )
-export const clockTimesAtom = atom(
+export const clocksAtom = atom(
     (get) => {
         const times = new Map<Color, number>();
         for (const player of get(playersAtom)) {
