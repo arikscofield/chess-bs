@@ -8,7 +8,7 @@ import rematchHandler from "./game/rematch.js";
 import type {ZodObject} from "zod";
 import Game from "../game.js";
 import {saveFinishedGame} from "../db/helper.js";
-import {type GameOverResponse, GameResult} from "@common/src/index.js";
+import {type GameClockStartedResponse, type GameOverResponse, GameResult} from "@common/src/index.js";
 import {generateGameId} from "../helper.js";
 import {type GameRematchAcceptedResponse, GameStatus} from "@chess-bs/common";
 import type {Server} from "socket.io";
@@ -73,6 +73,16 @@ export function handleRematch(game: Game) {
     }
     io.to(game.gameId).emit("game:rematch:accepted", rematchAcceptedPayload);
 
+}
+
+
+export function sendClockStarted(game: Game) {
+
+    const payload: GameClockStartedResponse = {
+        gameStatus: game.gameStatus,
+        startedAt: game.clockStartTimestamp
+    }
+    io.to(game.gameId).emit("game:clock:started", payload);
 }
 
 

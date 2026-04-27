@@ -131,6 +131,12 @@ export const GameAbortedSchema = z.object({
 })
 export type GameAbortedResponse = z.infer<typeof GameAbortedSchema>;
 
+export const GameClockStartedSchema = z.object({
+    gameStatus: ZGameStatusEnum,
+    startedAt: z.number().int(),
+})
+export type GameClockStartedResponse = z.infer<typeof GameClockStartedSchema>;
+
 export const GameClockStateSchema = ClockInfoSchema;
 export type GameClockStateResponse = z.infer<typeof GameClockStateSchema>;
 
@@ -179,29 +185,30 @@ export const GameMoveBluffCallResultSchema = z.object({
 export type GameMoveBluffCallResultResponse = z.infer<typeof GameMoveBluffCallResultSchema>;
 
 export const GameMoveBluffCallSucceededSchema = z.object({
-    appliedAt: z.number().int(),
+    turn: TurnSchema,
     turnColor: ZColorEnum,
     bluffPunishment: ZBluffPunishmentEnum,
     punished: ZColorEnum,
-    turn: TurnSchema,
+    appliedAt: z.number().int(),
 })
 export type GameMoveBluffCallSucceededResponse = z.infer<typeof GameMoveBluffCallSucceededSchema>;
 
 export const GameMoveBluffCallFailedSchema = z.object({
-    appliedAt: z.number().int(),
+    turn: TurnSchema,
     turnColor: ZColorEnum,
     bluffPunishment: ZBluffPunishmentEnum,
     punished: ZColorEnum,
-    turn: TurnSchema,
+    appliedAt: z.number().int(),
 })
 export type GameMoveBluffCallFailedResponse = z.infer<typeof GameMoveBluffCallFailedSchema>;
 
 export const GameMoveBluffLostPieceSchema = z.object({
-    appliedAt: z.number().int(),
+    turn: TurnSchema,
     turnColor: ZColorEnum,
     square: SquareSchema,
     piece: ZPieceTypeEnum,
     color: ZColorEnum,
+    appliedAt: z.number().int(),
 })
 export type GameMoveBluffLostPieceResponse = z.infer<typeof GameMoveBluffLostPieceSchema>;
 

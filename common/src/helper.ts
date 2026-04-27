@@ -156,5 +156,7 @@ export function getMoveNotation(board: Board, move: Move): string {
     return notation;
 }
 
-
+export function nextTurnColor(color: Color): Color {
+    return color === Color.White ? Color.Black : Color.White;
+}
 

@@ -124,7 +124,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
         const {row, col} = getRowColFromEvent(event.nativeEvent as unknown as PointerEvent);
 
-        console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
+        // console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
 
         const square = {row, col};
         const piece = boardRef.current?.getPiece(square);

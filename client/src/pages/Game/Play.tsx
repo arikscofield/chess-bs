@@ -17,7 +17,7 @@ import TurnHistory from "../../components/TurnHistory.tsx";
 import Chatroom from "../../components/Chatroom.tsx";
 import {useAtom, useAtomValue, useSetAtom} from "jotai";
 import {
-    addTurnAtom,
+    addTurnAtom, addTurnTimestampAtom,
     clockInfoAtom, drawOfferedColorAtom,
     gameIdAtom,
     gameResultAtom,
@@ -37,6 +37,7 @@ import {useGameViewer} from "../../components/GameViewer.tsx";
 import {useSocket} from "../../components/context/SocketContext.ts";
 import {useEffect, useState} from "react";
 import GameActions from "../../components/GameActions.tsx";
+import {useLiveClock} from "../../components/LiveClock.tsx";
 
 function Play() {
     const socket = useSocket();
@@ -59,8 +60,10 @@ function Play() {
 
     const addTurn = useSetAtom(addTurnAtom);
     const removeTurn = useSetAtom(removeTurnAtom);
+    const addTurnTimestamp = useSetAtom(addTurnTimestampAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory, clockInfo);
+    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, gameStatus);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
 
@@ -94,7 +97,7 @@ function Play() {
         addTurn(move);
         setTurnColor(turnColor === Color.White ? Color.Black : Color.White);
 
-        socket.emit("game:move:send", payload, (ok, message) => {
+        socket.emit("game:move:send", payload, (ok, message, appliedAt) => {
             if (!ok) {
                 removeTurn(-1);
                 setTurnColor(oldTurnColor);
@@ -102,6 +105,7 @@ function Play() {
             }
 
             setIsBluffing(false);
+            if (appliedAt) addTurnTimestamp(appliedAt, -1);
         })
     }
 
@@ -148,12 +152,12 @@ function Play() {
             {/* Board */}
             <div className={"relative flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</div>
+                    <div className={"flex text-start items-end text-white text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</div>
 
-                    <Timer
-                        clockMs={players.find(p => p.color === topColor)?.clockMs}
+                    {clockInfo.usesClock && <Timer
+                        clockMs={liveClocks.get(topColor)}
                         isRunning={(view && view !== turnColor) || (view === undefined && player?.color !== turnColor)}
-                    />
+                    />}
                 </div>
                 {visibleBoard !== null && player && <Board
                     board={visibleBoard}
@@ -168,15 +172,15 @@ function Play() {
                 />
                 }
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>
+                    <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>
                     <div className={"flex flex-row justify-center gap-5 py-3"}>
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButton gameId={gameId} />
                     </div>
-                    <Timer
-                        clockMs={players.find(p => p.color === bottomColor)?.clockMs}
+                    {clockInfo.usesClock && <Timer
+                        clockMs={liveClocks.get(bottomColor)}
                         isRunning={(view === turnColor) || (view === undefined && player?.color === turnColor)}
-                    />
+                    />}
                 </div>
 
             </div>

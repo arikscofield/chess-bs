@@ -46,34 +46,17 @@ export default function moveHandler(io: Server) {
             return;
         }
 
-
         move.notation = getMoveNotation(game.currentBoard, move);
+        move.timestamp = receivedAt;
         if (!game.makeMove(move, player, receivedAt)) {
             callback(false, "Failed to make move");
             return;
         }
 
-
-
-        // Increment
-        if (game.usesClock) {
-            game.clocksMs.set(game.turnColor, (game.clocksMs.get(game.turnColor) || 0) + game.clockIncrementMs);
-            game.hasMoved.set(game.turnColor, true);
-
-            // Start the timer if each player has made a move
-            if (game.gameStatus === GameStatus.WAITING_FOR_FIRST_MOVE && Array.from(game.hasMoved.values()).every(v => v)) {
-                game.startGameTimer();
-            }
-        }
-
-
-        // Change turn
-        game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
-
         const movePayload: GameMoveAppliedResponse = {
             move: move,
-            appliedAt: receivedAt,
             turnColor: game.turnColor,
+            appliedAt: receivedAt,
         }
 
         // Check for a "checkmate"/win
@@ -83,7 +66,7 @@ export default function moveHandler(io: Server) {
             if (game.currentBoard.findKing(playerColor) === null) {
                 console.log(`${game.gameId}: ${playerColor} king missing.\n\t${game.turnColor == oppColor}\n\t${game.turnColor == playerColor && !game.lastMoveWasBluff}`)
                 if (game.turnColor === oppColor || (game.turnColor === playerColor && !game.lastMoveWasBluff)) {
-                    callback(true, "Move applied");
+                    callback(true, "Move applied", receivedAt);
                     this.to(gameId).emit("game:move:applied", movePayload);
                     game.endGame(oppColor === Color.Black ? GameResult.Black : GameResult.White, "King captured");
                     return;
@@ -93,7 +76,7 @@ export default function moveHandler(io: Server) {
 
         // Send move and a true callback
         this.to(gameId).emit("game:move:applied", movePayload);
-        callback(true, "Move applied");
+        callback(true, "Move applied", receivedAt);
 
     }
 
@@ -129,45 +112,19 @@ export default function moveHandler(io: Server) {
             return;
         }
 
-        // Able to call bluff
-        const prevTurn = game.turnHistory[game.turnHistory.length-1]
-        if (!(prevTurn && 'from' in prevTurn && prevTurn.piece?.color !== game.turnColor) || game.prevBoard === null) {
-            callback(false, "Unable to call bluff");
+        const {ok, callSuccessful, response, message} = game.callBluff(player.color, receivedAt);
+        if (!ok) {
+            callback(false, message);
             return;
         }
 
-        if (game.lastMoveWasBluff) {
-            // Successful call
-            const newTurn: CallBluff = {successful: true, callerColor: player.color, timestamp: Date.now()}
-            game.currentBoard = game.prevBoard;
-            game.prevBoard = null;
-            game.currentBoard.enPassant = null;
-            game.turnHistory.push(newTurn)
-            const responsePayload: GameMoveBluffCallSucceededResponse = {
-                appliedAt: receivedAt,
-                turnColor: game.turnColor,
-                bluffPunishment: game.bluffPunishment,
-                punished: game.turnColor === Color.White ? Color.Black : Color.White,
-                turn: newTurn,
-            }
-            io.to(gameId).emit("game:move:bluff:call-succeeded", responsePayload)
-            callback(true, "Bluff call correct");
+        if (callSuccessful) {
+            io.to(gameId).emit("game:move:bluff:call-succeeded", response);
+            callback(true, message);
             return;
         } else {
-            // Failed call
-            const newTurn: CallBluff = {successful: false, callerColor: player.color, timestamp: Date.now()}
-            game.turnColor = game.turnColor === Color.White ? Color.Black : Color.White;
-            game.currentBoard.enPassant = null;
-            game.turnHistory.push(newTurn)
-            const responsePayload: GameMoveBluffCallFailedResponse = {
-                appliedAt: receivedAt,
-                turnColor: game.turnColor,
-                bluffPunishment: game.bluffPunishment,
-                punished: player.color,
-                turn: newTurn,
-            }
-            io.to(gameId).emit("game:move:bluff:call-failed", responsePayload)
-            callback(true, "Bluff call incorrect");
+            io.to(gameId).emit("game:move:bluff:call-failed", response);
+            callback(true, message);
             return;
         }
     }

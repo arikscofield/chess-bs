@@ -21,6 +21,18 @@ export const addTurnAtom = atom(null, (get, set, newTurn: Turn) => {
 export const removeTurnAtom = atom(null, (get, set, index: number) => {
     set(turnHistoryAtom, get(turnHistoryAtom).toSpliced(index, 1));
 })
+export const addTurnTimestampAtom = atom<null, [timestamp: number, index: number], void>(null, (_, set, timestamp, index) => {
+    set(turnHistoryAtom, prev => {
+        if (index === -1) index = prev.length - 1;
+        if (prev.length === 0 || index < 0 || index >= prev.length) return prev;
+
+        return [
+            ...prev.slice(0, index),
+            { ...prev[index], timestamp },
+            ...prev.slice(index + 1),
+        ];
+    });
+})
 export const turnColorAtom = atom<Color>(Color.White);
 export const playersAtom = atom<PlayerDTO[]>([]);
 export const gameResultAtom = atom<GameResult>(GameResult.Draw);
@@ -32,14 +44,12 @@ export const setGameStateAtom = atom(null, (_, set, state: GameStateResponse) =>
     set(startBoardAtom, new BoardClass(state.startBoard.grid, state.startBoard.enPassant));
     set(gameStatusAtom, state.gameStatus);
     set(rulePoolIdsAtom, state.rulePoolIds);
-    set(usesClockAtom, state.clock.usesClock);
-    set(clockStartMsAtom, state.clock.startMs);
-    set(clockIncrementMsAtom, state.clock.incrementMs);
     set(bluffPunishmentAtom, state.bluffPunishment);
     set(turnColorAtom, state.turnColor);
     set(turnHistoryAtom, state.turnHistory);
     set(playersAtom, state.players);
-    set(drawOfferedColorAtom, state.drawOfferedColor ?? null)
+    set(drawOfferedColorAtom, state.drawOfferedColor ?? null);
+    set(clockInfoAtom, state.clock)
 })
 
 
@@ -58,20 +68,20 @@ export const clockStartMsAtom = atom<number>(0);
 export const clockIncrementMsAtom = atom<number>(0);
 export const bluffPunishmentAtom = atom<BluffPunishment>(BluffPunishment.Turn);
 export const creatorColorAtom = atom<CreateGameColor>(CreateGameColor.Random);
-export const gameStartTimestampAtom = atom<number>(0);
+export const clockStartTimestampAtom = atom<number>(0);
 
 export const clockInfoAtom = atom(
     (get) => ({
         usesClock: get(usesClockAtom),
         startMs: get(clockStartMsAtom),
         incrementMs: get(clockIncrementMsAtom),
-        gameStartTimestamp: get(gameStartTimestampAtom),
+        startTimestamp: get(clockStartTimestampAtom),
     } as ClockInfo),
     (_get, set, clockInfo: ClockInfo) => {
         set(usesClockAtom, clockInfo.usesClock);
         set(clockStartMsAtom, clockInfo.startMs);
         set(clockIncrementMsAtom, clockInfo.incrementMs);
-        set(gameStartTimestampAtom, clockInfo.gameStartTimestamp);
+        set(clockStartTimestampAtom, clockInfo.startTimestamp);
     }
 )
 export const clocksAtom = atom(

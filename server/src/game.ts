@@ -5,7 +5,7 @@ import {
     type GameClockStateResponse,
     GameResult,
     type GameStateResponse,
-    GameStatus,
+    GameStatus, getMoveNotation,
     type Move,
     type Turn
 } from "@common/src/index.js";
@@ -14,8 +14,13 @@ import Rule from "@common/src/rule.js";
 import Player from "./player.js";
 import {parseFen} from "./helper.js";
 import {clearInterval} from "node:timers";
-import type {GameDTO} from "@chess-bs/common";
-import {sendGameOver} from "./socket/index.js";
+import type {
+    CallBluff,
+    GameDTO,
+    GameMoveBluffCallFailedResponse,
+    GameMoveBluffCallSucceededResponse
+} from "@chess-bs/common";
+import {sendClockStarted, sendGameOver} from "./socket/index.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -35,14 +40,14 @@ export default class Game {
     ruleCount: number;
     rulePool: Rule[];
     bluffPunishment: BluffPunishment;
+    gameStartTimestamp: number;
 
     usesClock: boolean;
-    gameStartTimestamp: Date;
+    clockStartTimestamp: number;
     clockStartMs: number;
     clockIncrementMs: number;
     clocksMs: Map<Color, number>;
-    timerUpdateTimestamp: number;
-    private timerInterval: NodeJS.Timeout | null = null;
+    clockUpdateTimestamp: number;
     hasMoved: Map<Color, boolean>;
 
     drawOfferedColor: Color | null = null;
@@ -58,7 +63,8 @@ export default class Game {
         this.hasMoved = new Map();
         if (clockStartMs !== null && clockIncrementMs !== null) {
             this.usesClock = true;
-            this.gameStartTimestamp = new Date();
+            this.gameStartTimestamp = Date.now();
+            this.clockStartTimestamp = 0;
             this.clockStartMs = clockStartMs;
             this.clockIncrementMs = clockIncrementMs;
             this.clocksMs = new Map<Color, number>();
@@ -66,14 +72,15 @@ export default class Game {
                 this.clocksMs.set(c, clockStartMs);
                 this.hasMoved.set(c, false);
             }
-            this.timerUpdateTimestamp = Date.now();
+            this.clockUpdateTimestamp = Date.now();
         } else {
             this.usesClock = false;
-            this.gameStartTimestamp = new Date();
+            this.gameStartTimestamp = Date.now();
+            this.clockStartTimestamp = 0;
             this.clockStartMs = 0;
             this.clockIncrementMs = 0;
             this.clocksMs = new Map<Color, number>();
-            this.timerUpdateTimestamp = 0;
+            this.clockUpdateTimestamp = 0;
         }
 
         this.gameStatus = GameStatus.WAITING_FOR_PLAYER;
@@ -108,6 +115,11 @@ export default class Game {
         };
     }
 
+    public getClocks(now=Date.now()): Map<Color, number> {
+        this.updateTimers(now);
+        return this.clocksMs;
+    }
+
     public getClockState(): GameClockStateResponse {
         this.updateTimers();
 
@@ -115,18 +127,18 @@ export default class Game {
             usesClock: this.usesClock,
             startMs: this.clockStartMs,
             incrementMs: this.clockIncrementMs,
-            gameStartTimestamp: this.gameStartTimestamp.getTime(),
+            startTimestamp: this.clockStartTimestamp,
         };
     }
 
     public updateTimers(now: number=Date.now()) {
-        if (this.gameStatus !== GameStatus.RUNNING || this.timerInterval === null) return;
+        if (this.gameStatus !== GameStatus.RUNNING) return;
 
-        const elapsed = now - this.timerUpdateTimestamp;
+        const elapsed = now - this.clockUpdateTimestamp;
         const current = this.clocksMs.get(this.turnColor);
         if (current === undefined) return;
         this.clocksMs.set(this.turnColor, Math.max(0, current - elapsed));
-        this.timerUpdateTimestamp = now;
+        this.clockUpdateTimestamp = now;
     }
 
 
@@ -152,6 +164,7 @@ export default class Game {
         this.players.push(player);
         
         if (this.players.length >= this.maxPlayers) {
+            this.gameStartTimestamp = Date.now();
             if (this.usesClock)
                 this.gameStatus = GameStatus.WAITING_FOR_FIRST_MOVE;
             else
@@ -182,31 +195,54 @@ export default class Game {
 
     public makeMove(move: Move, player: Player, appliedAt: number=Date.now()): boolean {
 
+        const applyMove = (wasBluff: boolean) => {
+            if (!this.currentBoard.applyMove(move)) {
+                return false;
+            }
+
+            this.lastMoveWasBluff = wasBluff;
+            this.prevBoard = prevBoard;
+
+            // Add move to game history
+            const moveCopy = structuredClone(move);
+            delete moveCopy.bluff;
+            moveCopy.timestamp = appliedAt;
+            this.turnHistory.push(moveCopy);
+
+            // Increment
+            if (this.usesClock) {
+                this.clocksMs.set(this.turnColor, (this.clocksMs.get(this.turnColor) || 0) + this.clockIncrementMs);
+                this.hasMoved.set(this.turnColor, true);
+
+                // Start the timer if each player has made a move
+                if (this.gameStatus === GameStatus.WAITING_FOR_FIRST_MOVE && Array.from(this.hasMoved.values()).every(v => v)) {
+                    this.startGameTimer();
+                }
+            }
+
+            // Change turn
+            this.turnColor = this.turnColor === Color.White ? Color.Black : Color.White;
+
+            return true;
+        }
+
         // Hasn't run out of time
         this.updateTimers(appliedAt);
         const currentTimeLeft = this.clocksMs.get(this.turnColor);
         if (currentTimeLeft && currentTimeLeft <= 0) {
             const gameResult: GameResult = this.turnColor === Color.White ? GameResult.Black : GameResult.White;
-            const reason = "Timeout";
-            this.endGame(gameResult, reason);
+            this.endGame(gameResult, "Timeout");
             return false;
         }
 
         const prevBoard = this.currentBoard.clone();
         const legalMoves: Move[] = this.currentBoard.getLegalMoves(move.from, true);
+        if (!move.notation) move.notation = getMoveNotation(this.currentBoard, move);
+        if (!move.timestamp) move.timestamp = appliedAt;
 
         if (legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal regular chess move
-            if (this.currentBoard.applyMove(move)) {
-                this.lastMoveWasBluff = false;
-                this.prevBoard = prevBoard;
-                const moveCopy = structuredClone(move);
-                delete moveCopy.bluff;
-                moveCopy.timestamp = appliedAt;
-                this.turnHistory.push(moveCopy);
-                return true;
-            }
-            return false;
+            return applyMove(false);
         }
 
         let legalRuleMoves: Move[] = [];
@@ -215,30 +251,12 @@ export default class Game {
         }
         if (legalRuleMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal special rule move
-            if (this.currentBoard.applyMove(move)) {
-                this.lastMoveWasBluff = false;
-                this.prevBoard = prevBoard;
-                const moveCopy = structuredClone(move);
-                delete moveCopy.bluff;
-                moveCopy.timestamp = appliedAt;
-                this.turnHistory.push(moveCopy);
-                return true;
-            }
-            return false;
+            return applyMove(false);
         }
 
         // Bluffing
         if (move.bluff) {
-            if (this.currentBoard.applyMove(move)) {
-                this.lastMoveWasBluff = true;
-                this.prevBoard = prevBoard;
-                const moveCopy = structuredClone(move);
-                delete moveCopy.bluff;
-                moveCopy.timestamp = appliedAt;
-                this.turnHistory.push(moveCopy);
-                return true;
-            }
-            return false;
+            return applyMove(true);
         }
 
         // Non-legal move
@@ -246,36 +264,58 @@ export default class Game {
     }
 
 
-    public startGameTimer() {
-        if (this.timerInterval) return;
+    public callBluff(callerColor: Color, receivedAt: number): {ok: boolean, callSuccessful?: boolean, response?: GameMoveBluffCallSucceededResponse | GameMoveBluffCallFailedResponse, message?: string} {
 
-        const now = Date.now();
-        this.gameStatus = GameStatus.RUNNING;
-        this.timerUpdateTimestamp = now;
-        this.gameStartTimestamp = new Date();
+        // Able to call bluff
+        const prevTurn = this.turnHistory[this.turnHistory.length - 1];
+        if (!(prevTurn && 'from' in prevTurn && prevTurn.piece?.color !== this.turnColor) || this.prevBoard === null) {
+            return {ok: false, message: "Unable to call bluff"}
+        }
 
-        this.timerInterval = setInterval(() => {
-            this.updateTimers();
-            const currentTimeLeft = this.clocksMs.get(this.turnColor);
-            if (currentTimeLeft == undefined) return;
-
-            if (currentTimeLeft <= 0) {
-                this.endGame(this.turnColor === Color.White ? GameResult.Black : GameResult.White, "Timeout");
-                return;
+        this.updateTimers(receivedAt);
+        if (this.lastMoveWasBluff) {
+            // Successful call
+            const newTurn: CallBluff = {successful: true, callerColor: callerColor, timestamp: receivedAt}
+            this.currentBoard = this.prevBoard;
+            this.prevBoard = null;
+            this.currentBoard.enPassant = null;
+            this.turnHistory.push(newTurn)
+            const responsePayload: GameMoveBluffCallSucceededResponse = {
+                turn: newTurn,
+                turnColor: this.turnColor,
+                bluffPunishment: this.bluffPunishment,
+                punished: this.turnColor === Color.White ? Color.Black : Color.White,
+                appliedAt: receivedAt,
             }
-        }, 1000);
+            return {ok: true, callSuccessful: true, response: responsePayload, message: "Bluff call correct"}
+        } else {
+            // Failed call
+            const newTurn: CallBluff = {successful: false, callerColor: callerColor, timestamp: receivedAt}
+            this.turnColor = this.turnColor === Color.White ? Color.Black : Color.White;
+            this.currentBoard.enPassant = null;
+            this.turnHistory.push(newTurn)
+            const responsePayload: GameMoveBluffCallFailedResponse = {
+                turn: newTurn,
+                turnColor: this.turnColor,
+                bluffPunishment: this.bluffPunishment,
+                punished: callerColor,
+                appliedAt: receivedAt,
+            }
+            return {ok: true, callSuccessful: false, response: responsePayload, message: "Bluff call incorrect"}
+        }
+    }
+
+
+    public startGameTimer(now = Date.now()) {
+        this.gameStatus = GameStatus.RUNNING;
+        this.clockUpdateTimestamp = now;
+        this.clockStartTimestamp = now;
+        sendClockStarted(this);
     }
 
 
     public endGame(gameResult: GameResult, reason: string): boolean {
         console.log(`Game ${this.gameId} ended: Result: ${gameResult}. Reason: ${reason}`);
-
-        // Stop Timer
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
-        }
-
         this.gameStatus = GameStatus.DONE;
         return sendGameOver(this.gameId, gameResult, reason);
     }

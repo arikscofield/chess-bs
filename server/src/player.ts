@@ -32,14 +32,6 @@ class Player {
     public setRandomRules(count: number, rulePool: Rule[]) {
         this.rules = Rule.getRandomRules(count, rulePool);
     }
-
-    public getState(): GamePlayerStateResponse {
-        return {
-            userId: this.userId,
-            color: this.color,
-            ruleIds: this.rules.map((rule) => rule.id),
-        }
-    }
 }
 
 

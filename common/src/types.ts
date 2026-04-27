@@ -2,7 +2,8 @@ import {z} from "zod";
 import {
     GameAbortedResponse,
     GameChatMessageResponse,
-    GameChatSendRequest, GameClockStateResponse, GameDrawAcceptRequest, GameDrawCancelledResponse,
+    GameChatSendRequest,
+    GameClockStartedResponse, GameClockStateResponse, GameDrawAcceptRequest, GameDrawCancelledResponse,
     GameDrawCancelOfferRequest,
     GameDrawDeclinedResponse, GameDrawDeclineRequest, GameDrawOfferedResponse, GameDrawOfferRequest,
     GameJoinRequest, GameMoveAcceptedResponse,
@@ -256,13 +257,12 @@ export interface ServerToClientEvents {
     "game:state": (payload: GameStateResponse) => void;
     "game:started": (payload: GameStartedResponse) => void;
 
-    // "game:move:accepted": (payload: GameMoveAcceptedResponse) => void; // Only sent back to the sender of the move (due to UI prediction)
-    // "game:move:rejected": (payload: GameMoveRejectedResponse) => void;
     "game:move:applied": (payload: GameMoveAppliedResponse) => void;
     "game:move:bluff:call-succeeded": (payload: GameMoveBluffCallSucceededResponse) => void;
     "game:move:bluff:call-failed": (payload: GameMoveBluffCallFailedResponse) => void;
     "game:move:bluff:lost-piece": (payload: GameMoveBluffLostPieceResponse) => void;
 
+    "game:clock:started": (payload: GameClockStartedResponse) => void;
     "game:clock:state": (payload: GameClockStateResponse) => void;
 
     "game:draw:offered": (payload: GameDrawOfferedResponse) => void;

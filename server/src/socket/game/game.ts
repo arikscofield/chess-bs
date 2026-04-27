@@ -96,6 +96,9 @@ export default function gameHandler(io: Server) {
                 socket.emit("game:player:state", playerStatePayload);
             }
 
+            const state: GameStateResponse = game.getState();
+            io.to(gameId).emit("game:state", state);
+
             const gameStartedPayload: GameStartedResponse = {
                 gameStatus: game.gameStatus,
                 startedAt: Date.now(),

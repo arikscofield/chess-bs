@@ -91,7 +91,7 @@ export const ClockInfoSchema = z.object({
     usesClock: z.boolean(),
     startMs: z.number().int().positive(),
     incrementMs: z.number().int().positive(),
-    gameStartTimestamp: z.int().positive(),
+    startTimestamp: z.int().positive(),
 })
 export type ClockInfo = z.infer<typeof ClockInfoSchema>;
 

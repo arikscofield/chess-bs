@@ -16,6 +16,7 @@ import {
     type GameMoveBluffCallFailedResponse,
     type GameMoveBluffLostPieceResponse,
     type GameClockStateResponse,
+    type GameClockStartedResponse,
     type GameDrawOfferedResponse,
     type GameDrawCancelledResponse,
     type GameDrawDeclinedResponse,
@@ -39,8 +40,8 @@ import {useSetAtom} from "jotai";
 import {
     addTurnAtom,
     bluffPunishmentAtom,
-    clockIncrementMsAtom,
-    clockStartMsAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom, gameStartTimestampAtom,
+    clockIncrementMsAtom, clockInfoAtom,
+    clockStartMsAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
     gameStatusAtom, playerAtom, playersAtom,
     rulePoolIdsAtom, setGameStateAtom,
     startBoardAtom, turnColorAtom, turnHistoryAtom,
@@ -59,7 +60,6 @@ function Game() {
 
     const [page, setPage] = useState<'join' | 'lobby' | 'play' | 'spectate' | 'replay'>('join');
 
-    const setGameStartTimestamp = useSetAtom(gameStartTimestampAtom);
     const setGameState = useSetAtom(setGameStateAtom);
     const setGameId = useSetAtom(gameIdAtom);
     const setGameStatus = useSetAtom(gameStatusAtom);
@@ -75,6 +75,7 @@ function Game() {
     const addTurn = useSetAtom(addTurnAtom);
     const setGameResult = useSetAtom(gameResultAtom);
     const setGameResultReason = useSetAtom(gameResultReasonAtom);
+    const setClockInfo = useSetAtom(clockInfoAtom);
 
     const setPlayer = useSetAtom(playerAtom);
 
@@ -214,7 +215,6 @@ function Game() {
             const {gameStatus, startedAt} = payload;
             setGameStatus(gameStatus);
             setPage('play');
-            setGameStartTimestamp(startedAt);
         }
 
         function onMoveApplied(payload: GameMoveAppliedResponse) {
@@ -223,7 +223,6 @@ function Game() {
 
             addTurn(move);
             setTurnColor(turnColor);
-
         }
 
         function onBluffCallSucceeded(payload: GameMoveBluffCallSucceededResponse) {
@@ -233,7 +232,6 @@ function Game() {
             setTurnColor(turnColor);
             setBluffPunishment(bluffPunishment);
             addTurn(turn);
-
         }
 
         function onBluffCallFailed(payload: GameMoveBluffCallFailedResponse) {
@@ -250,13 +248,18 @@ function Game() {
             // const {turnColor, square, piece, color, appliedAt} = payload;
         }
 
+        function onClockStarted(payload: GameClockStartedResponse) {
+            console.log("game:clock:started received", payload);
+            const {gameStatus, startedAt} = payload;
+
+            setGameStatus(gameStatus);
+        }
+
         function onClockState(payload: GameClockStateResponse) {
             console.log("game:clock:state received", payload);
-            const {usesClock, startMs, incrementMs} = payload;
+            // const {usesClock, startMs, incrementMs, startTimestamp} = payload;
 
-            setUsesClock(usesClock);
-            setClockStartMs(startMs);
-            setClockIncrementMs(incrementMs);
+            setClockInfo(payload);
         }
 
         function onDrawOffered(payload: GameDrawOfferedResponse) {
@@ -310,6 +313,7 @@ function Game() {
         socket.on('game:move:bluff:call-succeeded', onBluffCallSucceeded);
         socket.on('game:move:bluff:call-failed', onBluffCallFailed);
         socket.on('game:move:bluff:lost-piece', onBluffLostPiece);
+        socket.on('game:clock:started', onClockStarted);
         socket.on('game:clock:state', onClockState);
         socket.on('game:draw:offered', onDrawOffered);
         socket.on('game:draw:cancelled', onDrawCancelled);
@@ -333,6 +337,7 @@ function Game() {
             socket.off('game:move:bluff:call-succeeded', onBluffCallSucceeded);
             socket.off('game:move:bluff:call-failed', onBluffCallFailed);
             socket.off('game:move:bluff:lost-piece', onBluffLostPiece);
+            socket.off('game:clock:started', onClockStarted);
             socket.off('game:clock:state', onClockState);
             socket.off('game:draw:offered', onDrawOffered);
             socket.off('game:draw:cancelled', onDrawCancelled);
