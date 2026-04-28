@@ -63,7 +63,7 @@ function Play() {
     const addTurnTimestamp = useSetAtom(addTurnTimestampAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory, clockInfo);
-    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, gameStatus);
+    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
 

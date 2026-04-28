@@ -44,13 +44,8 @@ export const CallBluffSchema = z.object({
 })
 export type CallBluff = z.infer<typeof CallBluffSchema>;
 
-export const TurnSchema = z.union([MoveSchema, CallBluffSchema]);
+export const TurnSchema = z.xor([MoveSchema, CallBluffSchema]);
 export type Turn = z.infer<typeof TurnSchema>;
-
-
-const getLegalMovesSchema = z.function({
-    input: []
-})
 
 export const UserDTOSchema = z.object({
     userId: z.string(),

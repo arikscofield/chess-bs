@@ -15,7 +15,7 @@ function Timer({clockMs, isRunning, }: {clockMs: number | undefined, isRunning: 
         const hours = Math.floor((timeMs / (60 * 60 * 1000)) % 60);
 
         if (hours > 0)
-            result += (hours < 10 ? "0" + hours : hours) + ":";
+            result += hours + ":";
         result += (hours !== 0 && minutes < 10 ? "0" + minutes : minutes) + ":";
         result += seconds < 10 ? "0" + seconds : seconds;
         if (hours === 0 && minutes === 0 && seconds < 10)

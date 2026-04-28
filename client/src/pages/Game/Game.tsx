@@ -41,7 +41,7 @@ import {
     addTurnAtom,
     bluffPunishmentAtom,
     clockIncrementMsAtom, clockInfoAtom,
-    clockStartMsAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
+    clockStartMsAtom, clockStartTimestampAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
     gameStatusAtom, playerAtom, playersAtom,
     rulePoolIdsAtom, setGameStateAtom,
     startBoardAtom, turnColorAtom, turnHistoryAtom,
@@ -65,9 +65,6 @@ function Game() {
     const setGameStatus = useSetAtom(gameStatusAtom);
     const setStartBoard = useSetAtom(startBoardAtom);
     const setRulePoolIds = useSetAtom(rulePoolIdsAtom);
-    const setUsesClock = useSetAtom(usesClockAtom);
-    const setClockStartMs = useSetAtom(clockStartMsAtom);
-    const setClockIncrementMs = useSetAtom(clockIncrementMsAtom);
     const setBluffPunishment = useSetAtom(bluffPunishmentAtom);
     const setPlayers = useSetAtom(playersAtom);
     const setTurnColor = useSetAtom(turnColorAtom);
@@ -75,6 +72,11 @@ function Game() {
     const addTurn = useSetAtom(addTurnAtom);
     const setGameResult = useSetAtom(gameResultAtom);
     const setGameResultReason = useSetAtom(gameResultReasonAtom);
+
+    const setUsesClock = useSetAtom(usesClockAtom);
+    const setClockStartMs = useSetAtom(clockStartMsAtom);
+    const setClockIncrementMs = useSetAtom(clockIncrementMsAtom);
+    const setClockStartTimestamp = useSetAtom(clockStartTimestampAtom);
     const setClockInfo = useSetAtom(clockInfoAtom);
 
     const setPlayer = useSetAtom(playerAtom);
@@ -253,6 +255,7 @@ function Game() {
             const {gameStatus, startedAt} = payload;
 
             setGameStatus(gameStatus);
+            setClockStartTimestamp(startedAt);
         }
 
         function onClockState(payload: GameClockStateResponse) {

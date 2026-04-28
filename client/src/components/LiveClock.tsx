@@ -1,29 +1,18 @@
-import {useEffect, useMemo, useRef, useState} from "react";
-import {type ClockInfo, GameStatus, type Turn} from "@chess-bs/common";
+import {useEffect, useMemo, useState} from "react";
+import {type ClockInfo, type Turn} from "@chess-bs/common";
 import {Color, nextTurnColor} from "@chess-bs/common";
 
 
-export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo, gameStatus: GameStatus): Map<Color, number> {
-    const freeMoveCount = 2; // Number of moves before clock starts
-
+export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo): Map<Color, number> {
     const [now, setNow] = useState(() => Date.now());
 
-    const isTicking = useRef(gameStatus === GameStatus.RUNNING && turnHistory.length >= freeMoveCount);
 
     useEffect(() => {
-        const newIsTicking = gameStatus === GameStatus.RUNNING && turnHistory.length >= freeMoveCount;
-        if (isTicking.current !== newIsTicking) {
-            isTicking.current = newIsTicking;
-        }
-    }, [gameStatus, turnHistory]);
-
-    useEffect(() => {
-        if (!isTicking.current) return;
         const id = setInterval(() => {
             setNow(Date.now())
         }, 100);
         return () => clearInterval(id);
-    }, [isTicking.current]);
+    }, []);
 
 
     return useMemo(() => {
@@ -35,22 +24,21 @@ export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo, gameStat
         let turnColor = Color.White;
         let prevTimestamp = clockInfo.startTimestamp;
 
-        for (let i = 0; i < turnHistory.length; i++) {
-            const turn = turnHistory[i];
+        for (const turn of turnHistory) {
             clocks.set(turnColor, Math.max(0, (clocks.get(turnColor) ?? 0) + clockInfo.incrementMs)); // Add increment
             if (!turn.timestamp) {
-                turnColor = nextTurnColor(turnColor);
+                if ("from" in turn || !turn.successful) turnColor = nextTurnColor(turnColor);
                 continue;
             }
-            if (i >= freeMoveCount) { // Clock only starts when both players have moved
+            if (clockInfo.startTimestamp && turn.timestamp > clockInfo.startTimestamp) { // Clock only starts when both players have moved
                 clocks.set(turnColor, Math.max(0, (clocks.get(turnColor) ?? 0) - (turn.timestamp - prevTimestamp)));
             }
-            turnColor = nextTurnColor(turnColor);
+            if ("from" in turn || !turn.successful) turnColor = nextTurnColor(turnColor);
             prevTimestamp = turn.timestamp;
         }
 
         // Live tick for the player whose turn it is
-        if (turnHistory.length >= freeMoveCount) {
+        if (clockInfo.startTimestamp && now > clockInfo.startTimestamp) {
             clocks.set(turnColor, Math.max(0, (clocks.get(turnColor) ?? 0) - (now - prevTimestamp)));
         }
         return clocks;
