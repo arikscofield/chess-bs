@@ -200,7 +200,7 @@ function Play() {
                         minSize={"100px"}
                     >
                         <div className={"flex flex-col rounded-md h-full bg-bg-2 p-1"}>
-                            <div className={"h-full"}>
+                            <div className={"flex-1 min-h-0"}>
                                 <TurnHistory
                                     turnHistory={turnHistory}
                                     viewMoveIndex={viewMoveIndex}
@@ -210,7 +210,7 @@ function Play() {
                                 />
                             </div>
 
-                            <div className={"flex flex-wrap w-full justify-between pt-2 pb-1"}>
+                            <div className={"shrink-0 w-full pt-2 pb-1"}>
                                 <GameActions gameId={gameId}
                                              color={player?.color ?? Color.White}
                                              drawOfferedColor={drawOfferedColor}

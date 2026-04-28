@@ -109,7 +109,7 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
 
     return (
         <div className={"flex flex-col justify-between h-full text-white text-base"}>
-            <ol className={"flex flex-col justify-between overflow-y-auto pb-1"}>
+            <ol className={"flex flex-col justify-start overflow-y-auto pb-1"}>
                 {turnRows.map((row, i) => (
                     <div key={i} className={"flex flex-row justify-between"}>
                         <div className={"px-1 py-0.5 text-gray-400"}>{i}</div>
