@@ -370,7 +370,7 @@ function Game() {
                 return;
             }
             console.log(`Joined game: ${gameId}`)
-            console.log(`Got socket game state:`)
+            console.log(`Got game:join callback game state:`)
             console.log(data)
             setGameState(data as GameStateResponse);
             return;

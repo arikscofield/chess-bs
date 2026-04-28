@@ -2,18 +2,9 @@ import {type Move, type Turn} from "@chess-bs/common";
 import {type Dispatch, type SetStateAction, useEffect, useState} from "react";
 import Board from "@chess-bs/common/src/board"
 
-
-type ClockInfo = {
-    usesClock: boolean,
-    startMs: number,
-    incrementMs: number,
-    startTimestamp: number,
-}
-
 export function useGameViewer(
     startBoard: Board | null,
-    turnHistory: Turn[],
-    clockInfo: ClockInfo):
+    turnHistory: Turn[]):
     {
         visibleBoard: Board | null,
         viewMoveIndex: number,
@@ -69,7 +60,7 @@ export function useGameViewer(
 
 
         setVisibleBoard(newBoard);
-    }, [clockInfo, startBoard, turnHistory, viewMoveIndex]);
+    }, [startBoard, turnHistory, viewMoveIndex]);
 
     return {
         visibleBoard,

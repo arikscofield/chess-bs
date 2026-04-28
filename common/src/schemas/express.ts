@@ -24,11 +24,12 @@ export type LoginRequest = z.infer<typeof LoginSchema>;
 
 export const CreateGameSchema = z.object({
     color: ZCreateGameColorEnum,
-    clockStartSeconds: z.coerce.number().int().positive().nullable(),
-    clockIncrementSeconds: z.coerce.number().int().positive().nullable(),
     bluffPunishment: ZBluffPunishmentEnum,
     ruleCount: z.coerce.number().int().positive().default(DEFAULT_RULE_COUNT),
-    rulePoolIds: z.array(z.coerce.number().int().positive()),
+    rulePoolIds: z.array(z.coerce.number().int().nonnegative()),
+    usesClock: z.boolean().default(false),
+    clockStartSeconds: z.coerce.number().int().nonnegative().optional(),
+    clockIncrementSeconds: z.coerce.number().int().nonnegative().optional(),
 });
 export type CreateGameRequest = z.infer<typeof CreateGameSchema>;
 

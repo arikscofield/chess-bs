@@ -84,9 +84,9 @@ export type BoardDTO = z.infer<typeof BoardDTOSchema>;
 
 export const ClockInfoSchema = z.object({
     usesClock: z.boolean(),
-    startMs: z.number().int().positive(),
-    incrementMs: z.number().int().positive(),
-    startTimestamp: z.int().positive(),
+    startMs: z.number().int().nonnegative().optional(),
+    incrementMs: z.number().int().nonnegative().optional(),
+    startTimestamp: z.int().positive().optional(),
 })
 export type ClockInfo = z.infer<typeof ClockInfoSchema>;
 
@@ -97,8 +97,8 @@ export const GameDTOSchema = z.object({
     rulePoolIds: z.array(z.number().int()),
     turnHistory: z.array(TurnSchema),
     usesClock: z.boolean(),
-    clockStartMs: z.number().int().nullable(),
-    clockIncrementMs: z.number().int().nullable(),
+    clockStartMs: z.number().int().nonnegative().optional(),
+    clockIncrementMs: z.number().int().nonnegative().optional(),
     bluffPunishment: ZBluffPunishmentEnum,
 
     players: z.array(PlayerDTOSchema),

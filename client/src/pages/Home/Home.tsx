@@ -30,7 +30,15 @@ function Home() {
         setCreateGameModalOpen(true);
     }
 
-    async function createGame(color: CreateGameColor, clockStartSeconds: number | null, clockIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) {
+    async function createGame(
+        color: CreateGameColor,
+        bluffPunishment: BluffPunishment,
+        ruleCount: number,
+        rulePoolIds: number[],
+        usesClock: boolean,
+        clockStartSeconds?: number,
+        clockIncrementSeconds?: number,
+        ) {
         if (!socket) {
             console.error("context not connected");
             return;
@@ -38,11 +46,14 @@ function Home() {
 
         const payload: CreateGameRequest = {
             color: color,
-            clockStartSeconds: clockStartSeconds,
-            clockIncrementSeconds: clockIncrementSeconds,
             bluffPunishment: bluffPunishment,
             ruleCount: ruleCount,
             rulePoolIds: rulePoolIds,
+            usesClock: usesClock,
+        }
+        if (usesClock) {
+            payload.clockStartSeconds = clockStartSeconds
+            payload.clockIncrementSeconds = clockIncrementSeconds;
         }
 
         const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/games`, {

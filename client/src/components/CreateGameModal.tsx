@@ -18,7 +18,15 @@ const CLOCK_INCREMENT_VALUES = [
 function CreateGameModal({opened, onClose, onSubmit}: {
     opened: boolean,
     onClose: () => void,
-    onSubmit: (color: CreateGameColor, clockStartSeconds: number | null, clockIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePoolIds: number[]) => void
+    onSubmit: (
+        color: CreateGameColor,
+        bluffPunishment: BluffPunishment,
+        ruleCount: number,
+        rulePoolIds: number[],
+        usesClock: boolean,
+        clockStartSeconds?: number,
+        clockIncrementSeconds?: number,
+    ) => void,
 }) {
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
 
@@ -199,7 +207,15 @@ function CreateGameModal({opened, onClose, onSubmit}: {
 
             <Button color={"green"} size={"md"}
                     onClick={() => {
-                        onSubmit(color, clockEnabled ? clockStartMinutes * 60 : null, clockEnabled ? clockIncrementSeconds : null, bluffPunishment, typeof ruleCount === "number" ? ruleCount : 3, rulePoolIds);
+                        onSubmit(
+                            color,
+                            bluffPunishment,
+                            typeof ruleCount === "number" ? ruleCount : 3,
+                            rulePoolIds,
+                            clockEnabled,
+                            clockEnabled ? clockStartMinutes * 60 : undefined,
+                            clockEnabled ? clockIncrementSeconds : undefined,
+                        );
                     }}
                     disabled={
                         (clockStartMinutes === 0 && clockIncrementSeconds === 0) ||

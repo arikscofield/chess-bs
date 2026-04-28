@@ -12,6 +12,7 @@ import {
     turnHistoryAtom,
     viewAtom
 } from "./atoms.ts";
+import {useLiveClock} from "../../components/LiveClock.tsx";
 
 function Replay() {
     const startBoard = useAtomValue(startBoardAtom);
@@ -20,9 +21,9 @@ function Replay() {
     const view = useAtomValue(viewAtom);
 
     const clockInfo = useAtomValue(clockInfoAtom);
-    // const clockTimes = useAtomValue(clockTimesAtom);
 
-    const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove, clock } = useGameViewer(startBoard, turnHistory, clockInfo);
+    const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
+    const clocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo);
 
     const oppColor = view === Color.White ? Color.Black : Color.White;
     const playerRuleIds: Map<Color, number[]> = new Map(players.map(player => [player.color, player.ruleIds ?? []]));
@@ -40,7 +41,7 @@ function Replay() {
                     </div>
 
                     <Timer
-                        clockMs={clock.get(oppColor)}
+                        clockMs={clocks.get(oppColor)}
                         isRunning={false}
                     />
                 </div>
@@ -60,12 +61,12 @@ function Replay() {
                     <div className={"float-start text-white text-xl"}>{view}</div>
 
                     <div className={"overflow-auto"}>
-                        <ReplayPlayerRuleList color={view} playerRuleIds={playerRuleIds.get(view) ?? []} className={"pt-1"}/>
+                        <ReplayPlayerRuleList color={view ?? Color.White} playerRuleIds={playerRuleIds.get(view ?? Color.White) ?? []} className={"pt-1"}/>
                     </div>
 
 
                     <Timer
-                        clockMs={clock.get(view)}
+                        clockMs={clocks.get(view ?? Color.White)}
                         isRunning={false}
                     />
                 </div>

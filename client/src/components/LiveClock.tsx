@@ -3,16 +3,17 @@ import {type ClockInfo, type Turn} from "@chess-bs/common";
 import {Color, nextTurnColor} from "@chess-bs/common";
 
 
-export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo): Map<Color, number> {
+export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo, liveTick: boolean = true): Map<Color, number> {
     const [now, setNow] = useState(() => Date.now());
 
 
     useEffect(() => {
+        if (!liveTick) return;
         const id = setInterval(() => {
             setNow(Date.now())
         }, 100);
         return () => clearInterval(id);
-    }, []);
+    }, [liveTick]);
 
 
     return useMemo(() => {
@@ -20,9 +21,10 @@ export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo): Map<Col
         for (const color of Object.values(Color)) {
             clocks.set(color, clockInfo.startMs ?? 0);
         }
+        if (!clockInfo.usesClock || clockInfo.incrementMs === undefined || clockInfo.startMs === undefined) return clocks;
 
         let turnColor = Color.White;
-        let prevTimestamp = clockInfo.startTimestamp;
+        let prevTimestamp = clockInfo.startTimestamp ?? Date.now();
 
         for (const turn of turnHistory) {
             clocks.set(turnColor, Math.max(0, (clocks.get(turnColor) ?? 0) + clockInfo.incrementMs)); // Add increment
@@ -38,11 +40,11 @@ export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo): Map<Col
         }
 
         // Live tick for the player whose turn it is
-        if (clockInfo.startTimestamp && now > clockInfo.startTimestamp) {
+        if (liveTick && clockInfo.startTimestamp && now > clockInfo.startTimestamp) {
             clocks.set(turnColor, Math.max(0, (clocks.get(turnColor) ?? 0) - (now - prevTimestamp)));
         }
         return clocks;
-    }, [clockInfo, turnHistory, now]);
+    }, [clockInfo, turnHistory, now, liveTick]);
 
 }
 

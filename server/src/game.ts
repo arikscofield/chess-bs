@@ -10,10 +10,8 @@ import {
     type Turn
 } from "@common/src/index.js";
 import Rule from "@common/src/rule.js";
-// import Player from "@common/src/player.js";
 import Player from "./player.js";
 import {parseFen} from "./helper.js";
-import {clearInterval} from "node:timers";
 import type {
     CallBluff,
     GameDTO,
@@ -44,8 +42,8 @@ export default class Game {
 
     usesClock: boolean;
     clockStartTimestamp: number;
-    clockStartMs: number;
-    clockIncrementMs: number;
+    clockStartMs?: number | undefined;
+    clockIncrementMs?: number | undefined;
     clocksMs: Map<Color, number>;
     clockUpdateTimestamp: number;
     hasMoved: Map<Color, boolean>;
@@ -54,34 +52,25 @@ export default class Game {
     rematchOfferedColor: Color | null = null;
 
 
-    constructor(gameId: string, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, clockStartMs: number | null = null, clockIncrementMs: number | null = null, fen?: string, ) {
+    constructor(gameId: string, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, usesClock: boolean, clockStartMs?: number, clockIncrementMs?: number, fen?: string, ) {
         this.gameId = gameId;
         this.ruleCount = ruleCount;
         this.rulePool = rulePool;
         this.bluffPunishment = bluffPunishment;
 
         this.hasMoved = new Map();
-        if (clockStartMs !== null && clockIncrementMs !== null) {
-            this.usesClock = true;
-            this.gameStartTimestamp = Date.now();
-            this.clockStartTimestamp = 0;
-            this.clockStartMs = clockStartMs;
-            this.clockIncrementMs = clockIncrementMs;
-            this.clocksMs = new Map<Color, number>();
-            for (const c of Object.values(Color)) {
-                this.clocksMs.set(c, clockStartMs);
-                this.hasMoved.set(c, false);
-            }
-            this.clockUpdateTimestamp = Date.now();
-        } else {
-            this.usesClock = false;
-            this.gameStartTimestamp = Date.now();
-            this.clockStartTimestamp = 0;
-            this.clockStartMs = 0;
-            this.clockIncrementMs = 0;
-            this.clocksMs = new Map<Color, number>();
-            this.clockUpdateTimestamp = 0;
+
+        this.usesClock = usesClock;
+        this.gameStartTimestamp = Date.now();
+        this.clockStartTimestamp = 0;
+        this.clockStartMs = clockStartMs;
+        this.clockIncrementMs = clockIncrementMs;
+        this.clocksMs = new Map<Color, number>();
+        for (const c of Object.values(Color)) {
+            this.clocksMs.set(c, clockStartMs ?? 0);
+            this.hasMoved.set(c, false);
         }
+        this.clockUpdateTimestamp = Date.now();
 
         this.gameStatus = GameStatus.WAITING_FOR_PLAYER;
         this.startBoard = Board.defaultBoard(); // TODO: be able to change based on how to user requests in order to have non-standard baord setups
@@ -211,7 +200,7 @@ export default class Game {
 
             // Increment
             if (this.usesClock) {
-                this.clocksMs.set(this.turnColor, (this.clocksMs.get(this.turnColor) || 0) + this.clockIncrementMs);
+                this.clocksMs.set(this.turnColor, (this.clocksMs.get(this.turnColor) || 0) + (this.clockIncrementMs ?? 0));
                 this.hasMoved.set(this.turnColor, true);
 
                 // Start the timer if each player has made a move
@@ -353,7 +342,15 @@ export default class Game {
     }
 
     public createRematchGame(newGameId: string): Game {
-        const newGame = new Game(newGameId, this.ruleCount, this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined), this.bluffPunishment, this.clockStartMs, this.clockIncrementMs);
+        const newGame = new Game(
+            newGameId,
+            this.ruleCount,
+            this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined),
+            this.bluffPunishment,
+            this.usesClock,
+            this.clockStartMs,
+            this.clockIncrementMs
+        );
         newGame.gameStatus = GameStatus.WAITING_FOR_FIRST_MOVE;
         newGame.players = this.players.map(p => {
             p.color = p.color === Color.White ? Color.Black : Color.White
@@ -367,7 +364,15 @@ export default class Game {
 
     public clone(): Game {
         // TODO: Properly set the startBoard to be the same
-        const newGame = new Game(this.gameId, this.ruleCount, this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined), this.bluffPunishment, this.clockStartMs, this.clockIncrementMs);
+        const newGame = new Game(
+            this.gameId,
+            this.ruleCount,
+            this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined),
+            this.bluffPunishment,
+            this.usesClock,
+            this.clockStartMs,
+            this.clockIncrementMs
+        );
 
         return newGame;
     }
