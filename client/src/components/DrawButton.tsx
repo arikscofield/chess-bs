@@ -1,6 +1,6 @@
 import {Button} from "@mantine/core";
 import { IoClose } from "react-icons/io5";
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {useSocket} from "./context/SocketContext.ts";
 import type {
     GameDrawAcceptRequest, GameDrawCancelOfferRequest,
@@ -23,12 +23,7 @@ function DrawButton(
     const isControlled = receivedDrawOfferProps !== undefined;
     const receivedOffer = isControlled ? receivedDrawOfferProps : receivedOfferInternal;
 
-    // useEffect(() => {
-    //     setReceivedOffer((prev) => receivedDrawOffer ?? prev);
-    // }, [receivedDrawOffer]);
-
-
-    function setReceivedOffer(value: boolean) {
+    const setReceivedOffer = useCallback((value: boolean) => {
         if (setReceivedDrawOfferProps) {
             setReceivedDrawOfferProps(value);
         }
@@ -36,10 +31,25 @@ function DrawButton(
         if (!isControlled) {
             setReceivedOfferInternal(value);
         }
-    }
-
+    }, [isControlled, setReceivedDrawOfferProps])
+    
     useEffect(() => {
         if (!socket) return;
+
+        function handleReceivedOffer() {
+            setReceivedOffer(true);
+        }
+
+        function handleReceivedDeclined() {
+            setWaitingForResponse(false);
+            setTimeout(() => {
+                setSentOffer(false);
+            }, 20000)
+        }
+
+        function handleReceivedCancelled() {
+            setReceivedOffer(false);
+        }
 
         socket.on("game:draw:offered", handleReceivedOffer)
         socket.on("game:draw:declined", handleReceivedDeclined)
@@ -51,22 +61,7 @@ function DrawButton(
             socket.off("game:draw:cancelled", handleReceivedCancelled)
         }
 
-    }, [socket])
-
-    function handleReceivedOffer() {
-        setReceivedOffer(true);
-    }
-
-    function handleReceivedDeclined() {
-        setWaitingForResponse(false);
-        setTimeout(() => {
-            setSentOffer(false);
-        }, 20000)
-    }
-
-    function handleReceivedCancelled() {
-        setReceivedOffer(false);
-    }
+    }, [setReceivedOffer, socket])
 
 
     function acceptOffer() {

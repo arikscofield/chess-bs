@@ -5,7 +5,8 @@ import {
     type GameClockStateResponse,
     GameResult,
     type GameStateResponse,
-    GameStatus, getMoveNotation,
+    GameStatus,
+    getMoveNotation,
     type Move,
     type Turn
 } from "@common/src/index.js";
@@ -323,15 +324,19 @@ export default class Game {
     public getGameDTO(): GameDTO {
 
         return {
+            gameId: this.gameId,
             bluffPunishment: this.bluffPunishment,
             gameStatus: this.gameStatus,
             rulePoolIds: this.rulePool.map((rule) => rule.id),
             turnHistory: this.turnHistory,
             startBoard: this.startBoard.getBoardDTO(),
+            gameStartTimestamp: this.gameStartTimestamp,
+
             usesClock: this.usesClock,
             clockIncrementMs: this.clockIncrementMs,
             clockStartMs: this.clockStartMs,
-            gameId: this.gameId,
+            clockStartTimestamp: this.clockStartTimestamp,
+
             players: this.players.map(player => ({
                 userId: player.userId,
                 username: player.username,
@@ -364,7 +369,7 @@ export default class Game {
 
     public clone(): Game {
         // TODO: Properly set the startBoard to be the same
-        const newGame = new Game(
+        return new Game(
             this.gameId,
             this.ruleCount,
             this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined),
@@ -373,8 +378,6 @@ export default class Game {
             this.clockStartMs,
             this.clockIncrementMs
         );
-
-        return newGame;
     }
 
 

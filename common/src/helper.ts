@@ -7,7 +7,6 @@
 import PieceClass from "./piece";
 import {
     Color, FileToIndex, IndexToFile, PieceAscii, PrefixToPieceType, PieceType,
-    PieceTypeToPrefix
 } from "./types";
 import type {Move, Piece, Square} from "./schemas/common";
 import Board from "./board";

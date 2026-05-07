@@ -80,6 +80,7 @@ function Replay() {
                         turnHistory={turnHistory}
                         viewMoveIndex={viewMoveIndex}
                         setViewMoveIndex={setViewMoveIndex}
+                        playerColor={Color.White}
                     />
                 </div>
             </div>

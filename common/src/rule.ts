@@ -415,51 +415,6 @@ export const allRules: Rule[] = [
             return moves;
         }
     ),
-    new Rule(
-        9,
-        "Dummy rule 1",
-        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
-        PieceType.King,
-        (board: Board, square: Square): Move[] => {
-            return []
-        }
-    ),
-    new Rule(
-        10,
-        "Dummy rule 2",
-        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
-        PieceType.King,
-        (board: Board, square: Square): Move[] => {
-            return []
-        }
-    ),
-    new Rule(
-        11,
-        "Dummy rule 3",
-        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
-        PieceType.King,
-        (board: Board, square: Square): Move[] => {
-            return []
-        }
-    ),
-    new Rule(
-        12,
-        "Dummy rule 4",
-        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
-        PieceType.King,
-        (board: Board, square: Square): Move[] => {
-            return []
-        }
-    ),
-    new Rule(
-        13,
-        "Dummy rule 5",
-        "asdf asd f dasf asdf asf rtrt dagd gdffgsdg sdf gfds gsdf g",
-        PieceType.King,
-        (board: Board, square: Square): Move[] => {
-            return []
-        }
-    ),
 
 ]
 

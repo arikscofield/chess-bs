@@ -15,7 +15,7 @@ function SocketProvider({ children }: { children: ReactNode }) {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useMemo(() => {
         if (!isConnected || !user) return null;
 
-        return io(`http://${SERVER_IP}:${SERVER_PORT}`, {
+        return io(`https://${SERVER_IP}:${SERVER_PORT}`, {
                 withCredentials: true,
             })
     }, [user, isConnected]);

@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         async function fetchUser() {
             try {
-                const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/auth/me`, {
+                const response = await fetch(`https://${SERVER_IP}:${SERVER_PORT}/api/auth/me`, {
                     method: "GET",
                     credentials: "include",
                 })

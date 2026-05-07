@@ -10,7 +10,7 @@ import {
     type CreateGameRequest, CreateGameResponseSchema,
     CreateGameSchema,
     GameIdParamSchema, GetGameResponseSchema, GetUserGamesResponseSchema, GetUserResponseSchema, LoginResponseSchema,
-    LoginSchema, LogoutResponseSchema, type PaginationQueryRequest, PaginationQuerySchema, RegisterResponseSchema,
+    LoginSchema, LogoutResponseSchema, PaginationQuerySchema, RegisterResponseSchema,
     RegisterSchema, UserIdParamSchema
 } from "@common/src/schemas/express.js";
 import {

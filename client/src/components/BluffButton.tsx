@@ -9,8 +9,8 @@ function BluffButton({ isBluffing, setIsBluffing }: {isBluffing: boolean, setIsB
         function handleKeyDown(e: KeyboardEvent) {
 
             switch (e.key) {
-                case " ": // Spacebar toggles bluffing
-                    if (document.activeElement == document.getElementById("chat-input"))
+                case " ": // Space bar toggles bluffing
+                    if (document.activeElement && document.activeElement == document.getElementById("chat-input"))
                         break;
                     setIsBluffing((prev) => !prev);
                     break;
@@ -22,7 +22,7 @@ function BluffButton({ isBluffing, setIsBluffing }: {isBluffing: boolean, setIsB
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [])
+    }, [setIsBluffing])
 
     return (
         <Button

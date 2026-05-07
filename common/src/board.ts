@@ -35,7 +35,7 @@ export default class Board {
 
 
     public static defaultBoard() {
-        const {grid, turn, enPassant, halfMove, fullMove} = parseFen(defaultFEN);
+        const {grid, enPassant} = parseFen(defaultFEN);
 
         const newBoard = new Board();
         newBoard.grid = grid;
@@ -53,7 +53,7 @@ export default class Board {
 
         for (const [rowIndex, row] of this.grid.entries()) {
             for (const [colIndex, piece] of row.entries()) {
-                const piece = this.getPiece({row: rowIndex, col: colIndex});
+                // const piece = this.getPiece({row: rowIndex, col: colIndex});
                 if (!piece || piece.color !== color) continue;
                 const legalMoves = this.getLegalMoves({row: rowIndex, col: colIndex}, false, false);
                 if (legalMoves.some(move => move.to.row === square.row && move.to.col === square.col)) {

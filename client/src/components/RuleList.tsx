@@ -30,7 +30,7 @@ function RuleList(
                              : "60"
                         }
                     />
-                    {/* TODO: Sort allrules so that the enabled ones are first */}
+                    {/* TODO: Sort allRules so that the enabled ones are first */}
                     {allRules.filter((rule: Rule) => rule.pieceType === pieceType && (!onlyShowEnabled || enabledRules.some(r => r.name === rule.name))).map((rule: Rule) => (
                         <div key={rule.name} className={"m-1"}>
                             <Tooltip

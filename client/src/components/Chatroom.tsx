@@ -46,7 +46,7 @@ function Chatroom({gameId, }: {gameId: string}) {
         return () => {
             socket.off('game:chat:message', onMessage);
         }
-    }, [])
+    }, [socket])
 
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;

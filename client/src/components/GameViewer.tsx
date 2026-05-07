@@ -24,20 +24,14 @@ export function useGameViewer(
 
 
     useEffect(() => {
-        // console.log("GameViewer.tsx: Main useEffect");
-
         if (!startBoard) {return;}
 
         let newBoard = startBoard.clone();
-
         const eventsToApply = turnHistory.slice(0, viewMoveIndex >= 0 ? viewMoveIndex : turnHistory.length);
-        // console.log("EventsToApply", eventsToApply);
-
         const boardStack: Board[] = [];
 
         setHighlightedMove(null);
         for (const event of eventsToApply) {
-            // console.log(event);
             // If it's a Move event
             if ('from' in event && 'to' in event) {
                 boardStack.push(newBoard.clone());
@@ -55,9 +49,7 @@ export function useGameViewer(
                     setHighlightedMove(null);
                 }
             }
-            // console.log(newClock);
         }
-
 
         setVisibleBoard(newBoard);
     }, [startBoard, turnHistory, viewMoveIndex]);

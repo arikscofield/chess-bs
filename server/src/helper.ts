@@ -7,16 +7,12 @@ import {
     Color,
     FileToIndex,
     GameStatus,
-    IndexToFile,
-    type Move,
     type Piece,
-    PieceAscii,
     PieceType,
     PrefixToPieceType,
     type Square
 } from "@common/src/index.js";
 import PieceClass from "@common/src/piece.js"
-import Board from "@common/src/board.js";
 import {v4 as uuidv4} from "uuid";
 import type {Game as FinishedGame, User} from "./db/schema.js";
 import type { GameDTO, UserDTO} from "@common/src/schemas/common.js";
@@ -114,10 +110,14 @@ export async function getGameDTOFromFinishedGame(finishedGame: FinishedGame): Pr
         startBoard: finishedGame.startBoard,
         rulePoolIds: finishedGame.rulePoolIds,
         turnHistory: finishedGame.turnHistory,
+        bluffPunishment: finishedGame.bluffPunishment,
+        gameStartTimestamp: finishedGame.startedAt.getTime(),
+
         usesClock: finishedGame.usesClock,
+        clockStartTimestamp: finishedGame.clockStartedAt?.getTime(),
         clockStartMs: finishedGame.clockStartMs,
         clockIncrementMs: finishedGame.clockIncrementMs,
-        bluffPunishment: finishedGame.bluffPunishment,
+
         players: players,
     }
 }

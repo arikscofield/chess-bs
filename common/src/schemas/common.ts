@@ -96,10 +96,13 @@ export const GameDTOSchema = z.object({
     startBoard: BoardDTOSchema,
     rulePoolIds: z.array(z.number().int()),
     turnHistory: z.array(TurnSchema),
+    bluffPunishment: ZBluffPunishmentEnum,
+    gameStartTimestamp: z.int().positive(),
+
     usesClock: z.boolean(),
     clockStartMs: z.number().int().nonnegative().optional(),
     clockIncrementMs: z.number().int().nonnegative().optional(),
-    bluffPunishment: ZBluffPunishmentEnum,
+    clockStartTimestamp: z.int().positive().optional(),
 
     players: z.array(PlayerDTOSchema),
 

@@ -9,7 +9,7 @@ import {
     BoardColorType,
     Color,
     GameStatus, IndexToFile,
-    type Move,
+    type Move, type Piece,
     PieceType, type PlayerDTO,
     type Square as SquareType,
 } from "@chess-bs/common";
@@ -44,7 +44,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
     const [boardType, ] = useState<[string, string, string, string]>(BoardColorType.Brown);
 
-    const { ref: sizeRef, width, height } = useElementSize();
+    const { ref: sizeRef, width } = useElementSize();
     const boardElementRef = useRef<HTMLElement | null>(null);
     const mergedBoardRef = useMergedRef(sizeRef, boardElementRef);
 
@@ -79,6 +79,17 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
         const c = Math.floor(e.offsetX / (w / numCols));
         return view === Color.Black ? {row: numRows - 1 - r, col: numCols - 1 - c} : {row: r, col: c};
     };
+
+
+    function getIsLegalMove(piece: Piece | null, dest: SquareType, isBluffing: boolean = false): boolean {
+        return isBluffing
+            ? (piece === null || piece.color !== player?.color) && !legalMoves.concat(legalRuleMoves).some((move) =>
+                move.to.row === dest.row && move.to.col === dest.col
+            )
+            : legalMoves.concat(legalRuleMoves).some((move) =>
+                move.to.row === dest.row && move.to.col === dest.col
+            );
+    }
 
     function handlePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
         lastPointerPosRef.current = {x: e.pageX, y: e.pageY};
@@ -122,11 +133,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
         lastPointerPosRef.current = {x: event.pageX, y: event.pageY};
 
-        // window.addEventListener("contextmenu", () => {
-        //     deselect();
-        //     setDraggedSquare(null);
-        // });
-
+        // Selecting the promotion piece
         if (promotionMove && col === promotionMove.to.col) {
             const rowDiff = Math.abs(row - promotionMove.to.row);
             if (rowDiff < promotionOptions.length) {
@@ -135,9 +142,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
             }
         }
 
-        const isLegalMove = isBluffing
-            ? (piece === null || piece.color !== player?.color) && !legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col)
-            : legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col);
+        const isLegalMove = getIsLegalMove(piece, square, isBluffing);
 
         if (isLegalMove) {
             move(square);
@@ -249,9 +254,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
             return;
         }
 
-        const isLegalMove = isBluffing
-            ? (piece === null || piece.color !== player?.color) && !legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col)
-            : legalMoves.concat(legalRuleMoves).some((move) => move.to.row === square.row && move.to.col === square.col);
+        const isLegalMove = getIsLegalMove(piece, square, isBluffing);
 
         if (isLegalMove) {
             move(square)
@@ -327,7 +330,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                             movable = !(movable || ruleMovable) && board?.grid[row][col]?.color !== player?.color;
                             ruleMovable = false;
 
-                            // Don't allow bluffing into check (Except if capturing opponents king
+                            // Don't allow bluffing into check (Except if capturing opponent's king)
                             if (movable) {
                                 const piece = board?.getPiece(selectedSquare);
                                 if (piece && board?.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {

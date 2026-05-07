@@ -1,15 +1,13 @@
-import {z} from "zod";
-import {
+import type {
     GameAbortedResponse,
     GameChatMessageResponse,
     GameChatSendRequest,
     GameClockStartedResponse, GameClockStateResponse, GameDrawAcceptRequest, GameDrawCancelledResponse,
     GameDrawCancelOfferRequest,
     GameDrawDeclinedResponse, GameDrawDeclineRequest, GameDrawOfferedResponse, GameDrawOfferRequest,
-    GameJoinRequest, GameMoveAcceptedResponse,
-    GameMoveAppliedResponse, GameMoveBluffCallFailedResponse, GameMoveBluffCallRequest, GameMoveBluffCallResultResponse,
+    GameJoinRequest,
+    GameMoveAppliedResponse, GameMoveBluffCallFailedResponse, GameMoveBluffCallRequest,
     GameMoveBluffCallSucceededResponse, GameMoveBluffChoosePieceRequest, GameMoveBluffLostPieceResponse,
-    GameMoveRejectedResponse,
     GameMoveSendRequest, GameOverResponse,
     GamePlayerJoinedResponse,
     GamePlayerStateResponse, GameRematchAcceptedResponse, GameRematchAcceptRequest,
@@ -18,7 +16,7 @@ import {
     GameRequestStateRequest, GameResignRequest,
     GameSpectateRequest, GameStartedResponse, GameStateResponse
 } from "./schemas/socket";
-import type {Square, Piece, Move, CallBluff, Turn, Rule, } from "./schemas/common";
+import type {Move,} from "./schemas/common";
 
 export enum PieceType {
     Pawn = "Pawn",
@@ -104,71 +102,6 @@ export const BoardColorType: Record<string, [string, string, string, string]> = 
     Green: ["bg-board-green-light", "bg-board-green-dark", "text-board-green-light", "text-board-green-dark"],
 }
 
-
-// TODO: Remove and replace with zod schemas/types
-// export interface Piece {
-//     pieceType: PieceType;
-//     color: Color;
-//     hasMoved: boolean;
-// }
-//
-// export interface Square {
-//     row: number,
-//     col: number,
-// }
-//
-//
-// export interface Move {
-//     from: Square,
-//     to: Square,
-//     piece: {
-//         type: PieceType,
-//         color: Color,
-//     },
-//     promotion?: PieceType,
-//     bluff?: boolean,
-//     timestamp?: number,
-//     notation?: string,
-// }
-//
-// export interface CallBluff {
-//     callerColor: Color,
-//     successful: boolean,
-//     timestamp?: number,
-// }
-//
-// export type Turn = Move | CallBluff
-//
-// export interface Rule {
-//     id: number,
-//     name: string;
-//     description: string;
-//     pieceType: PieceType;
-//
-//     getLegalMoves(board: Board, square: Square): Move[];
-// }
-
-// export interface Board {
-//     grid: (Piece | null)[][];
-//     enPassant: Square | null;
-//
-//     attackers(square: Square, color: Color): Square[];
-//     getPiece(square: Square): Piece | null | undefined;
-//     setPiece(square: Square, piece: Piece | null): boolean;
-//     applyMove(move: Move): boolean;
-//     getLegalMoves(square: Square, validateChecks: boolean): Move[];
-//     findKing(color: Color): Square | null;
-//     clone(): Board;
-// }
-
-// export interface Player {
-//     userId: string;
-//     username: string;
-//     color: Color;
-//     rules: Rule[];
-// }
-
-
 export enum GameStatus {
     WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",
     WAITING_FOR_FIRST_MOVE = "WAITING_FOR_FIRST_MOVE",
@@ -198,25 +131,6 @@ export enum BluffPunishment {
     PieceRandom = "pieceRandom",
 }
 
-
-// -------- context Events -------------
-
-export enum AckStatus {
-    OK = "OK",
-    ERROR = "ERROR",
-}
-
-export interface ClientToServerEventsOld {
-    // createGame: (color: CreateGameColor, timeControlStartSeconds: number | null, timeControlIncrementSeconds: number | null, bluffPunishment: BluffPunishment, ruleCount: number, rulePool: Rule[], callback: (
-    //     {status, message, gameId}:
-    //     {status: AckStatus, message: string, gameId?: string})
-    //     => void) => void;
-    joinGame: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
-    move: (gameId: string, move: Move, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
-    callBluff: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string, result?: boolean}) => void) => void;
-    chatMessage: (gameId: string, message: string) => void;
-    rematch: (gameId: string, callback: ({status, message}: {status: AckStatus, message: string}) => void) => void;
-}
 
 export type GenericCallback = (ok: boolean, message?: string, data?: any) => void;
 

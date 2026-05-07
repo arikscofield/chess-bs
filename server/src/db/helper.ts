@@ -1,19 +1,21 @@
+import * as schema from "./schema.js";
 import {
-    games,
-    type User,
     type Game as DBGame,
-    users,
+    games,
+    gamesToPlayers,
+    type GameToPlayer,
+    type NewGame as NewDBGame,
+    type NewSession,
+    type NewUser,
     type Session,
     sessions,
-    type NewUser,
-    type NewSession, gamesToPlayers, type GameToPlayer
+    type User,
+    users
 } from "./schema.js";
 import {count, desc, eq} from "drizzle-orm";
 import {drizzle} from "drizzle-orm/node-postgres";
-import * as schema from "./schema.js";
 import Game from "../game.js";
 import {Color, UserType} from "@common/src/index.js";
-
 
 
 const db = drizzle(process.env.DATABASE_URL!, { schema });
@@ -127,7 +129,7 @@ export async function getFinishedGameById(gameId: string): Promise<DBGame | null
 }
 
 export async function saveFinishedGame(game: Game): Promise<boolean> {
-    const finishedGame: typeof games.$inferInsert = {
+    const finishedGame: NewDBGame = {
         id: game.gameId,
         startBoard: game.startBoard,
         // players: game.players.map((player) => {
@@ -136,11 +138,12 @@ export async function saveFinishedGame(game: Game): Promise<boolean> {
         rulePoolIds: game.rulePool.map((rule) => rule.id),
         turnHistory: game.turnHistory,
         bluffPunishment: game.bluffPunishment,
+        startedAt: new Date(game.gameStartTimestamp),
 
         usesClock: game.usesClock,
-        startTimestamp: game.gameStartTimestamp,
         clockStartMs: game.clockStartMs,
         clockIncrementMs: game.clockIncrementMs,
+        clockStartedAt: new Date(game.clockStartTimestamp),
     }
 
     try {
@@ -166,7 +169,7 @@ export async function getUserGames(userId: string, page: number, pageSize: numbe
         .from(gamesToPlayers)
         .innerJoin(games, eq(gamesToPlayers.gameId, games.id))
         .where(eq(gamesToPlayers.userId, userId))
-        .orderBy(desc(games.startTimestamp), desc(games.id))
+        .orderBy(desc(games.startedAt), desc(games.id))
         .limit(pageSize)
         .offset((page - 1) * pageSize)
 
@@ -177,13 +180,11 @@ export async function getUserGames(userId: string, page: number, pageSize: numbe
 
 // Get the players in a particular game
 export async function getPlayersFromGame(gameId: string): Promise<GameToPlayer[]> {
-    const players = await db
+    return db
         .select()
         .from(gamesToPlayers)
         .where(eq(gamesToPlayers.gameId, gameId))
         .orderBy(desc(gamesToPlayers.userId));
-
-    return players;
 }
 
 

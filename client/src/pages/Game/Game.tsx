@@ -142,16 +142,6 @@ function Game() {
                         if (newPlayers.some(player => player.userId === user?.userId)) {
                             handleJoinGame(gameId);
                             setPage('play');
-                            // const payload: GameRequestStateRequest = {
-                            //     gameId: gameId,
-                            // }
-                            // socket?.emit("game:request-state", payload, ((ok, message) => {
-                            //     if (!ok) {
-                            //         console.error(message);
-                            //         return;
-                            //     }
-                            //     console.log(message);
-                            // }) as GenericCallback)
                         } else {
                             setPage('spectate');
                         }
@@ -214,14 +204,14 @@ function Game() {
 
         function onGameStarted(payload: GameStartedResponse) {
             console.log("game:started received", payload);
-            const {gameStatus, startedAt} = payload;
+            const {gameStatus} = payload;
             setGameStatus(gameStatus);
             setPage('play');
         }
 
         function onMoveApplied(payload: GameMoveAppliedResponse) {
             console.log("game:move:applied received", payload);
-            const {move, turnColor, appliedAt} = payload;
+            const {move, turnColor} = payload;
 
             addTurn(move);
             setTurnColor(turnColor);
@@ -229,7 +219,7 @@ function Game() {
 
         function onBluffCallSucceeded(payload: GameMoveBluffCallSucceededResponse) {
             console.log("game:move:bluff:call-succeeded received", payload);
-            const {turnColor, bluffPunishment, punished, turn, appliedAt} = payload;
+            const {turnColor, bluffPunishment, turn} = payload;
 
             setTurnColor(turnColor);
             setBluffPunishment(bluffPunishment);
@@ -238,7 +228,7 @@ function Game() {
 
         function onBluffCallFailed(payload: GameMoveBluffCallFailedResponse) {
             console.log("game:move:bluff:call-failed received", payload);
-            const {turnColor, bluffPunishment, punished, turn, appliedAt} = payload;
+            const {turnColor, bluffPunishment, turn} = payload;
 
             setTurnColor(turnColor);
             setBluffPunishment(bluffPunishment);
