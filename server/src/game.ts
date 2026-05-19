@@ -42,7 +42,7 @@ export default class Game {
     gameStartTimestamp: number;
 
     usesClock: boolean;
-    clockStartTimestamp: number;
+    clockStartTimestamp?: number | undefined;
     clockStartMs?: number | undefined;
     clockIncrementMs?: number | undefined;
     clocksMs: Map<Color, number>;
@@ -63,7 +63,7 @@ export default class Game {
 
         this.usesClock = usesClock;
         this.gameStartTimestamp = Date.now();
-        this.clockStartTimestamp = 0;
+        this.clockStartTimestamp = undefined;
         this.clockStartMs = clockStartMs;
         this.clockIncrementMs = clockIncrementMs;
         this.clocksMs = new Map<Color, number>();
