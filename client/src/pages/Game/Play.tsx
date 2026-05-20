@@ -169,8 +169,7 @@ function Play() {
                     isBluffing={isBluffing}
                     handleMove={handleMove}
                     highlightedMove={highlightedMove}
-                />
-                }
+                />}
                 <div className={"flex flex-row justify-between"}>
                     <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>
                     <div className={"flex flex-row justify-center gap-5 py-3"}>

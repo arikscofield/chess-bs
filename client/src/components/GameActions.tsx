@@ -4,7 +4,8 @@ import {
     Color,
     type GameDrawAcceptRequest,
     type GameDrawDeclineRequest,
-    GameResult, GameStatus,
+    GameResult,
+    GameStatus,
     type GenericCallback
 } from "@chess-bs/common";
 import {useSocket} from "./context/SocketContext.ts";
@@ -14,7 +15,15 @@ import DrawButton from "./DrawButton.tsx";
 import RematchButton from "./RematchButton.tsx";
 
 
-function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, gameStatus, gameResult, gameResultReason}: {
+const RESULT_TEXT: [Record<Color, Record<GameResult, string>>, Record<GameResult, string>] = [
+    {
+        [Color.White]: {[GameResult.White]: "You Won!", [GameResult.Black]: "You Lost", [GameResult.Draw]: "You Tied"},
+        [Color.Black]: {[GameResult.White]: "You Lost", [GameResult.Black]: "You Won!", [GameResult.Draw]: "You Tied"}
+    },
+    {[GameResult.White]: "White won", [GameResult.Black]: "Black won", [GameResult.Draw]: "Draw"},
+]
+
+function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, gameStatus, gameResult, gameResultReason, isSpectating}: {
     gameId: string,
     color: Color,
     drawOfferedColor: Color | null,
@@ -22,6 +31,7 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
     gameStatus?: GameStatus,
     gameResult?: GameResult,
     gameResultReason?: string,
+    isSpectating?: boolean
 
 }) {
     const socket = useSocket();
@@ -60,16 +70,21 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
 
     // Game over UI
     if (gameStatus === GameStatus.DONE) {
-        const resultText = gameResult === GameResult.Draw ? "You Tied" :
-            gameResult === GameResult.White && color === Color.White || gameResult === GameResult.Black && color === Color.Black ? "You Won!" : "You Lost";
+        const resultText = isSpectating ?
+            RESULT_TEXT[1][gameResult ?? GameResult.White]
+            : RESULT_TEXT[0][color ?? Color.White][gameResult ?? GameResult.White]
 
         return (<div className={"flex flex-col gap-3 w-full"}>
             <div className={"flex flex-col justify-center items-center gap-1"}>
-                <div className={"text-xl font-bold text-center"}>{resultText}</div>
+                <div className={"text-xl font-bold text-center text-white"}>{resultText}</div>
                 <div className={"text-sm text-center text-gray-300"}>{gameResultReason}</div>
             </div>
-            <RematchButton gameId={gameId}/>
+            {!isSpectating && <RematchButton gameId={gameId}/>}
         </div>)
+    }
+
+    if (isSpectating) {
+        return ""
     }
 
     // Received draw offer; show decline/accept buttons

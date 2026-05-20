@@ -32,7 +32,7 @@ function Timer({clockMs, isRunning, }: {clockMs: number | undefined, isRunning: 
     return (<div className={`flex justify-center items-center w-[100px] h-[50px] my-1 px-1 pb-0.5 rounded-md
      ${clockMs <= 0 ? "bg-red-400/30" : isRunning ? "bg-lime-700/50" : "bg-bg-2"}
      `}>
-        <p className={`text-3xl text-center ${isRunning ? "text-white" : "text-gray-400"}}`}>
+        <p className={`text-3xl text-center ${isRunning ? "text-white" : "text-gray-400"}`}>
             {formatTime(clockMs)}
         </p>
     </div>)

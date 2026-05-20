@@ -12,7 +12,7 @@ const OPPONENT_COLOR = "text-red-500";
 const ERROR_COLOR = "text-red-300/80";
 const SYSTEM_COLOR = "text-gray-400";
 
-function Chatroom({gameId, }: {gameId: string}) {
+function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean}) {
     type Message = {
         username?: string;
         usernameColor?: string;
@@ -68,6 +68,7 @@ function Chatroom({gameId, }: {gameId: string}) {
 
 
     function handleSendMessage() {
+        if (!canSend) return;
         if (!socket) {
             console.error("context not connected");
             return;
@@ -104,7 +105,7 @@ function Chatroom({gameId, }: {gameId: string}) {
             ))}
         </div>
 
-        <div className={"flex flex-row gap-2"}>
+        {canSend && <div className={"flex flex-row gap-2"}>
             <TextInput
                 id={"chat-input"}
                 value={inputMessage}
@@ -128,7 +129,7 @@ function Chatroom({gameId, }: {gameId: string}) {
             >
                 <IoSend/>
             </Button>
-        </div>
+        </div>}
     </div>)
 }
 
