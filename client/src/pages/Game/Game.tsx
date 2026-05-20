@@ -41,7 +41,7 @@ import {
     addTurnAtom,
     bluffPunishmentAtom,
     clockIncrementMsAtom, clockInfoAtom,
-    clockStartMsAtom, clockStartTimestampAtom,
+    clockStartMsAtom, clockStartTimestampAtom, drawOfferedColorAtom,
     gameCreatedTimestampAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
     gameStatusAtom, playerAtom, playersAtom,
     rulePoolIdsAtom, setGameStateAtom,
@@ -82,6 +82,8 @@ function Game() {
     const setClockInfo = useSetAtom(clockInfoAtom);
 
     const setPlayer = useSetAtom(playerAtom);
+
+    const setDrawOfferedColor = useSetAtom(drawOfferedColorAtom);
 
 
     // Initial visit to the game page: get game data
@@ -258,14 +260,21 @@ function Game() {
 
         function onDrawOffered(payload: GameDrawOfferedResponse) {
             console.log("game:draw:offered received", payload);
+            const {offeredBy: newDrawOfferedColor} = payload;
+
+            setDrawOfferedColor(newDrawOfferedColor);
         }
 
         function onDrawCancelled(payload: GameDrawCancelledResponse) {
             console.log("game:draw:cancelled received", payload);
+
+            setDrawOfferedColor(null);
         }
 
         function onDrawDeclined(payload: GameDrawDeclinedResponse) {
             console.log("game:draw:declined received", payload);
+
+            setDrawOfferedColor(null);
         }
 
         function onRematchOffered(payload: GameRematchOfferedResponse) {

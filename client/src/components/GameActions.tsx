@@ -1,4 +1,4 @@
-import {type Dispatch, type SetStateAction, useState} from "react";
+import {type Dispatch, type SetStateAction} from "react";
 import {Button} from "@mantine/core";
 import {
     Color,
@@ -26,21 +26,6 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
 }) {
     const socket = useSocket();
 
-    const [receivedDrawOfferInternal, setReceivedDrawOfferInternal] = useState<boolean>(false);
-
-    const isControlled = drawOfferedColor !== undefined;
-    const receivedDrawOffer = isControlled ? drawOfferedColor !== null && drawOfferedColor !== color : receivedDrawOfferInternal;
-
-    function setReceivedDrawOffer(value: boolean) {
-        if (setDrawOfferedColor) {
-            setDrawOfferedColor(value ? (color === Color.White ? Color.Black : Color.White) : null);
-        }
-
-        if (!isControlled) {
-            setReceivedDrawOfferInternal(value);
-        }
-    }
-
     function declineDrawOffer() {
         if (!socket) return;
 
@@ -52,7 +37,7 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
                 console.error(message);
                 return;
             } else {
-                setReceivedDrawOffer(false);
+                setDrawOfferedColor(null);
             }
         }) as GenericCallback)
     }
@@ -68,7 +53,7 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
                 console.error(message);
                 return;
             } else {
-                setReceivedDrawOffer(false);
+                setDrawOfferedColor(null);
             }
         }) as GenericCallback)
     }
@@ -88,7 +73,7 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
     }
 
     // Received draw offer; show decline/accept buttons
-    if (receivedDrawOffer) {
+    if (drawOfferedColor && drawOfferedColor !== color) {
         return (<div className={"flex flex-row justify-between w-full"}>
             <div>
                 <Button
@@ -113,7 +98,7 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
     // Typical in-game resign/draw buttons
     return (<div className={"flex flex-row justify-around w-full"}>
         <ResignButton gameId={gameId}/>
-        <DrawButton gameId={gameId} receivedDrawOfferProps={receivedDrawOffer} setReceivedDrawOfferProps={setReceivedDrawOffer}/>
+        <DrawButton gameId={gameId} drawOfferedColor={drawOfferedColor}/>
     </div>)
 }
 

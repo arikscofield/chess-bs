@@ -1,44 +1,27 @@
 import {Button} from "@mantine/core";
 import { IoClose } from "react-icons/io5";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useSocket} from "./context/SocketContext.ts";
 import type {
-    GameDrawAcceptRequest, GameDrawCancelOfferRequest,
+    Color,
+    GameDrawCancelOfferRequest,
     GameDrawOfferRequest,
     GenericCallback
 } from "@chess-bs/common";
 
 function DrawButton(
-    {gameId, receivedDrawOfferProps, setReceivedDrawOfferProps}:
-    {gameId: string, receivedDrawOfferProps?: boolean, setReceivedDrawOfferProps?: (value: boolean) => void}) {
+    {gameId, drawOfferedColor}:
+    {gameId: string, drawOfferedColor: Color | null}) {
     const socket = useSocket();
 
     const [confirming, setConfirming] = useState<boolean>(false);
-    const [receivedOfferInternal, setReceivedOfferInternal] = useState<boolean>(false);
     const [sentOffer, setSentOffer] = useState<boolean>(false);
-    const [waitingForResponse, setWaitingForResponse] = useState<boolean>(false);
+    const [waitingForResponse, setWaitingForResponse] = useState<boolean>(!!drawOfferedColor);
     
     const resetConfirmingTimeout = useRef<number>(0);
     
-    const isControlled = receivedDrawOfferProps !== undefined;
-    const receivedOffer = isControlled ? receivedDrawOfferProps : receivedOfferInternal;
-
-    const setReceivedOffer = useCallback((value: boolean) => {
-        if (setReceivedDrawOfferProps) {
-            setReceivedDrawOfferProps(value);
-        }
-        
-        if (!isControlled) {
-            setReceivedOfferInternal(value);
-        }
-    }, [isControlled, setReceivedDrawOfferProps])
-    
     useEffect(() => {
         if (!socket) return;
-
-        function handleReceivedOffer() {
-            setReceivedOffer(true);
-        }
 
         function handleReceivedDeclined() {
             setWaitingForResponse(false);
@@ -47,38 +30,17 @@ function DrawButton(
             }, 20000)
         }
 
-        function handleReceivedCancelled() {
-            setReceivedOffer(false);
-        }
-
-        socket.on("game:draw:offered", handleReceivedOffer)
         socket.on("game:draw:declined", handleReceivedDeclined)
-        socket.on("game:draw:cancelled", handleReceivedCancelled)
 
         return () => {
-            socket.off("game:draw:offered", handleReceivedOffer)
             socket.off("game:draw:declined", handleReceivedDeclined)
-            socket.off("game:draw:cancelled", handleReceivedCancelled)
         }
 
-    }, [setReceivedOffer, socket])
+    }, [socket])
 
-
-    function acceptOffer() {
-        if (!socket) return;
-
-        const payload: GameDrawAcceptRequest = {
-            gameId: gameId,
-        }
-        socket.emit("game:draw:accept", payload, ((ok, message) => {
-            if (!ok) {
-                console.error(message);
-                return;
-            } else {
-                setReceivedOffer(false);
-            }
-        }) as GenericCallback)
-    }
+    useEffect(() => {
+        setWaitingForResponse(!!drawOfferedColor);
+    }, [drawOfferedColor])
 
 
     function handleClick() {
@@ -102,8 +64,6 @@ function DrawButton(
             }) as GenericCallback)
             setWaitingForResponse(true);
             setConfirming(false)
-        } else if (receivedOffer) {
-            acceptOffer();
         } else if (!sentOffer) {
             setConfirming(true);
             resetConfirmingTimeout.current = setTimeout(() => {
@@ -111,7 +71,6 @@ function DrawButton(
             }, 5000)
         }
     }
-
 
     function handleCancel() {
         if (waitingForResponse) {
@@ -138,12 +97,6 @@ function DrawButton(
 
     }
 
-
-    if (receivedOffer) {
-        return(<div className={"flex justify-center grow pt-1"}>
-
-        </div>)
-    }
 
     return (
         <div className={"flex justify-center relative"}>
