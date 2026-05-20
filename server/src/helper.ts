@@ -16,8 +16,9 @@ import PieceClass from "@common/src/piece.js"
 import {v4 as uuidv4} from "uuid";
 import type {Game as FinishedGame, User} from "./db/schema.js";
 import type { GameDTO, UserDTO} from "@common/src/schemas/common.js";
-import {getPlayersFromGameWithUser} from "./db/helper.js";
+import {getFinishedGameById, getPlayersFromGameWithUser} from "./db/helper.js";
 import type {PlayerDTO} from "@chess-bs/common";
+import {gameRepository} from "./server.js";
 
 export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {
     const grid: (Piece | null)[][] = [];
@@ -94,6 +95,12 @@ export function generateGameId(len: number) {
 
 export function generateUUID() {
     return crypto.randomUUID?.() ?? uuidv4();
+}
+
+export async function gameIdExists(gameId: string): Promise<boolean> {
+    if (gameRepository.getById(gameId)) return true;
+    const finishedGame = await getFinishedGameById(gameId);
+    return finishedGame !== null;
 }
 
 export async function getGameDTOFromFinishedGame(finishedGame: FinishedGame): Promise<GameDTO> {

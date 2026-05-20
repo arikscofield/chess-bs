@@ -21,7 +21,7 @@ import {
     getUserById,
     saveSession, getUserGames
 } from "./db/helper.js";
-import {generateGameId, generateUUID, getGameDTOFromFinishedGame} from "./helper.js";
+import {gameIdExists, generateGameId, generateUUID, getGameDTOFromFinishedGame} from "./helper.js";
 import Game from "./game.js";
 import Rule from "@common/src/rule.js";
 import {DEFAULT_GUEST_SESSION_EXPIRATION, DEFAULT_USER_SESSION_EXPIRATION} from "@common/src/const.js";
@@ -284,8 +284,8 @@ app.post('/api/games', validate({ body: CreateGameSchema }), requireAuth, async 
 
 
     let gameId = generateGameId(6);
-    while (gameRepository.getById(gameId))
-        gameId = Math.random().toString(36).substring(2, 8);
+    while (await gameIdExists(gameId))
+        gameId = generateGameId(6);
     const game = new Game(gameId, ruleCount, rulePool, bluffPunishment, usesClock, clockStartSeconds !== undefined ? clockStartSeconds * 1000 : undefined, clockIncrementSeconds !== undefined ? clockIncrementSeconds * 1000 : undefined);
 
     gameRepository.save(game);
