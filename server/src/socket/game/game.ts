@@ -1,6 +1,6 @@
 import type {Server, Socket} from "socket.io";
 import {
-    Color,
+    Color, type GameChatSystemResponse,
     type GameJoinRequest, GameJoinSchema, type GamePlayerJoinedResponse,
     type GameRequestStateRequest, GameRequestStateSchema,
     type GameResignRequest, GameResignSchema, GameResult,
@@ -182,6 +182,7 @@ export default function gameHandler(io: Server) {
             return;
         }
 
+        io.to(gameId).emit("game:chat:system", ({message: `${player.color} resigned`}) as GameChatSystemResponse);
         callback(true, "Successfully resigned from game");
         return;
     }

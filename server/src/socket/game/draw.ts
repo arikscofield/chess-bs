@@ -1,5 +1,6 @@
 import type {Server, Socket} from "socket.io";
 import type {
+    GameChatSystemResponse,
     GameDrawAcceptRequest, GameDrawCancelledResponse,
     GameDrawCancelOfferRequest,
     GameDrawDeclineRequest,
@@ -57,6 +58,7 @@ export default function drawHandler(io: Server) {
             offeredBy: player.color,
         }
         this.to(gameId).emit("game:draw:offered", drawOfferedPayload);
+        io.to(gameId).emit("game:chat:system", ({message: `${player.color} offered a draw`}) as GameChatSystemResponse);
         callback(true, "Draw Offered");
     }
 
@@ -99,7 +101,7 @@ export default function drawHandler(io: Server) {
 
         }
         io.to(gameId).emit("game:draw:cancelled", drawOfferCancelledPayload);
-
+        io.to(gameId).emit("game:chat:system", ({message: `${player.color} canceled draw offer`}) as GameChatSystemResponse);
     }
 
     function acceptDraw(this: Socket, payload: GameDrawAcceptRequest, callback: GenericCallback) {
@@ -175,6 +177,7 @@ export default function drawHandler(io: Server) {
 
         }
         io.to(gameId).emit("game:draw:declined", drawOfferDeclinedPayload);
+        io.to(gameId).emit("game:chat:system", ({message: `${player.color} declined draw offer`}) as GameChatSystemResponse);
     }
 
 

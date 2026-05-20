@@ -1,6 +1,6 @@
 import type {Server, Socket} from "socket.io";
 import {
-    Color, type GameMoveAppliedResponse,
+    Color, type GameChatSystemResponse, type GameMoveAppliedResponse,
     type GameMoveBluffCallRequest, type GameMoveBluffCallResultResponse, GameMoveBluffCallSchema,
     type GameMoveBluffChoosePieceRequest,
     type GameMoveSendRequest, GameMoveSendSchema, GameResult,
@@ -122,10 +122,12 @@ export default function moveHandler(io: Server) {
         if (callSuccessful) {
             io.to(gameId).emit("game:move:bluff:call-succeeded", response);
             callback(true, message);
+            io.to(gameId).emit("game:chat:system", ({message: `${player.color} successfully called bluff`}) as GameChatSystemResponse);
             return;
         } else {
             io.to(gameId).emit("game:move:bluff:call-failed", response);
             callback(true, message);
+            io.to(gameId).emit("game:chat:system", ({message: `${player.color}'s bluff call was incorrect`}) as GameChatSystemResponse);
             return;
         }
     }

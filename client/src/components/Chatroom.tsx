@@ -3,13 +3,14 @@ import {Button, TextInput} from "@mantine/core";
 import {useInputState} from "@mantine/hooks";
 import {useEffect, useRef, useState} from "react";
 import {useSocket} from "./context/SocketContext.ts";
-import type {GameChatMessageResponse, GameChatSendRequest, GenericCallback} from "@chess-bs/common";
+import type {GameChatMessageResponse, GameChatSystemResponse, GameChatSendRequest, GenericCallback} from "@chess-bs/common";
 import {useAuth} from "./context/AuthContext.ts";
 
 
 const PLAYER_COLOR = "text-blue-500";
 const OPPONENT_COLOR = "text-red-500";
 const ERROR_COLOR = "text-red-300/80";
+const SYSTEM_COLOR = "text-gray-400";
 
 function Chatroom({gameId, }: {gameId: string}) {
     type Message = {
@@ -17,6 +18,7 @@ function Chatroom({gameId, }: {gameId: string}) {
         usernameColor?: string;
         message: string;
         messageColor?: string;
+        centered?: boolean;
     }
 
     const [inputMessage, setInputMessage] = useInputState("");
@@ -37,14 +39,26 @@ function Chatroom({gameId, }: {gameId: string}) {
                 username: payload.username,
                 usernameColor: OPPONENT_COLOR,
                 message: payload.message,
-            }
+            };
+            setMessages(prevMessages => [...prevMessages, message])
+        }
+
+        function onSystem(payload: GameChatSystemResponse) {
+            const message: Message = {
+                username: "",
+                message: payload.message,
+                messageColor: SYSTEM_COLOR,
+                centered: true,
+            };
             setMessages(prevMessages => [...prevMessages, message])
         }
 
         socket.on('game:chat:message', onMessage);
+        socket.on('game:chat:system', onSystem)
 
         return () => {
             socket.off('game:chat:message', onMessage);
+            socket.off('game:chat:system', onSystem)
         }
     }, [socket])
 
@@ -83,8 +97,8 @@ function Chatroom({gameId, }: {gameId: string}) {
 
         <div ref={scrollRef} className={"flex flex-col grow overflow-auto min-h-0 "}>
             {messages.map((message, index) => (
-                <div key={index} className={"wrap-anywhere "}>
-                    <p className={`inline font-bold ${message.usernameColor ?? ''}`}>{message.username ?? ""}: </p>
+                <div key={index} className={`wrap-anywhere ${message.centered && "text-center"}`}>
+                    {message.username && <p className={`inline font-bold ${message.usernameColor ?? ''}`}>{message.username}: </p>}
                     <p className={`inline ${message.messageColor ?? ""}`}>{message.message}</p>
                 </div>
             ))}

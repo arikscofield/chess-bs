@@ -1,7 +1,7 @@
 import type {
     GameAbortedResponse,
     GameChatMessageResponse,
-    GameChatSendRequest,
+    GameChatSendRequest, GameChatSystemResponse,
     GameClockStartedResponse, GameClockStateResponse, GameDrawAcceptRequest, GameDrawCancelledResponse,
     GameDrawCancelOfferRequest,
     GameDrawDeclinedResponse, GameDrawDeclineRequest, GameDrawOfferedResponse, GameDrawOfferRequest,
@@ -162,6 +162,7 @@ export interface ClientToServerEvents {
 
 export interface ServerToClientEvents {
     "game:chat:message": (payload: GameChatMessageResponse) => void;
+    "game:chat:system": (payload: GameChatSystemResponse) => void;
 
     "game:player:joined": (payload: GamePlayerJoinedResponse) => void;
     "game:player:state": (payload: GamePlayerStateResponse) => void;

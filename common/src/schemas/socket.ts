@@ -112,6 +112,11 @@ export const GameChatMessageSchema = z.object({
 })
 export type GameChatMessageResponse = z.infer<typeof GameChatMessageSchema>;
 
+export const GameChatSystemSchema = z.object({
+    message: z.string(),
+})
+export type GameChatSystemResponse = z.infer<typeof GameChatSystemSchema>;
+
 export const GamePlayerJoinedSchema = z.object({
     userId: z.string(),
     username: z.string(),
