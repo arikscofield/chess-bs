@@ -1,6 +1,5 @@
 import {useEffect, useMemo, useState} from "react";
-import {type ClockInfo, type Turn} from "@chess-bs/common";
-import {Color, nextTurnColor} from "@chess-bs/common";
+import {type ClockInfo, Color, GameStatus, nextTurnColor, type Turn} from "@chess-bs/common";
 
 
 export function useLiveClock(
@@ -8,17 +7,18 @@ export function useLiveClock(
     clockInfo: ClockInfo,
     liveTick: boolean = true,
     viewMoveIndex: number = -1,
+    gameStatus: GameStatus = GameStatus.RUNNING,
 ): Map<Color, number> {
     const [now, setNow] = useState(() => Date.now());
 
 
     useEffect(() => {
-        if (!liveTick) return;
+        if (!liveTick || gameStatus === GameStatus.DONE) return;
         const id = setInterval(() => {
             setNow(Date.now())
         }, 100);
         return () => clearInterval(id);
-    }, [liveTick]);
+    }, [liveTick, gameStatus]);
 
 
     return useMemo(() => {

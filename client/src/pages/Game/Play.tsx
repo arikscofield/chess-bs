@@ -3,7 +3,7 @@ import RuleList from "../../components/RuleList.tsx";
 import {MdOutlineDragIndicator} from "react-icons/md";
 import {
     Color,
-    type GameMoveSendRequest,
+    type GameMoveSendRequest, GameStatus,
     getMoveNotation,
     type Move,
     type PlayerDTO
@@ -63,7 +63,7 @@ function Play() {
     const addTurnTimestamp = useSetAtom(addTurnTimestampAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
-    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo);
+    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
 
@@ -156,7 +156,7 @@ function Play() {
 
                     {clockInfo.usesClock && <Timer
                         clockMs={liveClocks.get(topColor)}
-                        isRunning={(view && view !== turnColor) || (view === undefined && player?.color !== turnColor)}
+                        isRunning={gameStatus !== GameStatus.DONE && ((view && view !== turnColor) || (view === undefined && player?.color !== turnColor))}
                     />}
                 </div>
                 {visibleBoard !== null && player && <Board
@@ -179,7 +179,7 @@ function Play() {
                     </div>
                     {clockInfo.usesClock && <Timer
                         clockMs={liveClocks.get(bottomColor)}
-                        isRunning={(view === turnColor) || (view === undefined && player?.color === turnColor)}
+                        isRunning={gameStatus !== GameStatus.DONE && ((view === turnColor) || (view === undefined && player?.color === turnColor))}
                     />}
                 </div>
 
