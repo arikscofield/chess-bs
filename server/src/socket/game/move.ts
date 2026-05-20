@@ -53,6 +53,7 @@ export default function moveHandler(io: Server) {
             return;
         }
 
+        delete move.bluff;
         const movePayload: GameMoveAppliedResponse = {
             move: move,
             turnColor: game.turnColor,

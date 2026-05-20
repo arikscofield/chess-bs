@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         BASE_DELAY_MS * 2 ** attempt + Math.random() * 250,
                         MAX_DELAY_MS,
                     )
-                    console.warn(`Atuh fetch failed (attempt ${attempt + 1}, retrying in ${Math.round(delay)}ms`, error);
+                    console.warn(`Auth fetch failed (attempt ${attempt + 1}, retrying in ${Math.round(delay)}ms`, error);
                     attempt++;
                     try {
                         await sleep(delay, controller.signal);
