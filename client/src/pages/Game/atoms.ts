@@ -62,6 +62,7 @@ export const playerAtom = atom<PlayerDTO>();
 export const playerRulePoolAtom = atom(get => (get(playerAtom)?.ruleIds ?? []).map(id => Rule.getRuleFromId(id)).filter(rule => rule !== undefined));
 export const bluffPunishmentAtom = atom<BluffPunishment>(BluffPunishment.Turn);
 export const creatorColorAtom = atom<CreateGameColor>(CreateGameColor.Random);
+export const gameCreatedTimestampAtom = atom<number>(0);
 
 export const usesClockAtom = atom<boolean>(false);
 export const clockStartMsAtom = atom<number | undefined>(0);

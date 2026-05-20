@@ -41,7 +41,8 @@ import {
     addTurnAtom,
     bluffPunishmentAtom,
     clockIncrementMsAtom, clockInfoAtom,
-    clockStartMsAtom, clockStartTimestampAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
+    clockStartMsAtom, clockStartTimestampAtom,
+    gameCreatedTimestampAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
     gameStatusAtom, playerAtom, playersAtom,
     rulePoolIdsAtom, setGameStateAtom,
     startBoardAtom, turnColorAtom, turnHistoryAtom,
@@ -66,6 +67,7 @@ function Game() {
     const setStartBoard = useSetAtom(startBoardAtom);
     const setRulePoolIds = useSetAtom(rulePoolIdsAtom);
     const setBluffPunishment = useSetAtom(bluffPunishmentAtom);
+    const setGameCreatedTimestamp = useSetAtom(gameCreatedTimestampAtom);
     const setPlayers = useSetAtom(playersAtom);
     const setTurnColor = useSetAtom(turnColorAtom);
     const setTurnHistory = useSetAtom(turnHistoryAtom);
@@ -104,42 +106,41 @@ function Game() {
                 }
 
                 const gameData: GetGameResponse = await response.json();
-                const { gameId: newGameId, gameStatus: newGameStatus, startBoard: newStartBoard,
-                    rulePoolIds: newRulePoolIds, turnHistory: newTurnHistory, usesClock: newUsesClock,
-                    clockStartMs: newClockStartMs, clockIncrementMs: newClockIncrementMs,
-                    bluffPunishment: newBluffPunishment, players: newPlayers}
-                    = gameData;
                 console.log("Received game data from fetch:", gameData);
 
-                if (newGameId !== gameId) {
+                if (gameData.gameId !== gameId) {
                     navigate("/");
-                    console.error("Received game data for id", newGameId, "instead of ", gameId);
+                    console.error("Received game data for id", gameData.gameId, "instead of ", gameId);
                     return;
                 }
 
-                setGameId(newGameId);
-                setGameStatus(newGameStatus);
-                setStartBoard(new BoardClass(newStartBoard.grid, newStartBoard.enPassant));
-                setRulePoolIds(newRulePoolIds);
-                setTurnHistory(newTurnHistory);
-                setUsesClock(newUsesClock);
-                setClockStartMs(newClockStartMs ?? 0);
-                setClockIncrementMs(newClockIncrementMs ?? 0);
-                setBluffPunishment(newBluffPunishment);
-                setPlayers(newPlayers);
-                switch (newGameStatus) {
+                setGameId(gameData.gameId);
+                setGameStatus(gameData.gameStatus);
+                setStartBoard(new BoardClass(gameData.startBoard.grid, gameData.startBoard.enPassant));
+                setRulePoolIds(gameData.rulePoolIds);
+                setTurnHistory(gameData.turnHistory);
+                setBluffPunishment(gameData.bluffPunishment);
+                setGameCreatedTimestamp(gameData.gameCreatedTimestamp);
+
+                setUsesClock(gameData.usesClock);
+                setClockStartMs(gameData.clockStartMs ?? 0);
+                setClockIncrementMs(gameData.clockIncrementMs ?? 0);
+                setClockStartTimestamp(gameData.clockStartTimestamp ?? 0);
+
+                setPlayers(gameData.players);
+                switch (gameData.gameStatus) {
                     case GameStatus.WAITING_FOR_PLAYER:
-                        if (newPlayers.length === 0 || newPlayers.some(player =>  player.userId === user?.userId)) {
+                        if (gameData.players.length === 0 || gameData.players.some(player =>  player.userId === user?.userId)) {
                             handleJoinGame(gameId);
                             setPage('lobby')
                             break;
                         }
-                        setPage(newPlayers.length === 0 ? 'lobby' : 'join');
+                        setPage(gameData.players.length === 0 ? 'lobby' : 'join');
                         break;
                     case GameStatus.WAITING_FOR_FIRST_MOVE:
                     case GameStatus.PAUSED:
                     case GameStatus.RUNNING:
-                        if (newPlayers.some(player => player.userId === user?.userId)) {
+                        if (gameData.players.some(player => player.userId === user?.userId)) {
                             handleJoinGame(gameId);
                             setPage('play');
                         } else {

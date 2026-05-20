@@ -23,7 +23,7 @@ function Replay() {
     const [view, setView] = useAtom(viewAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
-    const clocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo);
+    const clocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, false, viewMoveIndex);
 
     const oppColor = view === Color.White ? Color.Black : Color.White;
     const playerRuleIds: Map<Color, number[]> = new Map(players.map(player => [player.color, player.ruleIds ?? []]));
@@ -32,16 +32,16 @@ function Replay() {
         <div className={"flex flex-row gap-5 justify-center items-center h-full"}>
 
             {/* Board */}
-            <div className={"flex flex-1 flex-col justify-center min-w-0 max-w-[min(calc(80vh-50px),80vw)] "}>
+            <div className={"flex flex-1 flex-col justify-center min-w-0 max-w-[min(calc(80vh-50px),80vw)] text-white "}>
                 <div className={"flex flex-row shrink justify-between items-end "}>
-                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === nextTurnColor(view || Color.White))?.username ?? nextTurnColor(view || Color.White)}</div>
+                    <div className={"float-start text-xl"}>{players.find(p => p.color === nextTurnColor(view || Color.White))?.username ?? nextTurnColor(view || Color.White)}</div>
 
                     <div className={"overflow-auto"}>
                         <ReplayPlayerRuleList color={oppColor} playerRuleIds={playerRuleIds.get(oppColor) ?? []} className={"pb-1"}/>
                     </div>
 
                     {clockInfo.usesClock && <Timer
-                        clockMs={clocks.get(oppColor)}
+                        clockMs={clocks.get(nextTurnColor(view || Color.White))}
                         isRunning={false}
                     />}
                 </div>

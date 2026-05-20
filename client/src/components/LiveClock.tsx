@@ -3,7 +3,12 @@ import {type ClockInfo, type Turn} from "@chess-bs/common";
 import {Color, nextTurnColor} from "@chess-bs/common";
 
 
-export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo, liveTick: boolean = true): Map<Color, number> {
+export function useLiveClock(
+    turnHistory: Turn[],
+    clockInfo: ClockInfo,
+    liveTick: boolean = true,
+    viewMoveIndex: number = -1,
+): Map<Color, number> {
     const [now, setNow] = useState(() => Date.now());
 
 
@@ -17,6 +22,7 @@ export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo, liveTick
 
 
     return useMemo(() => {
+        const viewedTurnHistory = turnHistory.slice(0, viewMoveIndex >= 0 ? viewMoveIndex : turnHistory.length);
         const clocks = new Map<Color, number>();
         for (const color of Object.values(Color)) {
             clocks.set(color, clockInfo.startMs ?? 0);
@@ -26,7 +32,7 @@ export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo, liveTick
         let turnColor = Color.White;
         let prevTimestamp = clockInfo.startTimestamp ?? Date.now();
 
-        for (const turn of turnHistory) {
+        for (const turn of viewedTurnHistory) {
             clocks.set(turnColor, Math.max(0, (clocks.get(turnColor) ?? 0) + clockInfo.incrementMs)); // Add increment
             if (!turn.timestamp) {
                 if ("from" in turn || !turn.successful) turnColor = nextTurnColor(turnColor);
@@ -44,7 +50,7 @@ export function useLiveClock(turnHistory: Turn[], clockInfo: ClockInfo, liveTick
             clocks.set(turnColor, Math.max(0, (clocks.get(turnColor) ?? 0) - (now - prevTimestamp)));
         }
         return clocks;
-    }, [clockInfo, turnHistory, now, liveTick]);
+    }, [clockInfo, turnHistory, now, liveTick, viewMoveIndex]);
 
 }
 
