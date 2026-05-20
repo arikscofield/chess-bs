@@ -39,7 +39,7 @@ export default class Game {
     ruleCount: number;
     rulePool: Rule[];
     bluffPunishment: BluffPunishment;
-    gameStartTimestamp: number;
+    gameCreatedTimestamp: number;
 
     usesClock: boolean;
     clockStartTimestamp?: number | undefined;
@@ -62,7 +62,7 @@ export default class Game {
         this.hasMoved = new Map();
 
         this.usesClock = usesClock;
-        this.gameStartTimestamp = Date.now();
+        this.gameCreatedTimestamp = Date.now();
         this.clockStartTimestamp = undefined;
         this.clockStartMs = clockStartMs;
         this.clockIncrementMs = clockIncrementMs;
@@ -154,7 +154,6 @@ export default class Game {
         this.players.push(player);
         
         if (this.players.length >= this.maxPlayers) {
-            this.gameStartTimestamp = Date.now();
             if (this.usesClock)
                 this.gameStatus = GameStatus.WAITING_FOR_FIRST_MOVE;
             else
@@ -330,7 +329,7 @@ export default class Game {
             rulePoolIds: this.rulePool.map((rule) => rule.id),
             turnHistory: this.turnHistory,
             startBoard: this.startBoard.getBoardDTO(),
-            gameStartTimestamp: this.gameStartTimestamp,
+            gameCreatedTimestamp: this.gameCreatedTimestamp,
 
             usesClock: this.usesClock,
             clockIncrementMs: this.clockIncrementMs,

@@ -15,7 +15,7 @@ const CLOCK_INCREMENT_VALUES = [
     17, 18, 19, 20, 25, 30, 35, 40, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180,
 ];
 
-function CreateGameModal({opened, onClose, onSubmit}: {
+function CreateGameModal({opened, onClose, onSubmit, error}: {
     opened: boolean,
     onClose: () => void,
     onSubmit: (
@@ -27,6 +27,7 @@ function CreateGameModal({opened, onClose, onSubmit}: {
         clockStartSeconds?: number,
         clockIncrementSeconds?: number,
     ) => void,
+    error?: string,
 }) {
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
 
@@ -226,6 +227,9 @@ function CreateGameModal({opened, onClose, onSubmit}: {
             </Button>
         </Group>
 
+        {error && <p className={"text-red-600 font-bold"}>
+            {error}
+        </p>}
 
     </Modal>)
 }

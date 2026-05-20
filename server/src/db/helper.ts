@@ -138,12 +138,12 @@ export async function saveFinishedGame(game: Game): Promise<boolean> {
         rulePoolIds: game.rulePool.map((rule) => rule.id),
         turnHistory: game.turnHistory,
         bluffPunishment: game.bluffPunishment,
-        startedAt: new Date(game.gameStartTimestamp),
+        createdAt: new Date(game.gameCreatedTimestamp),
 
         usesClock: game.usesClock,
         clockStartMs: game.clockStartMs,
         clockIncrementMs: game.clockIncrementMs,
-        clockStartedAt: new Date(game.clockStartTimestamp),
+        clockStartedAt: game.clockStartTimestamp ? new Date(game.clockStartTimestamp) : undefined,
     }
 
     try {
@@ -169,7 +169,7 @@ export async function getUserGames(userId: string, page: number, pageSize: numbe
         .from(gamesToPlayers)
         .innerJoin(games, eq(gamesToPlayers.gameId, games.id))
         .where(eq(gamesToPlayers.userId, userId))
-        .orderBy(desc(games.startedAt), desc(games.id))
+        .orderBy(desc(games.createdAt), desc(games.id))
         .limit(pageSize)
         .offset((page - 1) * pageSize)
 

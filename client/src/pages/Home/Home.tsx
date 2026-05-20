@@ -18,6 +18,7 @@ function Home() {
 
     const [gameCodeInput, setGameCodeInput] = useState<string>("");
     const [createGameModalOpen, setCreateGameModalOpen] = useState<boolean>(false);
+    const [createGameError, setCreateGameError] = useState<string>("");
 
     const socket = useSocket();
 
@@ -28,6 +29,7 @@ function Home() {
 
     function handleCreateGame() {
         setCreateGameModalOpen(true);
+        setCreateGameError("");
     }
 
     async function createGame(
@@ -39,8 +41,12 @@ function Home() {
         clockStartSeconds?: number,
         clockIncrementSeconds?: number,
         ) {
+        setCreateGameError("");
+
         if (!socket) {
-            console.error("context not connected");
+            const error = "Server socket not connected";
+            setCreateGameError(error);
+            console.error(error);
             return;
         }
 
@@ -120,6 +126,7 @@ function Home() {
             opened={createGameModalOpen}
             onClose={() => setCreateGameModalOpen(false)}
             onSubmit={createGame}
+            error={createGameError}
         />
     </Grid>
     )

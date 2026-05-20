@@ -97,7 +97,7 @@ export const GameDTOSchema = z.object({
     rulePoolIds: z.array(z.number().int()),
     turnHistory: z.array(TurnSchema),
     bluffPunishment: ZBluffPunishmentEnum,
-    gameStartTimestamp: z.int().positive(),
+    gameCreatedTimestamp: z.int().positive(),
 
     usesClock: z.boolean(),
     clockStartMs: z.number().int().nonnegative().optional(),

@@ -77,6 +77,10 @@ export function handleRematch(game: Game) {
 
 
 export function sendClockStarted(game: Game) {
+    if (!game.clockStartTimestamp) {
+        console.warn(`Tried to send ClockStarted socket event without a defined clcokStartTimestamp on game ${game.gameId}`)
+        return;
+    }
 
     const payload: GameClockStartedResponse = {
         gameStatus: game.gameStatus,
