@@ -11,8 +11,10 @@ import {
     CreateGameSchema,
     GameIdParamSchema, GetGameResponseSchema, GetUserGamesResponseSchema, GetUserResponseSchema, LoginResponseSchema,
     LoginSchema, LogoutResponseSchema, PaginationQuerySchema, RegisterResponseSchema,
-    RegisterSchema, UserIdParamSchema
-} from "@common/src/schemas/express.js";
+    RegisterSchema, UserIdParamSchema,
+    DEFAULT_GUEST_SESSION_EXPIRATION, DEFAULT_USER_SESSION_EXPIRATION,
+    UserType
+} from "@chess-bs/common";
 import {
     addUser,
     deleteSessionByToken,
@@ -23,10 +25,8 @@ import {
 } from "./db/helper.js";
 import {gameIdExists, generateGameId, generateUUID, getGameDTOFromFinishedGame} from "./helper.js";
 import Game from "./game.js";
-import Rule from "@common/src/rule.js";
-import {DEFAULT_GUEST_SESSION_EXPIRATION, DEFAULT_USER_SESSION_EXPIRATION} from "@common/src/const.js";
+import Rule from "@chess-bs/common/src/rule.js";
 import {hash, verify} from "argon2"
-import {UserType} from "@common/src/index.js";
 
 
 const port = parseInt(process.env.PORT || "3000");

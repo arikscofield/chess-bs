@@ -15,7 +15,7 @@ import {
 import {count, desc, eq} from "drizzle-orm";
 import {drizzle} from "drizzle-orm/node-postgres";
 import Game from "../game.js";
-import {Color, UserType} from "@common/src/index.js";
+import {Color, UserType} from "@chess-bs/common";
 
 
 const db = drizzle(process.env.DATABASE_URL!, { schema });

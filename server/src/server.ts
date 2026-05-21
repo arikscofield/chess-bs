@@ -2,7 +2,7 @@ import {Server} from "socket.io";
 import {
     type ClientToServerEvents,
     type ServerToClientEvents,
-} from "@common/src/types.js";
+} from "@chess-bs/common";
 import 'dotenv/config';
 import { createServer } from "node:http";
 

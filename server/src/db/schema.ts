@@ -1,5 +1,4 @@
 import {
-    bigint,
     boolean,
     integer,
     jsonb,
@@ -8,11 +7,9 @@ import {
     text,
     timestamp,
     uuid,
-    varchar,
     primaryKey,
     index,
 } from "drizzle-orm/pg-core";
-// import {BluffPunishment, Color, type Turn, type Piece, type Square, UserType} from "@common/dist/index.js"
 import {BluffPunishment, Color, type Turn, type Piece, type Square, UserType} from "@chess-bs/common"
 import { defineRelations } from 'drizzle-orm';
 import {createInsertSchema} from "drizzle-orm/zod";

@@ -2,7 +2,7 @@ import {Color, GameStatus, nextTurnColor} from "@chess-bs/common";
 import Timer from "../../components/Timer.tsx";
 import Board from "../../components/Board.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
-import {useGameViewer} from "../../components/GameViewer.tsx";
+import {useGameViewer} from "../../hooks/GameViewer.ts";
 import ReplayPlayerRuleList from "../../components/ReplayPlayerRuleList.tsx";
 import {useAtom, useAtomValue} from "jotai";
 import {
@@ -12,7 +12,7 @@ import {
     turnHistoryAtom,
     viewAtom
 } from "./atoms.ts";
-import {useLiveClock} from "../../components/LiveClock.tsx";
+import {useLiveClock} from "../../hooks/LiveClock.ts";
 
 function Replay() {
     const startBoard = useAtomValue(startBoardAtom);

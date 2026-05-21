@@ -2,8 +2,7 @@
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" },
-    { "path": "../common"}
+    { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
     "noErrorTruncation": true

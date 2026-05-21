@@ -33,11 +33,12 @@ import {
     turnHistoryAtom,
     viewAtom
 } from "./atoms.ts";
-import {useGameViewer} from "../../components/GameViewer.tsx";
+import {useGameViewer} from "../../hooks/GameViewer.ts";
 import {useSocket} from "../../components/context/SocketContext.ts";
 import {useEffect, useState} from "react";
 import GameActions from "../../components/GameActions.tsx";
-import {useLiveClock} from "../../components/LiveClock.tsx";
+import {useLiveClock} from "../../hooks/LiveClock.ts";
+import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
 
 function Play() {
     const socket = useSocket();
@@ -64,6 +65,7 @@ function Play() {
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
     const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
+    const { activeAnimations, playAnimations, playSingleMove, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
 
@@ -169,6 +171,8 @@ function Play() {
                     isBluffing={isBluffing}
                     handleMove={handleMove}
                     highlightedMove={highlightedMove}
+                    animations={activeAnimations}
+                    hiddenSquares={hiddenSquares}
                 />}
                 <div className={"flex flex-row justify-between"}>
                     <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>

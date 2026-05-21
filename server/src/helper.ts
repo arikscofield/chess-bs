@@ -10,14 +10,15 @@ import {
     type Piece,
     PieceType,
     PrefixToPieceType,
-    type Square
-} from "@common/src/index.js";
-import PieceClass from "@common/src/piece.js"
+    type Square,
+    type GameDTO,
+    type UserDTO,
+    type PlayerDTO
+} from "@chess-bs/common";
+import PieceClass from "@chess-bs/common/src/piece.js"
 import {v4 as uuidv4} from "uuid";
 import type {Game as FinishedGame, User} from "./db/schema.js";
-import type { GameDTO, UserDTO} from "@common/src/schemas/common.js";
 import {getFinishedGameById, getPlayersFromGameWithUser} from "./db/helper.js";
-import type {PlayerDTO} from "@chess-bs/common";
 import {gameRepository} from "./server.js";
 
 export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {

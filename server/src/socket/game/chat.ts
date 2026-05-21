@@ -4,7 +4,7 @@ import {
     type GameChatSendRequest,
     GameChatSendSchema,
     type GenericCallback
-} from "@common/src/index.js";
+} from "@chess-bs/common";
 import {validateSocketPayload} from "../index.js";
 import type {User} from "../../db/schema.js";
 import {gameRepository} from "../../server.js";

@@ -1,6 +1,5 @@
-import {type Color} from "@common/src/types.js";
-import Rule, {allRules} from "@common/src/rule.js";
-import type {GamePlayerStateResponse} from "@common/src/index.js";
+import {type Color, allRules} from "@chess-bs/common";
+import Rule from "@chess-bs/common/dist/rule.js"
 import {getUserById} from "./db/helper.js";
 
 class Player {

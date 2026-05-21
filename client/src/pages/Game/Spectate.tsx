@@ -19,8 +19,8 @@ import Timer from "../../components/Timer.tsx";
 import Board from "../../components/Board.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
 import Chatroom from "../../components/Chatroom.tsx";
-import {useLiveClock} from "../../components/LiveClock.tsx";
-import {useGameViewer} from "../../components/GameViewer.tsx";
+import {useLiveClock} from "../../hooks/LiveClock.ts";
+import {useGameViewer} from "../../hooks/GameViewer.ts";
 import GameActions from "../../components/GameActions.tsx";
 
 

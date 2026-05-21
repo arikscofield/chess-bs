@@ -4,12 +4,12 @@ import {
     type GameJoinRequest, GameJoinSchema, type GamePlayerJoinedResponse,
     type GameRequestStateRequest, GameRequestStateSchema,
     type GameResignRequest, GameResignSchema, GameResult,
-    type GameSpectateRequest, GameSpectateSchema, type GameStateResponse, GameStatus, type GenericCallback
-} from "@common/src/index.js";
+    type GameSpectateRequest, GameSpectateSchema, type GameStateResponse, GameStatus, type GenericCallback,
+    type GamePlayerStateResponse, type GameStartedResponse,
+} from "@chess-bs/common";
 import {validateSocketPayload} from "../index.js";
 import type {User} from "../../db/schema.js";
 import {gameRepository} from "../../server.js";
-import type {GamePlayerStateResponse, GameStartedResponse} from "@chess-bs/common";
 
 
 

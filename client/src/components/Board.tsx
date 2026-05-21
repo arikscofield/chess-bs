@@ -18,10 +18,12 @@ import {pieceImages} from "../assets/pieceImages.ts";
 import {Portal} from "@mantine/core";
 import BoardClass from "@chess-bs/common/src/board"
 import Rule from "@chess-bs/common/src/rule.js";
+import type {AnimationPiece} from "../hooks/PieceAnimation.ts";
+import PieceAnimationOverlay from "./PieceAnimationOverlay.tsx";
 
 
 
-function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove}: {
+function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove, animations, hiddenSquares}: {
     board: BoardClass | null,
     gameStatus: GameStatus,
     player: PlayerDTO | null,
@@ -30,7 +32,9 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
     canMove: boolean,
     isBluffing: boolean,
     handleMove: (move: Move) => void,
-    highlightedMove: Move | null
+    highlightedMove: Move | null,
+    animations?: AnimationPiece[],
+    hiddenSquares?: Set<string>,
 }) {
 
 
@@ -355,7 +359,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                         }
                         return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
                             <Square row={row} col={col} color={player?.color || Color.White}
-                                    piece={draggedSquare?.row === row && draggedSquare?.col === col ? null : board?.grid?.[row]?.[col] || null}
+                                    piece={hiddenSquares?.has(`${row}-${col}`) || (draggedSquare?.row === row && draggedSquare?.col === col) ? null : board?.grid?.[row]?.[col] || null}
                                     hovered={hovered.row === row && hovered.col === col}
                                     selected={selectedSquare?.row === row && selectedSquare?.col === col}
                                     highlighted={(highlightedMove?.to.row === row && highlightedMove?.to.col === col) || (highlightedMove?.from.row === row && highlightedMove?.from.col === col)}
@@ -369,6 +373,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                         </div>
                     })
                 ))}
+
+                <PieceAnimationOverlay animations={animations ?? []} view={view} squareSize={squareSize}/>
 
                 {draggedSquare && draggedPiece &&
                     <Portal>

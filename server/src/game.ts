@@ -1,4 +1,3 @@
-import Board from "@common/src/board.js";
 import {
     BluffPunishment,
     Color,
@@ -8,17 +7,16 @@ import {
     GameStatus,
     getMoveNotation,
     type Move,
-    type Turn
-} from "@common/src/index.js";
-import Rule from "@common/src/rule.js";
-import Player from "./player.js";
-import {parseFen} from "./helper.js";
-import type {
-    CallBluff,
-    GameDTO,
-    GameMoveBluffCallFailedResponse,
-    GameMoveBluffCallSucceededResponse
+    type Turn,
+    type CallBluff,
+    type GameDTO,
+    type GameMoveBluffCallFailedResponse,
+    type GameMoveBluffCallSucceededResponse
 } from "@chess-bs/common";
+import Rule from "@chess-bs/common/src/rule.js";
+import Board from "@chess-bs/common/src/board.js";
+import Player from "./player.js";
+import {parseFen} from "./helper.js";;
 import {sendClockStarted, sendGameOver} from "./socket/index.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

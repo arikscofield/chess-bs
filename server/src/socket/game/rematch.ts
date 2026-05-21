@@ -1,16 +1,16 @@
 import type {Server, Socket} from "socket.io";
-import type {
-    GameRematchAcceptRequest, GameRematchCancelledResponse,
-    GameRematchCancelOfferRequest, GameRematchDeclineRequest,
-    GameRematchOfferRequest
-} from "@common/src/index.js";
 import {
     GameRematchAcceptSchema,
     GameRematchCanceledSchema, GameRematchCancelOfferSchema, type GameRematchDeclinedResponse,
     GameRematchDeclineSchema, type GameRematchOfferedResponse,
     GameRematchOfferSchema,
     GameStatus,
-    type GenericCallback
+    type GenericCallback,
+    type GameRematchAcceptRequest,
+    type GameRematchCancelledResponse,
+    type GameRematchCancelOfferRequest,
+    type GameRematchDeclineRequest,
+    type GameRematchOfferRequest
 } from "@chess-bs/common";
 import {handleRematch, validateSocketPayload} from "../index.js";
 import {gameRepository} from "../../server.js";

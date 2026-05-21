@@ -1,16 +1,15 @@
 import type {Server, Socket} from "socket.io";
 import {
     Color, type GameChatSystemResponse, type GameMoveAppliedResponse,
-    type GameMoveBluffCallRequest, type GameMoveBluffCallResultResponse, GameMoveBluffCallSchema,
+    type GameMoveBluffCallRequest, GameMoveBluffCallSchema,
     type GameMoveBluffChoosePieceRequest,
     type GameMoveSendRequest, GameMoveSendSchema, GameResult,
     GameStatus, type GenericCallback,
     getMoveNotation
-} from "@common/src/index.js";
+} from "@chess-bs/common";
 import {validateSocketPayload} from "../index.js";
 import type {User} from "../../db/schema.js";
 import {gameRepository} from "../../server.js";
-import type {CallBluff, GameMoveBluffCallFailedResponse, GameMoveBluffCallSucceededResponse} from "@chess-bs/common";
 
 export default function moveHandler(io: Server) {
 

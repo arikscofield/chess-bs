@@ -1,11 +1,4 @@
 import type {Server, Socket} from "socket.io";
-import type {
-    GameChatSystemResponse,
-    GameDrawAcceptRequest, GameDrawCancelledResponse,
-    GameDrawCancelOfferRequest,
-    GameDrawDeclineRequest,
-    GameDrawOfferRequest
-} from "@common/src/index.js";
 import {validateSocketPayload} from "../index.js";
 import type {User} from "../../db/schema.js";
 import {gameRepository} from "../../server.js";
@@ -16,7 +9,13 @@ import {
     GameDrawOfferSchema,
     GameResult,
     GameStatus,
-    type GenericCallback
+    type GenericCallback,
+    type GameChatSystemResponse,
+    type GameDrawAcceptRequest,
+    type GameDrawCancelledResponse,
+    type GameDrawCancelOfferRequest,
+    type GameDrawDeclineRequest,
+    type GameDrawOfferRequest
 } from "@chess-bs/common";
 
 export default function drawHandler(io: Server) {

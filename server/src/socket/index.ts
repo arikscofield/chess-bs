@@ -8,9 +8,13 @@ import rematchHandler from "./game/rematch.js";
 import type {ZodObject} from "zod";
 import Game from "../game.js";
 import {saveFinishedGame} from "../db/helper.js";
-import {type GameClockStartedResponse, type GameOverResponse, GameResult} from "@common/src/index.js";
 import {generateGameId} from "../helper.js";
-import {type GameRematchAcceptedResponse, GameStatus} from "@chess-bs/common";
+import {
+    type GameRematchAcceptedResponse,
+    type GameClockStartedResponse,
+    type GameOverResponse,
+    GameResult
+} from "@chess-bs/common";
 import type {Server} from "socket.io";
 
 

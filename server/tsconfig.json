@@ -11,10 +11,9 @@
     "target": "es2022",
 
     "moduleResolution": "nodenext",
-    "esModuleInterop": true,
-    "paths": {
-      "@common/*": ["../common/*"]
-    },
+//    "paths": {
+//      "@common/*": ["../common/*"]
+//    },
 
     // Other Outputs
     "sourceMap": true,

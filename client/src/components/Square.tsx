@@ -7,8 +7,22 @@ import {pieceImages} from "../assets/pieceImages.ts";
 
 
 function Square(
-    { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, boardType = BoardColorType.Brown, handleSelectPromotion } :
-    {row: number, col: number, color: Color, piece: Piece | null, hovered: boolean, selected: boolean, highlighted: boolean, movable: boolean, ruleMovable: boolean, isBluffing: boolean, promotionOptionPieceType: PieceType | null, boardType?: [string, string, string, string], handleSelectPromotion: (pieceType: PieceType) => void }
+    { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, handleSelectPromotion, boardType = BoardColorType.Brown }:
+    {
+        row: number,
+        col: number,
+        color: Color,
+        piece: Piece | null,
+        hovered: boolean,
+        selected: boolean,
+        highlighted: boolean,
+        movable: boolean,
+        ruleMovable: boolean,
+        isBluffing: boolean,
+        promotionOptionPieceType: PieceType | null,
+        handleSelectPromotion: (pieceType: PieceType) => void,
+        boardType?: [string, string, string, string],
+    }
 ) {
 
     const pieceString: string = "" + piece?.color + piece?.pieceType;
