@@ -44,6 +44,8 @@ export function useGameViewer(
                     const previousBoard = boardStack.pop();
                     if (previousBoard) {
                         newBoard = previousBoard;
+                        // TODO: Add check for if bluff punishment is Turn
+                        newBoard.enPassant = null;
                     }
                 } else {
                     setHighlightedMove(null);
