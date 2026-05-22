@@ -13,6 +13,7 @@ import {
     viewAtom
 } from "./atoms.ts";
 import {useLiveClock} from "../../hooks/LiveClock.ts";
+import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
 
 function Replay() {
     const startBoard = useAtomValue(startBoardAtom);
@@ -24,6 +25,7 @@ function Replay() {
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
     const clocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, false, viewMoveIndex);
+    const { activeAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex);
 
     const oppColor = view === Color.White ? Color.Black : Color.White;
     const playerRuleIds: Map<Color, number[]> = new Map(players.map(player => [player.color, player.ruleIds ?? []]));
@@ -55,6 +57,8 @@ function Replay() {
                     isBluffing={false}
                     handleMove={() => {}}
                     highlightedMove={highlightedMove}
+                    animations={activeAnimations}
+                    hiddenSquares={hiddenSquares}
                 />
                 }
                 <div className={"flex flex-row shrink justify-between"}>

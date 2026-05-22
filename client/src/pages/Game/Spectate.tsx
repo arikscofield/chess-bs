@@ -22,6 +22,7 @@ import Chatroom from "../../components/Chatroom.tsx";
 import {useLiveClock} from "../../hooks/LiveClock.ts";
 import {useGameViewer} from "../../hooks/GameViewer.ts";
 import GameActions from "../../components/GameActions.tsx";
+import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
 
 
 function Spectate() {
@@ -43,6 +44,7 @@ function Spectate() {
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
     const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
+    const { activeAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex);
 
     useEffect(() => {
         if (!socket) return;
@@ -108,6 +110,8 @@ function Spectate() {
                     isBluffing={false}
                     handleMove={() => {}}
                     highlightedMove={highlightedMove}
+                    animations={activeAnimations}
+                    hiddenSquares={hiddenSquares}
                 />}
                 <div className={"flex flex-row justify-between"}>
                     <div className={"float-start text-white text-xl"}>{players.find(p => p.color === bottomColor)?.username ?? bottomColor}</div>

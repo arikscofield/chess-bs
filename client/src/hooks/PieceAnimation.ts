@@ -13,7 +13,7 @@ export interface AnimationPiece {
     duration: number;
 }
 
-export function usePieceAnimations(turnHistory: Turn[], viewMoveIndex: number, isDragMove: boolean) {
+export function usePieceAnimations(turnHistory: Turn[], viewMoveIndex: number, isDragMove: boolean = false) {
     const [activeAnimations, setActiveAnimations] = useState<AnimationPiece[]>([]);
     const directionRef = useRef(1);
     const prevHistoryLenRef = useRef(turnHistory.length);
