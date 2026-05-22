@@ -23,7 +23,7 @@ import {
     gameResultAtom,
     gameResultReasonAtom,
     gameStatusAtom,
-    isBluffingAtom,
+    isBluffingAtom, isDragMoveAtom,
     playerAtom,
     playersAtom,
     removeTurnAtom,
@@ -58,6 +58,7 @@ function Play() {
     const [turnColor, setTurnColor] = useAtom(turnColorAtom);
     const [isBluffing, setIsBluffing] = useAtom(isBluffingAtom);
     const [drawOfferedColor, setDrawOfferedColor] = useAtom(drawOfferedColorAtom);
+    const [isDragMove, setIsDragMove] = useAtom(isDragMoveAtom);
 
     const addTurn = useSetAtom(addTurnAtom);
     const removeTurn = useSetAtom(removeTurnAtom);
@@ -65,7 +66,7 @@ function Play() {
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
     const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
-    const { activeAnimations, playAnimations, playSingleMove, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex);
+    const { activeAnimations, playAnimations, playSingleMove, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex, isDragMove);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
 
@@ -103,6 +104,7 @@ function Play() {
             if (!ok) {
                 removeTurn(-1);
                 setTurnColor(oldTurnColor);
+                clearAnimations();
                 console.error(message);
             }
 
@@ -173,6 +175,7 @@ function Play() {
                     highlightedMove={highlightedMove}
                     animations={activeAnimations}
                     hiddenSquares={hiddenSquares}
+                    setIsDragMove={setIsDragMove}
                 />}
                 <div className={"flex flex-row justify-between"}>
                     <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>

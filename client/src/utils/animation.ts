@@ -1,9 +1,15 @@
-import type {Piece, Turn} from "@chess-bs/common";
+import type {Turn} from "@chess-bs/common";
 import type {AnimationPiece} from "../hooks/PieceAnimation.ts";
 
 
 export function getAnimations(turnHistory: Turn[], startIndex: number, endIndex: number): AnimationPiece[] {
-    if (startIndex === endIndex) return [];
+    if (startIndex < 0) startIndex = turnHistory.length + startIndex + 1;
+    if (endIndex < 0) endIndex = turnHistory.length + endIndex + 1;
+
+    if (startIndex === endIndex || startIndex > turnHistory.length || endIndex > turnHistory.length) {
+        console.warn(`getAnimations: Got invalid indices: startIndex: ${startIndex}, endIndex: ${endIndex}`);
+        return [];
+    }
 
     const animations: AnimationPiece[] = [];
     const direction = endIndex > startIndex ? 1 : -1;
@@ -34,7 +40,7 @@ export function getAnimations(turnHistory: Turn[], startIndex: number, endIndex:
                         id: `${turn.from.row}-${turn.from.col}-${turn.to.row}-${turn.to.col}-${now}`,
                         from: turn.from,
                         to: turn.to,
-                        piece: ({pieceType: turn.piece.type, color: turn.piece.color, hasMoved: true}) as Piece,
+                        piece: turn.piece,
                         duration: 200,
                     });
                 }
@@ -62,7 +68,7 @@ export function getAnimations(turnHistory: Turn[], startIndex: number, endIndex:
                         id: `${turn.to.row}-${turn.to.col}-${turn.from.row}-${turn.from.col}-${now}`,
                         from: turn.to,
                         to: turn.from,
-                        piece: ({pieceType: turn.piece.type, color: turn.piece.color, hasMoved: true}) as Piece,
+                        piece: turn.piece,
                         duration: 200,
                     });
                 }

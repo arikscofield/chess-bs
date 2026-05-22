@@ -31,7 +31,7 @@ export default function AnimatedPiece({ anim, view, squareSize, rowCount, colCou
     const dx = isAnimating ? toPos.x - fromPos.x : 0;
     const dy = isAnimating ? toPos.y - fromPos.y : 0;
 
-    const pieceString = "" + anim.piece.color + anim.piece.pieceType;
+    const pieceString = "" + anim.piece.color + anim.piece.type;
     const src = pieceImages[pieceString];
     if (!src) return null;
 

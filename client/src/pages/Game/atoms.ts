@@ -100,7 +100,7 @@ export const clocksAtom = atom(
 
 // Other
 export const isBluffingAtom = atom<boolean>(false);
-
+export const isDragMoveAtom = atom<boolean>(false);
 
 
 

@@ -23,7 +23,7 @@ import PieceAnimationOverlay from "./PieceAnimationOverlay.tsx";
 
 
 
-function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove, animations, hiddenSquares}: {
+function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBluffing, handleMove, highlightedMove, animations, hiddenSquares, setIsDragMove}: {
     board: BoardClass | null,
     gameStatus: GameStatus,
     player: PlayerDTO | null,
@@ -35,6 +35,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
     highlightedMove: Move | null,
     animations?: AnimationPiece[],
     hiddenSquares?: Set<string>,
+    setIsDragMove?: (isDragMove: boolean) => void,
 }) {
 
 
@@ -177,7 +178,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
         setSelectedSquare(null);
         setLegalMoves([]);
         setLegalRuleMoves([]);
-    }, [turn, canMove]);
+        if (setIsDragMove) setIsDragMove(false);
+    }, [turn, canMove, setIsDragMove]);
 
 
     // Select a given square. If its own piece, set the legalMoves
@@ -203,6 +205,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
         setLegalRuleMoves([]);
         setPromotionMove(null);
         setDraggedSquare(null);
+        if (setIsDragMove) setIsDragMove(false);
     }
 
     // Move the currently selected square/piece to the given square
@@ -233,6 +236,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
         select(square);
         setDraggedSquare(square);
         isDraggingRef.current = true;
+        if (setIsDragMove) setIsDragMove(true);
         if (boardElementRef.current) boardElementRef.current.style.cursor = "grabbing";
         requestAnimationFrame(() => {
             if (draggedPiecePortalRef.current && boardElementRef.current) {
@@ -267,6 +271,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
         // Ensure that just clicking a piece maintains selection
         if (piece && piece.color === player?.color && square.row === selectedSquare?.row && square.col === selectedSquare.col) {
+            if (setIsDragMove) setIsDragMove(false);
             return;
         }
 
