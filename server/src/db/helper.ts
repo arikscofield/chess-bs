@@ -4,7 +4,7 @@ import {
     games,
     gamesToPlayers,
     type GameToPlayer,
-    type NewGame as NewDBGame,
+    type NewGame as NewDBGame, type NewGameToPlayer,
     type NewSession,
     type NewUser,
     type Session,
@@ -132,9 +132,6 @@ export async function saveFinishedGame(game: Game): Promise<boolean> {
     const finishedGame: NewDBGame = {
         id: game.gameId,
         startBoard: game.startBoard,
-        // players: game.players.map((player) => {
-        //     return { playerId: player.playerId, color: player.color, ruleIds: player.rules.map((rule) => rule.id) };
-        // }),
         rulePoolIds: game.rulePool.map((rule) => rule.id),
         turnHistory: game.turnHistory,
         bluffPunishment: game.bluffPunishment,
@@ -148,6 +145,7 @@ export async function saveFinishedGame(game: Game): Promise<boolean> {
 
     try {
         await db.insert(games).values(finishedGame);
+        if (!(await addGamesToPlayers(game))) return false;
         console.log(`Saved game ${game.gameId} to db`)
         return true;
     } catch (exception) {
@@ -160,6 +158,28 @@ export async function saveFinishedGame(game: Game): Promise<boolean> {
 
 
 // USER GAME -----------------------------------
+
+export async function addGamesToPlayers(game: Game): Promise<boolean> {
+    for (const player of game.players) {
+        const gameToPlayer: NewGameToPlayer = {
+            userId: player.userId,
+            gameId: game.gameId,
+            color: player.color,
+            ruleIds: player.rules.map((rule) => rule.id),
+        };
+
+        try {
+            await db.insert(gamesToPlayers).values(gameToPlayer);
+        } catch (exception) {
+            console.error(exception);
+            console.log(`Failed to add games-player mapping gameId: ${game.gameId} userId: ${player.userId}`, game);
+            return false;
+        }
+    }
+
+    return true;
+
+}
 
 export async function getUserGames(userId: string, page: number, pageSize: number): Promise<DBGame[]> {
     const userGames: DBGame[] = [];

@@ -27,7 +27,7 @@ function Replay() {
     const clocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, false, viewMoveIndex);
     const { activeAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex);
 
-    const oppColor = view === Color.White ? Color.Black : Color.White;
+    const oppColor = (view === undefined || view === Color.White) ? Color.Black : Color.White;
     const playerRuleIds: Map<Color, number[]> = new Map(players.map(player => [player.color, player.ruleIds ?? []]));
 
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
@@ -62,7 +62,7 @@ function Replay() {
                 />
                 }
                 <div className={"flex flex-row shrink justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === (view || Color.White))?.username ?? view}</div>
+                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === (view || Color.White))?.username ?? (view ?? Color.White)}</div>
 
                     <div className={"overflow-auto"}>
                         <ReplayPlayerRuleList color={view ?? Color.White} playerRuleIds={playerRuleIds.get(view ?? Color.White) ?? []} className={"pt-1"}/>

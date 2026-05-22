@@ -112,6 +112,8 @@ export async function getGameDTOFromFinishedGame(finishedGame: FinishedGame): Pr
         ruleIds: player.ruleIds,
     }));
 
+    console.log(players);
+
     return {
         gameId: finishedGame.id,
         gameStatus: GameStatus.DONE,
