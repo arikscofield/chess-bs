@@ -3,7 +3,10 @@ import {useSocket} from "./context/SocketContext.ts";
 import {type GameMoveBluffCallRequest, type GenericCallback} from "@chess-bs/common";
 
 
-function CallBluffButton({ gameId }: {gameId: string}) {
+function CallBluffButton({ gameId, disabled = false }: {
+    gameId: string,
+    disabled?: boolean,
+}) {
     const socket = useSocket();
 
     function handleCallBluff() {
@@ -30,6 +33,7 @@ function CallBluffButton({ gameId }: {gameId: string}) {
         color={"green"}
         w={120}
         onClick={handleCallBluff}
+        disabled={disabled}
         className={""}
     >
         Call Bluff

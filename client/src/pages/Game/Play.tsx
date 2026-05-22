@@ -66,7 +66,7 @@ function Play() {
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
     const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
-    const { activeAnimations, playAnimations, playSingleMove, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex, isDragMove);
+    const { activeAnimations, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex, isDragMove);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
 
@@ -181,7 +181,14 @@ function Play() {
                     <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>
                     <div className={"flex flex-row justify-center gap-5 py-3"}>
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
-                        <CallBluffButton gameId={gameId} />
+                        <CallBluffButton
+                            gameId={gameId}
+                            disabled={
+                                turnColor !== player?.color ||
+                                turnHistory.length === 0 ||
+                                !("from" in (turnHistory.at(-1) ?? {}))
+                            }
+                        />
                     </div>
                     {clockInfo.usesClock && <Timer
                         clockMs={liveClocks.get(bottomColor)}
