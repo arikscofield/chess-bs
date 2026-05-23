@@ -34,7 +34,6 @@ export function getAnimations(turnHistory: Turn[], startIndex: number, endIndex:
                     }
                 }
 
-
                 if (!added) {
                     animations.push({
                         id: `${turn.from.row}-${turn.from.col}-${turn.to.row}-${turn.to.col}-${now}`,
@@ -44,8 +43,34 @@ export function getAnimations(turnHistory: Turn[], startIndex: number, endIndex:
                         duration: 200,
                     });
                 }
+            } else {
+                if (turn.successful) {
+                    const lastMove = turnHistory[i-1];
+                    if (!("from" in lastMove)) continue;
+
+                    let added = false;
+                    for (let j = animations.length - 1; j >= 0; j--) {
+                        const anim = animations[j];
+                        if (anim.to.row === lastMove.to.row && anim.to.col === lastMove.to.col) {
+                            const newAnim = animations.splice(j, 1)[0];
+                            newAnim.to = lastMove.from;
+                            animations.push(newAnim);
+                            added = true;
+                            break;
+                        }
+                    }
+
+                    if (!added) {
+                        animations.push({
+                            id: `${lastMove.to.row}-${lastMove.to.col}-${lastMove.from.row}-${lastMove.from.col}-${now}`,
+                            from: lastMove.to,
+                            to: lastMove.from,
+                            piece: lastMove.piece,
+                            duration: 200,
+                        });
+                    }
+                }
             }
-            // TODO: Handle calling bluffs
         }
     } else {
         // Backward: collect moves from endIndex to startIndex-1, in reverse
@@ -72,8 +97,36 @@ export function getAnimations(turnHistory: Turn[], startIndex: number, endIndex:
                         duration: 200,
                     });
                 }
+            } else {
+                if (turn.successful) {
+                    const lastMove = turnHistory[i-1];
+                    if (!("from" in lastMove)) continue;
+
+                    let added = false;
+                    for (let j = animations.length - 1; j >= 0; j--) {
+                        const anim = animations[j];
+                        if (anim.to.row === lastMove.from.row && anim.to.col === lastMove.from.col) {
+                            const newAnim = animations.splice(j, 1)[0];
+                            newAnim.to = lastMove.to;
+                            animations.push(newAnim);
+                            added = true;
+                            break;
+                        }
+                    }
+
+                    if (!added) {
+                        animations.push({
+                            id: `${lastMove.from.row}-${lastMove.from.col}-${lastMove.to.row}-${lastMove.to.col}-${now}`,
+                            from: lastMove.from,
+                            to: lastMove.to,
+                            piece: lastMove.piece,
+                            duration: 200,
+                        });
+                    }
+                }
             }
         }
     }
+
     return animations;
 }
