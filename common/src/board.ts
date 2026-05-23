@@ -1,7 +1,7 @@
 import {Color, PieceAscii, PieceType} from "./types";
 import PieceClass from "./piece"
 import {defaultFEN, parseFen} from "./helper";
-import type {BoardDTO as BoardDTO, Move, Piece, Square} from "./schemas/common"
+import type {BoardDTO as BoardDTO, Move, Piece, SideEffectMove, Square} from "./schemas/common"
 
 /*
 
@@ -94,62 +94,54 @@ export default class Board {
      * Does not do any check for legality
      */
     public applyMove(move: Move): boolean {
+        const boardCopy = this.clone();
         const {from, to} = move;
-        const movingPiece = this.getPiece(from);
+        const movingPiece = boardCopy.getPiece(from);
         if (!movingPiece) return false;
 
         const isCastle = movingPiece.pieceType === PieceType.King && !movingPiece.hasMoved && Math.abs(from.col - to.col) == 2;
         const isDoublePawn = movingPiece.pieceType === PieceType.Pawn && Math.abs(from.row - to.row) > 1;
-        const isEnPassant = movingPiece.pieceType === PieceType.Pawn && to.row === this.enPassant?.row && to.col === this.enPassant?.col;
+        const isEnPassant = movingPiece.pieceType === PieceType.Pawn && to.row === boardCopy.enPassant?.row && to.col === boardCopy.enPassant?.col;
         const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
                 ((movingPiece.color === Color.White && to.row === 0) ||
                 (movingPiece.color === Color.Black && to.row === 7));
 
         if (isPromotion && move.promotion === undefined) return false; // Must promote
 
-        if (!this.setPiece(to, movingPiece)) {
-            return false;
-        }
+        if (!boardCopy.setPiece(to, movingPiece)) return false;
         movingPiece.hasMoved = true;
 
-        // Castling
-        if (isCastle && from.col > to.col) {
-            const rook = this.getPiece({row: from.row, col: 0});
-            if (rook && rook.pieceType === PieceType.Rook && !rook.hasMoved) {
-                rook.hasMoved = true;
-                this.setPiece({row: from.row, col: to.col+1}, rook);
-                this.setPiece({row: from.row, col: 0}, null);
-            }
-        } else if (isCastle && from.col < to.col) {
-            const rook = this.getPiece({row: from.row, col: 7});
-            if (rook && rook.pieceType === PieceType.Rook && !rook.hasMoved) {
-                rook.hasMoved = true;
-                this.setPiece({row: from.row, col: to.col-1}, rook);
-                this.setPiece({row: from.row, col: 7}, null);
-            }
-
+        for (const sideEffect of move?.sideEffectMoves ?? []) {
+            const fromPiece = boardCopy.getPiece(sideEffect.from);
+            if (!fromPiece) return false;
+            fromPiece.hasMoved = true;
+            if (!boardCopy.setPiece(sideEffect.to, fromPiece)) return false;
+            if (!boardCopy.setPiece(sideEffect.from, null)) return false;
         }
 
         // En Passant
         const direction = movingPiece.color === Color.White ? -1 : 1;
         if (isDoublePawn) {
-            this.enPassant = {row: from.row + direction, col: from.col};
+            boardCopy.enPassant = {row: from.row + direction, col: from.col};
         } else {
-            this.enPassant = null;
+            boardCopy.enPassant = null;
         }
 
         if (isEnPassant) {
-            this.setPiece({row: to.row-direction, col: to.col}, null);
+            boardCopy.setPiece({row: to.row-direction, col: to.col}, null);
         }
-
 
         // Pawn Promotion
         if (isPromotion && move.promotion) {
             movingPiece.pieceType = move.promotion;
         }
 
+        if (!boardCopy.setPiece(from, null)) return false;
 
-        return this.setPiece(from, null);
+        this.grid = boardCopy.grid;
+        this.enPassant = boardCopy.enPassant;
+
+        return true;
     }
 
     /*
@@ -278,7 +270,8 @@ export default class Board {
                             }
                         }
                         if (canCastle) {
-                            moves.push({from: {row, col}, to: {row: row, col: col-2}, piece: {type: piece.pieceType, color: piece.color}});
+                            const sideEffect: SideEffectMove = {from: {row: row, col: 0}, to: {row: row, col: 3}, piece: {type: queenSidePiece.pieceType, color: queenSidePiece.color}};
+                            moves.push({from: {row, col}, to: {row: row, col: col-2}, piece: {type: piece.pieceType, color: piece.color}, sideEffectMoves: [sideEffect]});
                         }
                     }
 
@@ -293,7 +286,8 @@ export default class Board {
                             }
                         }
                         if (canCastle) {
-                            moves.push({from: {row, col}, to: {row: row, col: col+2}, piece: {type: piece.pieceType, color: piece.color}});
+                            const sideEffect: SideEffectMove = {from: {row: row, col: 7}, to: {row: row, col: 5}, piece: {type: kingSidePiece.pieceType, color: kingSidePiece.color}};
+                            moves.push({from: {row, col}, to: {row: row, col: col+2}, piece: {type: piece.pieceType, color: piece.color}, sideEffectMoves: [sideEffect]});
                         }
                     }
                 }

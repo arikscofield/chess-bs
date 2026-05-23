@@ -23,6 +23,16 @@ export const PieceSchema = z.object({
 });
 export type Piece = z.infer<typeof PieceSchema>;
 
+export const SideEffectMoveSchema = z.object({
+    from: SquareSchema,
+    to: SquareSchema,
+    piece: z.object({
+        type: ZPieceTypeEnum,
+        color: ZColorEnum,
+    }),
+});
+export type SideEffectMove = z.infer<typeof SideEffectMoveSchema>;
+
 export const MoveSchema = z.object({
     from: SquareSchema,
     to: SquareSchema,
@@ -34,6 +44,7 @@ export const MoveSchema = z.object({
     bluff: z.boolean().optional(),
     timestamp: z.int().positive().optional(),
     notation: z.string().optional(),
+    sideEffectMoves: z.array(SideEffectMoveSchema).optional(),
 })
 export type Move = z.infer<typeof MoveSchema>;
 

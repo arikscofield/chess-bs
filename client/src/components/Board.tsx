@@ -149,8 +149,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
         const isLegalMove = getIsLegalMove(piece, square, isBluffing);
 
-        if (isLegalMove) {
-            move(square);
+        if (isLegalMove && selectedSquare) {
+            move(selectedSquare, square);
         } else if (piece && piece.color === player?.color) {
             startDrag(square);
         } else {
@@ -209,24 +209,30 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
     }
 
     // Move the currently selected square/piece to the given square
-    function move(square: SquareType) {
-        if (!selectedSquare) return;
-
-        const movingPiece = board?.getPiece(selectedSquare)
+    function move(srcSquare: SquareType, destSquare: SquareType) {
+        const movingPiece = board?.getPiece(srcSquare)
         if (!movingPiece) return;
 
-        const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
-            ((movingPiece.color === Color.White && square.row === 0) ||
-                (movingPiece.color === Color.Black && square.row === 7));
+        const foundMove = isBluffing ?
+            {from: srcSquare, to: destSquare, piece: {type: movingPiece.pieceType, color: movingPiece.color}}
+            : legalMoves.concat(legalRuleMoves).find(m =>
+            m.from.row === srcSquare.row && m.from.col === srcSquare.col &&
+            m.to.row === destSquare.row && m.to.col === destSquare.col
+        );
+        if (!foundMove) return;
+        foundMove.bluff = isBluffing;
 
+        const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
+            ((movingPiece.color === Color.White && destSquare.row === 0) ||
+                (movingPiece.color === Color.Black && destSquare.row === 7));
         if (isPromotion) {
-            setPromotionMove({from: selectedSquare, to: square, piece: {type: movingPiece.pieceType, color: movingPiece.color}, bluff: isBluffing});
+            setPromotionMove(foundMove);
             setLegalMoves([]);
             setLegalRuleMoves([]);
             return;
         }
 
-        handleMove({from: selectedSquare, to: square, piece: {type: movingPiece.pieceType, color: movingPiece.color}, bluff: isBluffing});
+        handleMove(foundMove);
         setSelectedSquare(null);
         setLegalMoves([]);
         setLegalRuleMoves([]);
@@ -264,8 +270,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
         const isLegalMove = getIsLegalMove(piece, square, isBluffing);
 
-        if (isLegalMove) {
-            move(square)
+        if (isLegalMove && selectedSquare) {
+            move(selectedSquare, square)
             return;
         }
 
