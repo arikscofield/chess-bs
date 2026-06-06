@@ -1,23 +1,24 @@
 import {
     BluffPunishment,
+    type CallBluff,
     Color,
+    CreateGameColor,
     type GameClockStateResponse,
+    type GameDTO,
+    type GameMoveBluffCallFailedResponse,
+    type GameMoveBluffCallSucceededResponse,
     GameResult,
     type GameStateResponse,
     GameStatus,
     getMoveNotation,
-    type Move,
-    type Turn,
-    type CallBluff,
-    type GameDTO,
-    type GameMoveBluffCallFailedResponse,
-    type GameMoveBluffCallSucceededResponse
+    type Move, nextTurnColor,
+    type Turn
 } from "@chess-bs/common";
 import Rule from "@chess-bs/common/src/rule.js";
 import Board from "@chess-bs/common/src/board.js";
 import Player from "./player.js";
-import {parseFen} from "./helper.js";;
-import {sendClockStarted, sendGameOver} from "./socket/index.js";
+import {colorToCreateGameColor, createGameColorToColor, parseFen} from "./helper.js";
+import {sendClockStarted, sendGameOver} from "./socket/events.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -29,6 +30,8 @@ export default class Game {
     maxPlayers: number = 2;
     players: Player[];
     spectators: Set<string> = new Set<string>()
+    creatorId: string;
+    creatorColor: CreateGameColor;
 
     turnHistory: Turn[];
     turnColor: Color;
@@ -51,11 +54,24 @@ export default class Game {
     rematchOfferedColor: Color | null = null;
 
 
-    constructor(gameId: string, ruleCount: number, rulePool: Rule[], bluffPunishment: BluffPunishment, usesClock: boolean, clockStartMs?: number, clockIncrementMs?: number, fen?: string, ) {
+    constructor(
+        gameId: string,
+        ruleCount: number,
+        rulePool: Rule[],
+        bluffPunishment: BluffPunishment,
+        creatorId: string,
+        creatorColor: CreateGameColor,
+        usesClock: boolean,
+        clockStartMs?: number,
+        clockIncrementMs?: number,
+        fen?: string,
+        ) {
         this.gameId = gameId;
         this.ruleCount = ruleCount;
         this.rulePool = rulePool;
         this.bluffPunishment = bluffPunishment;
+        this.creatorId = creatorId;
+        this.creatorColor = creatorColor;
 
         this.hasMoved = new Map();
 
@@ -143,12 +159,14 @@ export default class Game {
             if (this.players.length >= 1) {
                 color = this.players[0]?.color === Color.White ? Color.Black : Color.White;
             } else {
-                color = Object.values(Color)[Math.floor(Math.random() * Object.values(Color).length)] || Color.White
+                if (this.creatorColor === CreateGameColor.Random)
+                    color = Object.values(Color)[Math.floor(Math.random() * Object.values(Color).length)] || Color.White
+                else
+                    color = this.creatorColor === CreateGameColor.White ? Color.White : Color.Black;
             }
         }
 
-        const player =  new Player(playerId, color, undefined, username);
-        player.setRandomRules(this.ruleCount, this.rulePool);
+        const player =  new Player(playerId, color, Rule.getRandomRules(this.ruleCount, this.rulePool), username);
         this.players.push(player);
         
         if (this.players.length >= this.maxPlayers) {
@@ -180,7 +198,31 @@ export default class Game {
     }
 
 
+    /**
+     * Makes a given move for the given player. Does NOT validate whether the player is allowed to make a move.
+     * Returns whether the move was successfully made or not.
+     * @param move
+     * @param player
+     * @param appliedAt
+     */
     public makeMove(move: Move, player: Player, appliedAt: number=Date.now()): boolean {
+
+        // Hasn't run out of time
+        if (this.usesClock) {
+            this.updateTimers(appliedAt);
+            const currentTimeLeft = this.clocksMs.get(this.turnColor);
+            if (currentTimeLeft !== undefined && currentTimeLeft <= 0) {
+                const gameResult: GameResult = this.turnColor === Color.White ? GameResult.Black : GameResult.White;
+                this.endGame(gameResult, "Timeout");
+                return false;
+            }
+        }
+
+        const prevBoard = this.currentBoard.clone();
+        const legalMoves: Move[] = this.currentBoard.getLegalMoves(move.from, true);
+        if (!move.notation) move.notation = getMoveNotation(this.currentBoard, move);
+        if (!move.timestamp) move.timestamp = appliedAt;
+
 
         const applyMove = (wasBluff: boolean) => {
             if (!this.currentBoard.applyMove(move)) {
@@ -213,20 +255,6 @@ export default class Game {
             return true;
         }
 
-        // Hasn't run out of time
-        this.updateTimers(appliedAt);
-        const currentTimeLeft = this.clocksMs.get(this.turnColor);
-        if (currentTimeLeft && currentTimeLeft <= 0) {
-            const gameResult: GameResult = this.turnColor === Color.White ? GameResult.Black : GameResult.White;
-            this.endGame(gameResult, "Timeout");
-            return false;
-        }
-
-        const prevBoard = this.currentBoard.clone();
-        const legalMoves: Move[] = this.currentBoard.getLegalMoves(move.from, true);
-        if (!move.notation) move.notation = getMoveNotation(this.currentBoard, move);
-        if (!move.timestamp) move.timestamp = appliedAt;
-
         if (legalMoves.some((legalMove) => legalMove.to.row === move.to.row && legalMove.to.col === move.to.col)) {
             // Legal regular chess move
             return applyMove(false);
@@ -251,7 +279,7 @@ export default class Game {
     }
 
 
-    public callBluff(callerColor: Color, receivedAt: number): {ok: boolean, callSuccessful?: boolean, response?: GameMoveBluffCallSucceededResponse | GameMoveBluffCallFailedResponse, message?: string} {
+    public callBluff(callerColor: Color, receivedAt: number = Date.now()): {ok: boolean, callSuccessful?: boolean, response?: GameMoveBluffCallSucceededResponse | GameMoveBluffCallFailedResponse, message?: string} {
 
         // Able to call bluff
         const prevTurn = this.turnHistory[this.turnHistory.length - 1];
@@ -290,6 +318,20 @@ export default class Game {
             }
             return {ok: true, callSuccessful: false, response: responsePayload, message: "Bluff call incorrect"}
         }
+    }
+
+    public isInCheckmate(): Color | null {
+        for (const player of this.players) {
+            const playerColor = player.color;
+            const oppColor = player.color === Color.White ? Color.Black : Color.White;
+            if (this.currentBoard.findKing(playerColor) === null) {
+                console.log(`${this.gameId}: ${playerColor} king missing.\n\t${this.turnColor == oppColor}\n\t${this.turnColor == playerColor && !this.lastMoveWasBluff}`)
+                if (this.turnColor === oppColor || (this.turnColor === playerColor && !this.lastMoveWasBluff)) {
+                    return playerColor;
+                }
+            }
+        }
+        return null;
     }
 
 
@@ -344,11 +386,14 @@ export default class Game {
     }
 
     public createRematchGame(newGameId: string): Game {
+        const prevCreatorColor: Color = this.creatorColor === CreateGameColor.Random ? this.players.find(p => p.userId === this.creatorId)?.color ?? Color.White : createGameColorToColor(this.creatorColor);
         const newGame = new Game(
             newGameId,
             this.ruleCount,
             this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined),
             this.bluffPunishment,
+            this.creatorId,
+            colorToCreateGameColor(nextTurnColor(prevCreatorColor)),
             this.usesClock,
             this.clockStartMs,
             this.clockIncrementMs
@@ -371,6 +416,8 @@ export default class Game {
             this.ruleCount,
             this.rulePool.map(r => Rule.getRuleFromId(r.id)).filter(r => r !== undefined),
             this.bluffPunishment,
+            this.creatorId,
+            this.creatorColor,
             this.usesClock,
             this.clockStartMs,
             this.clockIncrementMs

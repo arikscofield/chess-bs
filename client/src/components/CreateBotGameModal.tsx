@@ -1,0 +1,182 @@
+import {Button, Center, Group, Modal, NumberInput, Radio, SegmentedControl} from "@mantine/core";
+import {useState} from "react";
+import {allRules, BluffPunishment, BotDifficulty, CreateGameColor} from "@chess-bs/common";
+
+import {pieceImages} from "../assets/pieceImages.ts";
+import RuleList from "./RuleList.tsx";
+
+
+function CreateGameModal({opened, onClose, onSubmit, error}: {
+    opened: boolean,
+    onClose: () => void,
+    onSubmit: (
+        color: CreateGameColor,
+        bluffPunishment: BluffPunishment,
+        ruleCount: number,
+        rulePoolIds: number[],
+        botDifficulty: BotDifficulty,
+    ) => void,
+    error?: string,
+}) {
+    const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
+    const [ruleCount, setRuleCount] = useState<number | string>(3);
+    const [rulePoolModalOpen, setRulePoolModalOpen] = useState<boolean>(false);
+    const [rulePoolIds, setRulePoolIds] = useState<number[]>(allRules.map(rule => rule.id));
+    const [color, setColor] = useState<CreateGameColor>(CreateGameColor.White);
+    const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>(BotDifficulty.Medium);
+
+
+    if (rulePoolModalOpen) {
+        return <Modal
+            opened={rulePoolModalOpen}
+            onClose={() => setRulePoolModalOpen(false)}
+            title={"Rule Pool"}
+            centered
+            size={"75%"}
+            styles={{ title: {fontSize: "2em"}}}
+        >
+            <RuleList enabledRuleIds={rulePoolIds} setEnabledRuleIds={setRulePoolIds} wrapChips={true}/>
+            <div className={"flex flex-row justify-center mt-10"}>
+                <Button color={""}
+                        onClick={() => setRulePoolModalOpen(false)}
+                >
+                    Back
+                </Button>
+            </div>
+        </Modal>
+    }
+
+
+    return (<Modal
+        opened={opened}
+        onClose={onClose}
+        size={"auto"}
+        title={"Create Bot Game"}
+        centered
+        classNames={{body: "flex flex-col justify-center items-center "}}
+        styles={{ title: {fontSize: "2em"}}}
+    >
+
+
+        {/* Bot Difficulty selection */}
+        <Radio.Group
+            value={botDifficulty}
+            onChange={(val) => {setBotDifficulty(val as BotDifficulty);}}
+            name={"botDifficulty"}
+            label={"Bot Difficulty"}
+            // description={""}
+            withAsterisk
+            size={"md"}
+            className={"px-1 pb-5"}
+        >
+            <Group>
+                <Radio value={BotDifficulty.Easy} label={"Easy"} className={"pt-2"}/>
+                <Radio value={BotDifficulty.Medium} label={"Medium"} className={"pt-2"}/>
+                <Radio value={BotDifficulty.Hard} label={"Hard"} className={"pt-2"}/>
+                <Radio value={BotDifficulty.Random} label={"Random"} className={"pt-2"}/>
+            </Group>
+        </Radio.Group>
+
+
+        {/* Rule Count and Rule Pool selection */}
+        <div className={"flex flex-row justify-around items-center w-full pb-5"}>
+            <NumberInput
+                value={ruleCount}
+                onChange={setRuleCount}
+                label={"Rule Count"}
+                description={"The number of rules each player gets"}
+                size={"md"}
+                allowDecimal={false}
+                allowNegative={false}
+                min={0}
+                max={rulePoolIds.length}
+                required
+                error={typeof ruleCount === "string"
+                    ? "Invalid Rule Count"
+                    : ruleCount > rulePoolIds.length
+                        ? "Rule Count greater than number of enabled rules"
+                        : ""
+                }
+            />
+
+            <Button
+                color={"blue"}
+                size={"md"}
+                onClick={() => setRulePoolModalOpen(true)}
+            >
+                Rule Pool
+            </Button>
+
+            <Modal opened={rulePoolModalOpen} onClose={() => setRulePoolModalOpen(false)}/>
+        </div>
+
+
+        {/* Called Bluff Punishment selection */}
+        <Radio.Group
+            value={bluffPunishment}
+            onChange={(val) => {setBluffPunishment(val as BluffPunishment);}}
+            name={"blushPunishment"}
+            label={"Called Bluff Punishment"}
+            description={"The punishment for getting called out for bluffing, or incorrectly calling a bluff"}
+            withAsterisk
+            size={"md"}
+            className={"px-1 pb-5"}
+        >
+            <Group>
+                <Radio value={BluffPunishment.Turn} label={"Lose Turn"} className={"pt-2"}/>
+                <Radio value={BluffPunishment.Piece} label={"Lose Piece (You Pick)"} className={"pt-2"}/>
+                <Radio value={BluffPunishment.PieceOpponent} label={"Lose Piece (Opponent Picks)"} className={"pt-2"}/>
+                <Radio value={BluffPunishment.PieceRandom} label={"Lose Piece (Random)"} className={"pt-2"}/>
+            </Group>
+        </Radio.Group>
+
+
+        {/* Color Selection */}
+        <div className={"flex flex-row items-center pb-5"}>
+            <p className={"px-3 text-base"}>Your Color</p>
+            <SegmentedControl
+                value={color}
+                onChange={(val) => {setColor(val as CreateGameColor);}}
+                size={"md"}
+                data={[
+                    { value: CreateGameColor.White, label: <Center><img src={pieceImages["WhiteKing"]} alt={"White"} width={30} /><span>White</span></Center> },
+                    { value: CreateGameColor.Black, label: <Center><img src={pieceImages["BlackKing"]} alt={"Black"} width={30} /><span>Black</span></Center> },
+                    { value: CreateGameColor.Random, label: <Center className={"px-4 py-0.5 h-full"}><img src={pieceImages["RandomKing"]} alt={"Random"} width={25} className={"pr-1 py-0.5"}/><span>Random</span></Center> },
+                ]}
+            />
+        </div>
+
+
+        {/* Action buttons */}
+        <Group justify={"space-around"} className={"w-full"}>
+            <Button color={"red"} onClick={onClose} size={"md"}>
+                Cancel
+            </Button>
+
+            <Button color={"green"} size={"md"}
+                    onClick={() => {
+                        onSubmit(
+                            color,
+                            bluffPunishment,
+                            typeof ruleCount === "number" ? ruleCount : 3,
+                            rulePoolIds,
+                            botDifficulty,
+                        );
+                    }}
+                    disabled={
+                        (typeof ruleCount === "string" || ruleCount > rulePoolIds.length)
+                    }
+            >
+                Create
+            </Button>
+        </Group>
+
+        {error && <p className={"text-red-600 font-bold"}>
+            {error}
+        </p>}
+
+    </Modal>)
+}
+
+
+export default CreateGameModal;

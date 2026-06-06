@@ -12,9 +12,11 @@ import {
     type GameRematchDeclineRequest,
     type GameRematchOfferRequest
 } from "@chess-bs/common";
-import {handleRematch, validateSocketPayload} from "../index.js";
+import {validateSocketPayload} from "../index.js";
 import {gameRepository} from "../../server.js";
 import type {User} from "../../db/schema.js";
+import {handleRematch} from "../events.js";
+import {isBotGame} from "./bot.js";
 
 export default function rematchHandler(io: Server) {
 
@@ -43,7 +45,7 @@ export default function rematchHandler(io: Server) {
             return;
         }
 
-        if (game.rematchOfferedColor && game.rematchOfferedColor !== player.color) {
+        if ((game.rematchOfferedColor && game.rematchOfferedColor !== player.color) || isBotGame(game)) {
             callback(true, "Rematch offered and accepted");
             handleRematch(game);
             return;

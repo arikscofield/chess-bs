@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {Color, PieceType, CreateGameColor, BluffPunishment, GameStatus, GameResult} from "../types";
+import {BotDifficulty} from "../bot/bots";
 
 
 export const ZPieceTypeEnum = z.enum(PieceType);
@@ -8,6 +9,7 @@ export const ZCreateGameColorEnum = z.enum(CreateGameColor);
 export const ZBluffPunishmentEnum = z.enum(BluffPunishment);
 export const ZGameStatusEnum = z.enum(GameStatus);
 export const ZGameResultEnum = z.enum(GameResult);
+export const ZBotDifficultyEnum = z.enum(BotDifficulty);
 
 
 export const SquareSchema = z.object({

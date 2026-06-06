@@ -42,13 +42,13 @@ export default function gameHandler(io: Server) {
             }
             this.emit("game:player:state", playerStatePayload);
 
-            const state: GameStateResponse = game.getState();
             const playerJoined: GamePlayerJoinedResponse = {
                 userId: user.id,
                 username: user.username,
             }
             this.to(gameId).emit("game:player:joined", playerJoined)
 
+            const state: GameStateResponse = game.getState();
             callback(true, "Successfully rejoined game", state);
             return;
         }

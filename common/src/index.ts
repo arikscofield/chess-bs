@@ -7,5 +7,6 @@ export * from "./const"
 export * from "./schemas/common"
 export * from "./schemas/express"
 export * from "./schemas/socket"
+export * from "./bot/bots"
 
 

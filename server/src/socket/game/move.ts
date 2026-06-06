@@ -1,15 +1,23 @@
 import type {Server, Socket} from "socket.io";
 import {
-    Color, type GameChatSystemResponse, type GameMoveAppliedResponse,
-    type GameMoveBluffCallRequest, GameMoveBluffCallSchema,
+    BluffPunishment,
+    Color,
+    type GameChatSystemResponse,
+    type GameMoveAppliedResponse,
+    type GameMoveBluffCallRequest,
+    GameMoveBluffCallSchema,
     type GameMoveBluffChoosePieceRequest,
-    type GameMoveSendRequest, GameMoveSendSchema, GameResult,
-    GameStatus, type GenericCallback,
+    type GameMoveSendRequest,
+    GameMoveSendSchema,
+    GameResult,
+    GameStatus,
+    type GenericCallback,
     getMoveNotation
 } from "@chess-bs/common";
 import {validateSocketPayload} from "../index.js";
 import type {User} from "../../db/schema.js";
 import {gameRepository} from "../../server.js";
+import {handleBotMove, isBotGame} from "./bot.js";
 
 export default function moveHandler(io: Server) {
 
@@ -59,24 +67,19 @@ export default function moveHandler(io: Server) {
             appliedAt: receivedAt,
         }
 
-        // Check for a "checkmate"/win
-        for (const player of game.players) {
-            const playerColor = player.color;
-            const oppColor = player.color === Color.White ? Color.Black : Color.White;
-            if (game.currentBoard.findKing(playerColor) === null) {
-                console.log(`${game.gameId}: ${playerColor} king missing.\n\t${game.turnColor == oppColor}\n\t${game.turnColor == playerColor && !game.lastMoveWasBluff}`)
-                if (game.turnColor === oppColor || (game.turnColor === playerColor && !game.lastMoveWasBluff)) {
-                    callback(true, "Move applied", receivedAt);
-                    this.to(gameId).emit("game:move:applied", movePayload);
-                    game.endGame(oppColor === Color.Black ? GameResult.Black : GameResult.White, "King captured");
-                    return;
-                }
-            }
-        }
-
         // Send move and a true callback
         this.to(gameId).emit("game:move:applied", movePayload);
         callback(true, "Move applied", receivedAt);
+
+        // Check for a "checkmate"/win
+        const checkmatedColor = game.isInCheckmate();
+        if (checkmatedColor) {
+            game.endGame(checkmatedColor === Color.White ? GameResult.Black : GameResult.White, "King captured");
+        }
+
+
+        // Handle Bot move in bot games
+        if (isBotGame(game)) handleBotMove(game);
 
     }
 
@@ -127,6 +130,7 @@ export default function moveHandler(io: Server) {
             io.to(gameId).emit("game:move:bluff:call-failed", response);
             callback(true, message);
             io.to(gameId).emit("game:chat:system", ({message: `${player.color}'s bluff call was incorrect`}) as GameChatSystemResponse);
+            if (isBotGame(game) && game.bluffPunishment === BluffPunishment.Turn) handleBotMove(game);
             return;
         }
     }

@@ -10,6 +10,7 @@ import {ColorSchemeScript, MantineProvider} from "@mantine/core";
 import Game from "./pages/Game/Game.tsx";
 import SocketProvider from "./components/context/SocketProvider.tsx";
 import {AuthProvider} from "./components/context/AuthProvider.tsx";
+import Bot from "./pages/Bot/Bot.tsx";
 
 createRoot(document.getElementById('root')!).render(
   // <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
                           <Route element={<MainLayout />}>
                               <Route index element={<Home />}/>
                               <Route path={"/:gameId"} element={<Game />}/>
+                              <Route path={"/bot"} element={<Bot />}/>
                           </Route>
                       </Routes>
                   </BrowserRouter>

@@ -3,30 +3,23 @@ import RuleList from "../../components/RuleList.tsx";
 import {MdOutlineDragIndicator} from "react-icons/md";
 import {
     Color,
-    type GameMoveSendRequest, GameStatus,
     getMoveNotation,
     type Move,
-    type PlayerDTO
 } from "@chess-bs/common";
 import OwnRules from "../../components/OwnRules.tsx";
 import Board from "../../components/Board.tsx";
-import Timer from "../../components/Timer.tsx";
-import {CallBluffButtonOnline} from "../../components/CallBluffButton.tsx";
+import {CallBluffButtonLocal} from "../../components/CallBluffButton.tsx";
 import BluffButton from "../../components/BluffButton.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
 import Chatroom from "../../components/Chatroom.tsx";
 import {useAtom, useAtomValue, useSetAtom} from "jotai";
 import {
-    addTurnAtom, addTurnTimestampAtom,
-    clockInfoAtom, drawOfferedColorAtom,
-    gameIdAtom,
+    addTurnAtom,
     gameResultAtom,
     gameResultReasonAtom,
     gameStatusAtom,
     isBluffingAtom, isDragMoveAtom,
     playerAtom,
-    playersAtom,
-    removeTurnAtom,
     rulePoolIdsAtom,
     startBoardAtom,
     turnColorAtom,
@@ -34,83 +27,42 @@ import {
     viewAtom
 } from "./atoms.ts";
 import {useGameViewer} from "../../hooks/GameViewer.ts";
-import {useSocket} from "../../components/context/SocketContext.ts";
-import {useEffect, useState} from "react";
 import GameActions from "../../components/GameActions.tsx";
-import {useLiveClock} from "../../hooks/LiveClock.ts";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
 
-function Play() {
-    const socket = useSocket();
+function Bot() {
 
-    const gameId = useAtomValue(gameIdAtom);
     const startBoard = useAtomValue(startBoardAtom);
     const gameStatus = useAtomValue(gameStatusAtom);
     const rulePoolIds = useAtomValue(rulePoolIdsAtom);
-    const players = useAtomValue(playersAtom);
     const player = useAtomValue(playerAtom);
     const turnHistory = useAtomValue(turnHistoryAtom);
-    const clockInfo = useAtomValue(clockInfoAtom);
     const gameResult = useAtomValue(gameResultAtom);
     const gameResultReason = useAtomValue(gameResultReasonAtom);
 
     const [view, setView] = useAtom(viewAtom);
     const [turnColor, setTurnColor] = useAtom(turnColorAtom);
     const [isBluffing, setIsBluffing] = useAtom(isBluffingAtom);
-    const [drawOfferedColor, setDrawOfferedColor] = useAtom(drawOfferedColorAtom);
     const [isDragMove, setIsDragMove] = useAtom(isDragMoveAtom);
 
     const addTurn = useSetAtom(addTurnAtom);
-    const removeTurn = useSetAtom(removeTurnAtom);
-    const addTurnTimestamp = useSetAtom(addTurnTimestampAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
-    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
     const { activeAnimations, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex, isDragMove);
-
-    const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
-
-
-    useEffect(() => {
-        const oppColor = player?.color === Color.White ? Color.Black : Color.White;
-        setOpponent(players.find(player => player.color === oppColor) ?? null);
-    }, [player, players])
 
 
     function handleMove(move: Move) {
-        if (!socket) {
-            console.error("socket not connected");
-            return;
-        }
-
-        if (!gameId) {
-            console.error("Couldn't get game id to send move");
-            return;
-        }
-
-        const payload: GameMoveSendRequest = {
-            gameId: gameId,
-            move: move,
-        }
-
         if (visibleBoard)
             move.notation = getMoveNotation(visibleBoard, move);
-        const oldTurnColor = turnColor;
+        move.timestamp = Date.now();
 
         addTurn(move);
         setTurnColor(turnColor === Color.White ? Color.Black : Color.White);
+        setIsBluffing(false);
+    }
 
-        socket.emit("game:move:send", payload, (ok, message, appliedAt) => {
-            if (!ok) {
-                removeTurn(-1);
-                setTurnColor(oldTurnColor);
-                clearAnimations();
-                console.error(message);
-            }
+    function handleCallBluff() {
 
-            setIsBluffing(false);
-            if (appliedAt) addTurnTimestamp(appliedAt, -1);
-        })
     }
 
     const topColor: Color = view === undefined ? (player?.color === Color.White ? Color.Black : Color.White) : (view === Color.White ? Color.Black : Color.White)
@@ -123,7 +75,6 @@ function Play() {
             {/* Left Side*/}
             <div className={"w-[300px] h-full"}>
                 <Group className={""}
-                    // style={{ height: 'calc(90vh-50px)' }}
                        orientation={"vertical"}
                        defaultLayout={{
                            "rule-pool": 1,
@@ -156,18 +107,14 @@ function Play() {
             {/* Board */}
             <div className={"relative flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"flex text-start items-end text-white text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</div>
+                    <div className={"flex text-start items-end text-white text-xl"}>{view === player?.color || view === undefined ? "Bot" : player?.username}</div>
 
-                    {clockInfo.usesClock && <Timer
-                        clockMs={liveClocks.get(topColor)}
-                        isRunning={gameStatus !== GameStatus.DONE && ((view && view !== turnColor) || (view === undefined && player?.color !== turnColor))}
-                    />}
                 </div>
-                {visibleBoard !== null && player && <Board
+                {visibleBoard !== null && <Board
                     board={visibleBoard}
                     gameStatus={gameStatus}
-                    player={player}
-                    view={view ?? player.color}
+                    player={null}
+                    view={(view ?? player?.color) ?? Color.White}
                     turn={turnColor}
                     canMove={viewMoveIndex == -1}
                     isBluffing={isBluffing}
@@ -178,11 +125,11 @@ function Play() {
                     setIsDragMove={setIsDragMove}
                 />}
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>
+                    <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : "Bot"}</div>
                     <div className={"flex flex-row justify-center gap-5 py-3"}>
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
-                        <CallBluffButtonOnline
-                            gameId={gameId}
+                        <CallBluffButtonLocal
+                            onCallBluff={handleCallBluff}
                             disabled={
                                 turnColor !== player?.color ||
                                 turnHistory.length === 0 ||
@@ -190,10 +137,6 @@ function Play() {
                             }
                         />
                     </div>
-                    {clockInfo.usesClock && <Timer
-                        clockMs={liveClocks.get(bottomColor)}
-                        isRunning={gameStatus !== GameStatus.DONE && ((view === turnColor) || (view === undefined && player?.color === turnColor))}
-                    />}
                 </div>
 
             </div>
@@ -201,10 +144,9 @@ function Play() {
             {/* Right Side */}
             <div className={"hidden lg:block w-[300px] h-full"}>
                 <Group className={""}
-                    // style={{ height: 'calc(90vh-50px)' }}
                        orientation={"vertical"}
                        defaultLayout={{
-                           "turn-history": 1.3,
+                           "turn-history": 1.5,
                            "chat": 1
                        }}
                 >
@@ -224,13 +166,14 @@ function Play() {
                             </div>
 
                             <div className={"shrink-0 w-full pt-2 pb-1"}>
-                                <GameActions gameId={gameId}
-                                             color={player?.color ?? Color.White}
-                                             drawOfferedColor={drawOfferedColor}
-                                             setDrawOfferedColor={setDrawOfferedColor}
+                                <GameActions gameId={""}
+                                             color={view ?? Color.White}
+                                             drawOfferedColor={null}
+                                             setDrawOfferedColor={() => {}}
                                              gameStatus={gameStatus}
                                              gameResult={gameResult}
                                              gameResultReason={gameResultReason}
+                                             isSpectating={true}
                                 />
                             </div>
                         </div>
@@ -245,7 +188,8 @@ function Play() {
                         minSize={"100px"}
                     >
                         <Chatroom
-                            gameId={gameId}
+                            gameId={""}
+                            canSend={false}
                         />
                     </Panel>
                 </Group>
@@ -257,4 +201,4 @@ function Play() {
 }
 
 
-export default Play;
+export default Bot;

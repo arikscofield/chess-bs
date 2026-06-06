@@ -5,15 +5,16 @@
 
 import {
     Color,
+    CreateGameColor,
     FileToIndex,
+    type GameDTO,
     GameStatus,
     type Piece,
     PieceType,
+    type PlayerDTO,
     PrefixToPieceType,
     type Square,
-    type GameDTO,
-    type UserDTO,
-    type PlayerDTO
+    type UserDTO
 } from "@chess-bs/common";
 import PieceClass from "@chess-bs/common/src/piece.js"
 import {v4 as uuidv4} from "uuid";
@@ -129,6 +130,29 @@ export async function getGameDTOFromFinishedGame(finishedGame: FinishedGame): Pr
         clockIncrementMs: finishedGame.clockIncrementMs,
 
         players: players,
+    }
+}
+
+
+export function createGameColorToColor(createGameColor: CreateGameColor): Color {
+    switch (createGameColor) {
+        case CreateGameColor.White:
+            return Color.White;
+        case CreateGameColor.Black:
+            return Color.Black;
+        case CreateGameColor.Random:
+        default:
+            const colors = Object.values(Color);
+            return colors[Math.floor(Math.random() * colors.length)] ?? Color.White;
+    }
+}
+
+export function colorToCreateGameColor(color: Color): CreateGameColor {
+    switch (color) {
+        case Color.White:
+            return CreateGameColor.White;
+        case Color.Black:
+            return CreateGameColor.Black;
     }
 }
 

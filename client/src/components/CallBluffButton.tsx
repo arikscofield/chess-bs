@@ -3,7 +3,19 @@ import {useSocket} from "./context/SocketContext.ts";
 import {type GameMoveBluffCallRequest, type GenericCallback} from "@chess-bs/common";
 
 
-function CallBluffButton({ gameId, disabled = false }: {
+function CallBluffButtonBase({ onClick, disabled = false} : {
+    onClick: () => void;
+    disabled?: boolean;
+}) {
+    return (
+        <Button color={"green"} w={120} onClick={onClick} disabled={disabled}>
+            Call Bluff
+        </Button>
+    )
+}
+
+
+export function CallBluffButtonOnline({ gameId, disabled = false }: {
     gameId: string,
     disabled?: boolean,
 }) {
@@ -18,7 +30,6 @@ function CallBluffButton({ gameId, disabled = false }: {
         const payload: GameMoveBluffCallRequest = {
             gameId: gameId,
         }
-
         socket.emit("game:move:bluff:call", payload, ((ok, message) => {
             if (!ok) {
                 console.error(message);
@@ -29,16 +40,12 @@ function CallBluffButton({ gameId, disabled = false }: {
         }) as GenericCallback)
     }
 
-    return <Button
-        color={"green"}
-        w={120}
-        onClick={handleCallBluff}
-        disabled={disabled}
-        className={""}
-    >
-        Call Bluff
-    </Button>
+    return <CallBluffButtonBase onClick={handleCallBluff} disabled={disabled}/>
 }
 
-
-export default CallBluffButton;
+export function CallBluffButtonLocal({ onCallBluff, disabled = false }: {
+    onCallBluff: () => void,
+    disabled?: boolean,
+}) {
+    return <CallBluffButtonBase onClick={onCallBluff} disabled={disabled}/>
+}

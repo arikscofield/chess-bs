@@ -13,7 +13,7 @@ import {
     LoginSchema, LogoutResponseSchema, PaginationQuerySchema, RegisterResponseSchema,
     RegisterSchema, UserIdParamSchema,
     DEFAULT_GUEST_SESSION_EXPIRATION, DEFAULT_USER_SESSION_EXPIRATION,
-    UserType
+    UserType, CreateBotGameSchema, type CreateBotGameRequest, CreateBotGameResponseSchema
 } from "@chess-bs/common";
 import {
     addUser,
@@ -27,6 +27,7 @@ import {gameIdExists, generateGameId, generateUUID, getGameDTOFromFinishedGame} 
 import Game from "./game.js";
 import Rule from "@chess-bs/common/src/rule.js";
 import {hash, verify} from "argon2"
+import BotGame from "./botGame.js";
 
 
 const port = parseInt(process.env.PORT || "3000");
@@ -286,7 +287,7 @@ app.post('/api/games', validate({ body: CreateGameSchema }), requireAuth, async 
     let gameId = generateGameId(6);
     while (await gameIdExists(gameId))
         gameId = generateGameId(6);
-    const game = new Game(gameId, ruleCount, rulePool, bluffPunishment, usesClock, clockStartSeconds !== undefined ? clockStartSeconds * 1000 : undefined, clockIncrementSeconds !== undefined ? clockIncrementSeconds * 1000 : undefined);
+    const game = new Game(gameId, ruleCount, rulePool, bluffPunishment, user.id, color, usesClock, clockStartSeconds !== undefined ? clockStartSeconds * 1000 : undefined, clockIncrementSeconds !== undefined ? clockIncrementSeconds * 1000 : undefined);
 
     gameRepository.save(game);
     console.log(`Creating game ${gameId} for player ${user.id} with options: Color: ${color}, timeStart: ${clockStartSeconds} * 1000, timeIncrement: ${clockIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${rulePoolIds}`);
@@ -294,6 +295,30 @@ app.post('/api/games', validate({ body: CreateGameSchema }), requireAuth, async 
     const response = CreateGameResponseSchema.safeParse({ gameId });
     if (!response.success) {
         console.error("POST /games : Error crafting response: ", z.prettifyError(response.error));
+        return res.status(500).json({error: "Internal server error"});
+    }
+    return res.status(200).json(response.data);
+})
+
+// Creates a bot game
+app.post('/api/games/bot', validate({ body: CreateBotGameSchema }), requireAuth, async (req, res) => {
+
+    const user = req.user!;
+    const { color, bluffPunishment, ruleCount, rulePoolIds, botDifficulty } = req.body as CreateBotGameRequest;
+    const rulePool = rulePoolIds.map(ruleId => Rule.getRuleFromId(ruleId)).filter(rule => rule !== undefined);
+
+
+    let gameId = generateGameId(6);
+    while (await gameIdExists(gameId))
+        gameId = generateGameId(6);
+    const game = new BotGame(gameId, ruleCount, rulePool, bluffPunishment, user.id, color, botDifficulty);
+
+    gameRepository.save(game);
+    console.log(`Creating BOT game ${gameId} for player ${user.id} with options: Color: ${color}, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${rulePoolIds}, botDifficulty: ${botDifficulty}`);
+
+    const response = CreateBotGameResponseSchema.safeParse({ gameId });
+    if (!response.success) {
+        console.error("POST /games/bot : Error crafting response: ", z.prettifyError(response.error));
         return res.status(500).json({error: "Internal server error"});
     }
     return res.status(200).json(response.data);

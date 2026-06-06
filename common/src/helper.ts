@@ -159,3 +159,7 @@ export function nextTurnColor(color: Color): Color {
     return color === Color.White ? Color.Black : Color.White;
 }
 
+export function pickRandom(arr: any[]) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+

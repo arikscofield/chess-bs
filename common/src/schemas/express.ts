@@ -1,5 +1,5 @@
 import { z } from "zod";
-import {GameDTOSchema, UserDTOSchema, ZBluffPunishmentEnum, ZCreateGameColorEnum} from "./common";
+import {GameDTOSchema, UserDTOSchema, ZBluffPunishmentEnum, ZBotDifficultyEnum, ZCreateGameColorEnum} from "./common";
 import {DEFAULT_RULE_COUNT, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH} from "../const";
 
 
@@ -32,6 +32,15 @@ export const CreateGameSchema = z.object({
     clockIncrementSeconds: z.coerce.number().int().nonnegative().optional(),
 });
 export type CreateGameRequest = z.infer<typeof CreateGameSchema>;
+
+export const CreateBotGameSchema = z.object({
+    color: ZCreateGameColorEnum,
+    bluffPunishment: ZBluffPunishmentEnum,
+    ruleCount: z.coerce.number().int().positive().default(DEFAULT_RULE_COUNT),
+    rulePoolIds: z.array(z.coerce.number().int().nonnegative()),
+    botDifficulty: ZBotDifficultyEnum,
+});
+export type CreateBotGameRequest = z.infer<typeof CreateBotGameSchema>;
 
 // PARAMS ----------------
 
@@ -81,6 +90,11 @@ export const CreateGameResponseSchema = z.object({
     gameId: z.string(),
 })
 export type CreateGameResponse = z.infer<typeof CreateGameResponseSchema>;
+
+export const CreateBotGameResponseSchema = z.object({
+    gameId: z.string(),
+})
+export type CreateBotGameResponse = z.infer<typeof CreateBotGameResponseSchema>;
 
 export const GetGameResponseSchema = GameDTOSchema;
 export type GetGameResponse = z.infer<typeof GetGameResponseSchema>;

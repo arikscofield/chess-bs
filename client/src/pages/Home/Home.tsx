@@ -3,10 +3,17 @@ import './Home.css'
 import {Button, Grid, Group, Stack, TextInput, Title} from "@mantine/core";
 import {useNavigate} from "react-router";
 import {useEffect, useState} from "react";
-import {BluffPunishment, CreateGameColor, type CreateGameRequest, type CreateGameResponse
+import {
+    BluffPunishment,
+    BotDifficulty,
+    type CreateBotGameRequest,
+    CreateGameColor,
+    type CreateGameRequest,
+    type CreateGameResponse
 } from "@chess-bs/common";
 import {useSocket} from "../../components/context/SocketContext.ts";
 import CreateGameModal from "../../components/CreateGameModal.tsx";
+import CreateBotGameModal from "../../components/CreateBotGameModal.tsx";
 
 const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT;
 const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP;
@@ -17,8 +24,12 @@ function Home() {
     const [isMounted, setIsMounted] = useState(false);
 
     const [gameCodeInput, setGameCodeInput] = useState<string>("");
+
     const [createGameModalOpen, setCreateGameModalOpen] = useState<boolean>(false);
     const [createGameError, setCreateGameError] = useState<string>("");
+
+    const [createBotGameModalOpen, setCreateBotGameModalOpen] = useState<boolean>(false);
+    const [createBotGameError, setCreateBotGameError] = useState<string>("");
 
     const socket = useSocket();
 
@@ -90,6 +101,62 @@ function Home() {
         navigate(`/${gameId}`);
     }
 
+
+    function handlePlayBot() {
+        setCreateBotGameModalOpen(true);
+        setCreateBotGameError("");
+    }
+
+
+    async function createBotGame(
+        color: CreateGameColor,
+        bluffPunishment: BluffPunishment,
+        ruleCount: number,
+        rulePoolIds: number[],
+        botDifficulty: BotDifficulty,
+    ) {
+        setCreateBotGameError("");
+
+        if (!socket) {
+            // TODO: Add offline bot option
+            const error = "Server socket not connected";
+            setCreateGameError(error);
+            console.error(error);
+            return;
+        }
+
+        const payload: CreateBotGameRequest = {
+            color: color,
+            bluffPunishment: bluffPunishment,
+            ruleCount: ruleCount,
+            rulePoolIds: rulePoolIds,
+            botDifficulty: botDifficulty,
+        }
+
+        const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/games/bot`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+            navigate("/");
+            response.json().then((data) => {
+                console.error(data.error)
+            })
+            return;
+        }
+
+        response.json().then((data: CreateGameResponse) => {
+            const gameId = data.gameId;
+            navigate(`/${gameId}`);
+            console.log(`Created game: ${gameId}`);
+        })
+    }
+
     if (!isMounted) return;
 
 
@@ -118,7 +185,7 @@ function Home() {
                     />
                 </Group>
 
-                <Button color={"orange"}>Play a Bot</Button>
+                <Button color={"orange"} onClick={handlePlayBot}>Play a Bot</Button>
             </Stack>
         </Grid.Col>
 
@@ -127,6 +194,12 @@ function Home() {
             onClose={() => setCreateGameModalOpen(false)}
             onSubmit={createGame}
             error={createGameError}
+        />
+
+        <CreateBotGameModal
+            opened={createBotGameModalOpen}
+            onClose={() => setCreateBotGameModalOpen(false)}
+            onSubmit={createBotGame}
         />
     </Grid>
     )
