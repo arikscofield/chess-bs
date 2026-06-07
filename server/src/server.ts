@@ -14,6 +14,7 @@ import {InMemoryGameRepository} from "./game.repository.js";
 import type {User} from "./db/schema.js";
 import {setUpSocketHandlers} from "./socket/index.js";
 import {setupMiddlewares} from "./socket/middleware.js";
+import {ensureBotUser} from "./db/helper.js";
 
 
 const port = parseInt(process.env.PORT || "3000");
@@ -38,6 +39,7 @@ export const gameRepository = new InMemoryGameRepository();
 
 setupMiddlewares(io);
 setUpSocketHandlers(io);
+ensureBotUser();
 
 httpServer.listen(port, () => {
     console.log(`Server started on port ${port}`);

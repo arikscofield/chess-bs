@@ -15,7 +15,7 @@ import {
 import {count, desc, eq} from "drizzle-orm";
 import {drizzle} from "drizzle-orm/node-postgres";
 import Game from "../game.js";
-import {Color, UserType} from "@chess-bs/common";
+import {BOT_UUID, Color, UserType} from "@chess-bs/common";
 
 
 const db = drizzle(process.env.DATABASE_URL!, { schema });
@@ -76,6 +76,18 @@ export async function emailAvailable(email: string): Promise<boolean> {
     const rows = await db.select({ count: count() }).from(users).where(eq(users.email, email))
 
     return (rows[0]?.count ?? 0) === 0;
+}
+
+
+export async function ensureBotUser() {
+    if (await getUserById(BOT_UUID) === null) {
+        const botUser: NewUser = {
+            username: "Bot",
+            id: BOT_UUID,
+            userType: UserType.Guest,
+        }
+        await addUser(botUser);
+    }
 }
 
 
