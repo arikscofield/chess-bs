@@ -1,4 +1,16 @@
-import {Button, Center, Group, Modal, NumberInput, Radio, SegmentedControl, Slider, Switch, Text} from "@mantine/core";
+import {
+    Button,
+    Center,
+    Group,
+    Modal,
+    NativeSelect,
+    NumberInput,
+    Radio,
+    SegmentedControl, Select,
+    Slider,
+    Switch,
+    Text
+} from "@mantine/core";
 import {useState} from "react";
 import {allRules, BluffPunishment, CreateGameColor} from "@chess-bs/common";
 
@@ -72,77 +84,80 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
         size={"auto"}
         title={"Create Game"}
         centered
-        classNames={{body: "flex flex-col justify-center items-center "}}
+        classNames={{body: "flex flex-col justify-center items-center gap-4"}}
         styles={{ title: {fontSize: "2em"}}}
     >
 
-        {/* Enable/Disable Time control switch */}
-        <div className={`${clockEnabled ? "" : "mb-5"}`}>
+
+        <div className={`grid grid-cols-[1fr_2fr] gap-2 items-center w-full justify-items-center`}>
             <Switch
                 checked={clockEnabled}
                 onChange={(event) => setClockEnabled(event.target.checked)}
                 label={"Time Control"}
                 size={"md"}
+                color={"var(--color-fg-1)"}
                 className={""}
             />
-        </div>
 
-
-        {/* Starting time and Increment sliders */}
-        {clockEnabled && <div className={"w-full mb-5"}>
-            <Text size={"md"}>Minutes per side: {clockStartMinutes}</Text>
-            <Slider value={clockStartIndex} onChange={(index) => {
-                setClockStartIndex(index)
-                setClockStartMinutes(CLOCK_START_VALUES[index])
-            }}
+            <div className={`w-full ${!clockEnabled && 'invisible' }`}>
+                <Text size={"md"}>Minutes per side: {clockStartMinutes}</Text>
+                <Slider value={clockStartIndex}
+                    color={"var(--color-fg-1)"}
                     label={clockStartMinutes}
                     min={0}
                     max={CLOCK_START_VALUES.length - 1}
                     step={1}
                     size={"lg"}
                     restrictToMarks
+                    disabled={!clockEnabled}
                     marks={CLOCK_START_VALUES.map((_, index) => ({
                         value: index,
                     }))}
+                    onChange={(index) => {
+                        setClockStartIndex(index)
+                        setClockStartMinutes(CLOCK_START_VALUES[index])
+                    }}
                     styles={{
                         mark: { display: 'none' },
                         root: { backgroundColor: clockStartMinutes === 0 && clockIncrementSeconds === 0 ? "rgba(255,0,0,0.22)" : ""},
                     }}
 
-            />
+                />
 
-            <div>Increment in seconds: {clockIncrementSeconds}</div>
-            <Slider value={clockIncrementIndex} onChange={(index) => {
-                setClockIncrementIndex(index)
-                setClockIncrementSeconds(CLOCK_INCREMENT_VALUES[index])
-            }}
-                    label={CLOCK_INCREMENT_VALUES[clockIncrementIndex]}
-                    min={0}
-                    max={CLOCK_INCREMENT_VALUES.length - 1}
-                    step={1}
-                    size={"lg"}
-                    restrictToMarks
-                    marks={CLOCK_INCREMENT_VALUES.map((_, index) => ({
-                        value: index,
-                    }))}
-                    styles={{ mark: { display: 'none' }, root: { backgroundColor: clockStartMinutes === 0 && clockIncrementSeconds === 0 ? "rgba(255,0,0,0.22)" : ""} }}
-            />
-        </div>}
-
+                <Text size={"md"}>Increment in seconds: {clockIncrementSeconds}</Text>
+                <Slider value={clockIncrementIndex}
+                        color={"var(--color-fg-1)"}
+                        label={CLOCK_INCREMENT_VALUES[clockIncrementIndex]}
+                        min={0}
+                        max={CLOCK_INCREMENT_VALUES.length - 1}
+                        step={1}
+                        size={"lg"}
+                        restrictToMarks
+                        disabled={!clockEnabled}
+                        marks={CLOCK_INCREMENT_VALUES.map((_, index) => ({
+                            value: index,
+                        }))}
+                        onChange={(index) => {
+                            setClockIncrementIndex(index)
+                            setClockIncrementSeconds(CLOCK_INCREMENT_VALUES[index])
+                        }}
+                        styles={{ mark: { display: 'none' }, root: { backgroundColor: clockStartMinutes === 0 && clockIncrementSeconds === 0 ? "rgba(255,0,0,0.22)" : ""} }}
+                />
+            </div>
+        </div>
 
         {/* Rule Count and Rule Pool selection */}
-        <div className={"flex flex-row justify-around items-center w-full pb-5"}>
+        <div className={"flex flex-row justify-around items-center w-full"}>
             <NumberInput
                 value={ruleCount}
                 onChange={setRuleCount}
                 label={"Rule Count"}
-                description={"The number of rules each player gets"}
-                size={"md"}
+                // description={"The number of rules each player gets"}
+                size={"sm"}
                 allowDecimal={false}
                 allowNegative={false}
                 min={0}
                 max={rulePoolIds.length}
-                required
                 error={typeof ruleCount === "string"
                     ? "Invalid Rule Count"
                     : ruleCount > rulePoolIds.length
@@ -152,7 +167,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
             />
 
             <Button
-                color={"blue"}
+                color={"var(--color-fg-1)"}
                 size={"md"}
                 onClick={() => setRulePoolModalOpen(true)}
             >
@@ -169,18 +184,33 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
             onChange={(val) => {setBluffPunishment(val as BluffPunishment);}}
             name={"blushPunishment"}
             label={"Called Bluff Punishment"}
-            description={"The punishment for getting called out for bluffing, or incorrectly calling a bluff"}
-            withAsterisk
+            // description={"The punishment for getting called out for bluffing, or incorrectly calling a bluff"}
             size={"md"}
-            className={"px-1 pb-5"}
+            className={"hidden lg:block "}
         >
-            <Group>
-                <Radio value={BluffPunishment.Turn} label={"Lose Turn"} className={"pt-2"}/>
-                <Radio value={BluffPunishment.Piece} label={"Lose Piece (You Pick)"} className={"pt-2"}/>
-                <Radio value={BluffPunishment.PieceOpponent} label={"Lose Piece (Opponent Picks)"} className={"pt-2"}/>
-                <Radio value={BluffPunishment.PieceRandom} label={"Lose Piece (Random)"} className={"pt-2"}/>
+            <Group mt={"xs"}>
+                <Radio value={BluffPunishment.Turn} label={"Lose Turn"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BluffPunishment.Piece} label={"Lose Piece (You Pick)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BluffPunishment.PieceOpponent} label={"Lose Piece (Opponent Picks)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BluffPunishment.PieceRandom} label={"Lose Piece (Random)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
             </Group>
         </Radio.Group>
+
+        <Select
+            value={bluffPunishment}
+            label={"Bluff Punishment"}
+            onChange={(value) => {setBluffPunishment(value as BluffPunishment);}}
+            data={[
+                { label: "Lose Turn", value: BluffPunishment.Turn},
+                { label: "Lose Piece (You Pick)", value: BluffPunishment.Piece},
+                { label: "Lose Piece (Opponent Picks)", value: BluffPunishment.PieceOpponent},
+                { label: "Lose Piece (Random)", value: BluffPunishment.PieceRandom},
+
+            ]}
+            classNames={{
+                root: "lg:hidden"
+            }}
+        />
 
 
         {/* Color Selection */}
@@ -188,14 +218,19 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
             <p className={"px-3 text-base"}>Your Color</p>
             <SegmentedControl
                 value={color}
+                color={"var(--color-fg-1)"}
                 onChange={(val) => {setColor(val as CreateGameColor);}}
                 size={"md"}
+                autoContrast={true}
                 data={[
                     { value: CreateGameColor.White, label: <Center><img src={pieceImages["WhiteKing"]} alt={"White"} width={30} /><span>White</span></Center> },
                     { value: CreateGameColor.Black, label: <Center><img src={pieceImages["BlackKing"]} alt={"Black"} width={30} /><span>Black</span></Center> },
                     { value: CreateGameColor.Random, label: <Center className={"px-4 py-0.5 h-full"}><img src={pieceImages["RandomKing"]} alt={"Random"} width={25} className={"pr-1 py-0.5"}/><span>Random</span></Center> },
                 ]}
-                // className={"py-2"}
+                classNames={{
+                    // indicator: "bg-linear-to-r from-fg-1/20 from-35% to-blue-600/20 rounded-full!"
+                    indicator: "rounded-lg!"
+                }}
             />
         </div>
 

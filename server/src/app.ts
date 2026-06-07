@@ -327,10 +327,10 @@ app.post('/api/games/bot', validate({ body: CreateBotGameSchema }), requireAuth,
 // Gets a game by id
 app.get('/api/games/:gameId', validate({ params: GameIdParamSchema }), async (req, res) => {
     const gameId = req.params.gameId!;
-    const game = gameRepository.getById(gameId);
 
-    if (game) {
-        const response = GetGameResponseSchema.safeParse(game.getGameDTO());
+    const finishedGame = await getFinishedGameById(gameId);
+    if (finishedGame) {
+        const response = GetGameResponseSchema.safeParse(await getGameDTOFromFinishedGame(finishedGame));
         if (!response.success) {
             console.error("GET /games/:gameID : Error crafting response: ", z.prettifyError(response.error));
             return res.status(500).json({error: "Internal server error"});
@@ -338,10 +338,9 @@ app.get('/api/games/:gameId', validate({ params: GameIdParamSchema }), async (re
         return res.status(200).json(response.data);
     }
 
-    const finishedGame = await getFinishedGameById(gameId);
-
-    if (finishedGame) {
-        const response = GetGameResponseSchema.safeParse(await getGameDTOFromFinishedGame(finishedGame));
+    const game = gameRepository.getById(gameId);
+    if (game) {
+        const response = GetGameResponseSchema.safeParse(game.getGameDTO());
         if (!response.success) {
             console.error("GET /games/:gameID : Error crafting response: ", z.prettifyError(response.error));
             return res.status(500).json({error: "Internal server error"});

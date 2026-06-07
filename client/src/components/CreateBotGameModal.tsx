@@ -1,4 +1,4 @@
-import {Button, Center, Group, Modal, NumberInput, Radio, SegmentedControl} from "@mantine/core";
+import {Button, Center, Group, Modal, NativeSelect, NumberInput, Radio, SegmentedControl, Select} from "@mantine/core";
 import {useState} from "react";
 import {allRules, BluffPunishment, BotDifficulty, CreateGameColor} from "@chess-bs/common";
 
@@ -24,6 +24,8 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
     const [rulePoolIds, setRulePoolIds] = useState<number[]>(allRules.map(rule => rule.id));
     const [color, setColor] = useState<CreateGameColor>(CreateGameColor.White);
     const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>(BotDifficulty.Medium);
+
+    const [creatingGame, setCreatingGame] = useState<boolean>(false);
 
 
     if (rulePoolModalOpen) {
@@ -53,33 +55,16 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
         size={"auto"}
         title={"Create Bot Game"}
         centered
-        classNames={{body: "flex flex-col justify-center items-center "}}
+        classNames={{body: "flex flex-col gap-4 justify-center items-center "}}
         styles={{ title: {fontSize: "2em"}}}
     >
 
 
-        {/* Bot Difficulty selection */}
-        <Radio.Group
-            value={botDifficulty}
-            onChange={(val) => {setBotDifficulty(val as BotDifficulty);}}
-            name={"botDifficulty"}
-            label={"Bot Difficulty"}
-            // description={""}
-            withAsterisk
-            size={"md"}
-            className={"px-1 pb-5"}
-        >
-            <Group>
-                <Radio value={BotDifficulty.Easy} label={"Easy"} className={"pt-2"}/>
-                <Radio value={BotDifficulty.Medium} label={"Medium"} className={"pt-2"}/>
-                <Radio value={BotDifficulty.Hard} label={"Hard"} className={"pt-2"}/>
-                <Radio value={BotDifficulty.Random} label={"Random"} className={"pt-2"}/>
-            </Group>
-        </Radio.Group>
+
 
 
         {/* Rule Count and Rule Pool selection */}
-        <div className={"flex flex-row justify-around items-center w-full pb-5"}>
+        <div className={"flex flex-row justify-around items-center w-full"}>
             <NumberInput
                 value={ruleCount}
                 onChange={setRuleCount}
@@ -100,7 +85,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
             />
 
             <Button
-                color={"blue"}
+                color={"var(--color-fg-1)"}
                 size={"md"}
                 onClick={() => setRulePoolModalOpen(true)}
             >
@@ -110,6 +95,37 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
             <Modal opened={rulePoolModalOpen} onClose={() => setRulePoolModalOpen(false)}/>
         </div>
 
+        {/* Bot Difficulty selection */}
+        <Radio.Group
+            value={botDifficulty}
+            onChange={(val) => {setBotDifficulty(val as BotDifficulty);}}
+            name={"botDifficulty"}
+            label={"Bot Difficulty"}
+            size={"md"}
+        >
+            <Group mt={"xs"}>
+                <Radio value={BotDifficulty.Easy} label={"Easy"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BotDifficulty.Medium} label={"Medium"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BotDifficulty.Hard} label={"Hard"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BotDifficulty.Random} label={"Random"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+            </Group>
+        </Radio.Group>
+        <Select
+            value={botDifficulty}
+            label={"Bot Difficulty"}
+            onChange={(value) => {setBotDifficulty(value as BotDifficulty);}}
+            data={[
+                { label: "Easy", value: BotDifficulty.Easy },
+                { label: "Medium", value: BotDifficulty.Medium },
+                { label: "Hard", value: BotDifficulty.Hard },
+                { label: "Random", value: BotDifficulty.Random },
+
+            ]}
+            classNames={{
+                root: "lg:hidden"
+            }}
+        />
+
 
         {/* Called Bluff Punishment selection */}
         <Radio.Group
@@ -117,18 +133,33 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
             onChange={(val) => {setBluffPunishment(val as BluffPunishment);}}
             name={"blushPunishment"}
             label={"Called Bluff Punishment"}
-            description={"The punishment for getting called out for bluffing, or incorrectly calling a bluff"}
-            withAsterisk
+            // description={"The punishment for getting called out for bluffing, or incorrectly calling a bluff"}
             size={"md"}
-            className={"px-1 pb-5"}
+            className={"hidden lg:block "}
         >
-            <Group>
-                <Radio value={BluffPunishment.Turn} label={"Lose Turn"} className={"pt-2"}/>
-                <Radio value={BluffPunishment.Piece} label={"Lose Piece (You Pick)"} className={"pt-2"}/>
-                <Radio value={BluffPunishment.PieceOpponent} label={"Lose Piece (Opponent Picks)"} className={"pt-2"}/>
-                <Radio value={BluffPunishment.PieceRandom} label={"Lose Piece (Random)"} className={"pt-2"}/>
+            <Group mt={"xs"}>
+                <Radio value={BluffPunishment.Turn} label={"Lose Turn"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BluffPunishment.Piece} label={"Lose Piece (You Pick)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BluffPunishment.PieceOpponent} label={"Lose Piece (Opponent Picks)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                <Radio value={BluffPunishment.PieceRandom} label={"Lose Piece (Random)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
             </Group>
         </Radio.Group>
+
+        <Select
+            value={bluffPunishment}
+            label={"Bluff Punishment"}
+            onChange={(value) => {setBluffPunishment(value as BluffPunishment);}}
+            data={[
+                { label: "Lose Turn", value: BluffPunishment.Turn},
+                { label: "Lose Piece (You Pick)", value: BluffPunishment.Piece},
+                { label: "Lose Piece (Opponent Picks)", value: BluffPunishment.PieceOpponent},
+                { label: "Lose Piece (Random)", value: BluffPunishment.PieceRandom},
+
+            ]}
+            classNames={{
+                root: "lg:hidden"
+            }}
+        />
 
 
         {/* Color Selection */}
@@ -155,6 +186,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
 
             <Button color={"green"} size={"md"}
                     onClick={() => {
+                        setCreatingGame(true);
                         onSubmit(
                             color,
                             bluffPunishment,
@@ -166,6 +198,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
                     disabled={
                         (typeof ruleCount === "string" || ruleCount > rulePoolIds.length)
                     }
+                    loading={creatingGame}
             >
                 Create
             </Button>

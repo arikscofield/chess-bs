@@ -64,5 +64,5 @@ export function handleBotMove(game: Game) {
         if (checkmatedColor) {
             game.endGame(checkmatedColor === Color.White ? GameResult.Black : GameResult.White, "King captured");
         }
-    }, 1000);
+    }, 500);
 }
