@@ -6,26 +6,40 @@ function ArrowLayer({arrows, draft, view=Color.White, rowCount=8, colCount=8}: {
     arrows: Arrow[];
     draft: Arrow | null;
     view: Color;
-    rowCount: number;
-    colCount: number;
+    rowCount?: number;
+    colCount?: number;
 }) {
 
 
+    // If drawing an arrow overtop an existing arrow: hide the draft arrow and lower opacity of existing arrow to indicate removal
+    for (const a of arrows) {
+        if (squareEqual(a.from, draft?.from) && squareEqual(a.to, draft?.to) && a.color === draft?.color) {
+            a.opacity = 0.75;
+            draft = null;
+        } else {
+            a.opacity = 1;
+        }
+    }
+
     return (<svg
         viewBox={`0 0 ${rowCount} ${colCount}`}
+        opacity={0.5}
         className={"absolute inset-0 w-full h-full pointer-events-none z-10"}
     >
         {arrows.map((arrow, i) => <SingleArrow key={i} arrow={arrow} view={view} rowCount={rowCount} colCount={colCount} />)}
-        {draft && <SingleArrow arrow={draft} view={view} rowCount={rowCount} colCount={colCount}/> }
+        {draft && <SingleArrow arrow={draft} view={view} rowCount={rowCount} colCount={colCount} circleStrokeWidth={0.08} lineStrokeWidth={0.12} headSize={0.4}/> }
     </svg>)
 }
 
 
-function SingleArrow({arrow, view, rowCount=8, colCount=8}: {
+function SingleArrow({arrow, view, rowCount=8, colCount=8, circleStrokeWidth=0.1, lineStrokeWidth=0.15, headSize=0.48}: {
     arrow: Arrow;
     view: Color;
-    rowCount: number;
-    colCount: number;
+    rowCount?: number;
+    colCount?: number;
+    circleStrokeWidth?: number;
+    lineStrokeWidth?: number;
+    headSize?: number;
 }) {
 
     const fromSquare = squareFromPerspective(arrow.from, view, rowCount, colCount);
@@ -33,14 +47,13 @@ function SingleArrow({arrow, view, rowCount=8, colCount=8}: {
 
     // Dot highlight
     if (squareEqual(fromSquare, toSquare)) {
-        return <g fill={"none"} stroke={arrow.color} strokeWidth={0.1} opacity={0.4}>
+        return <g fill={"none"} stroke={arrow.color} strokeWidth={circleStrokeWidth} opacity={arrow.opacity ?? 1}>
             <circle r={0.45} cx={fromSquare.col + 0.5} cy={fromSquare.row + 0.5}  />
         </g>;
     }
 
 
     // Full arrow highlight
-    const headSize = 0.45;
     const sx = fromSquare.col + 0.5, sy = fromSquare.row + 0.5; // Start coords
     const ex = toSquare.col + 0.5, ey = toSquare.row + 0.5; // End coords
     const dx = ex-sx, dy=ey-sy;
@@ -61,10 +74,10 @@ function SingleArrow({arrow, view, rowCount=8, colCount=8}: {
     const headPoint3Y = lineEndY + halfHeadLen * Math.sin(perpAngle);
 
 
-    return (<g opacity={0.4}>
+    return (<g opacity={arrow.opacity ?? 1}>
         <line x1={sx} y1={sy}
               x2={lineEndX} y2={lineEndY}
-              strokeWidth={0.15} stroke={arrow.color}
+              strokeWidth={lineStrokeWidth} stroke={arrow.color} strokeLinecap={"round"}
         />
         <polygon points={`
         ${ex}, ${ey} 

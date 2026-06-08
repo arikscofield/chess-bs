@@ -5,9 +5,8 @@ export interface Arrow {
     from: Square;
     to: Square;
     color: string;
+    opacity?: number;
 }
-
-const ARROW_COLOR = "#ff0505";
 
 function colorForModifiers(e: { shiftKey: boolean; altKey: boolean; ctrlKey: boolean }) {
     if (e.shiftKey) return '#882020';   // red

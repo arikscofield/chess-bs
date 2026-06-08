@@ -2,6 +2,8 @@ import {BoardColorType, Color, type Piece, type PieceType} from "@chess-bs/commo
 import {pieceImages} from "../assets/pieceImages.ts";
 
 
+const CAPTURE_HIGHLIGHT_SIZE = 25;
+
 function Square(
     { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, handleSelectPromotion, boardType = BoardColorType.Brown }:
     {
@@ -42,6 +44,8 @@ function Square(
         )
     }
 
+    const anyMovable = movable || ruleMovable;
+
     return (
         <div className={`relative flex w-full h-full items-center justify-center z-10 pointer-events-none ${(row+col) % 2 === 0 ? boardType[0] : boardType[1]} `}
              style={{ touchAction: "none" }}
@@ -51,16 +55,34 @@ function Square(
             {selected && <div className={`absolute w-full h-full top-0 left-0 bg-green-700/40 `}/>}
 
             {/* Last Move highlight */}
-            {highlighted && <div className={`absolute w-full h-full top-0 left-0 bg-lime-400/40`}/>}
+            {highlighted && !anyMovable && <div className={`absolute w-full h-full top-0 left-0 bg-lime-400/40`}/>}
 
             {/* Showing legal moves: both regular chess (green), and rule-specific (blue) */}
-            {(movable || ruleMovable) && !selected && !hovered && <div className={`absolute w-full h-full top-0 left-0 group-hover:hidden 
-                ${isBluffing ? "bg-red-700/40" : (ruleMovable ? "bg-blue-700/40" : (movable ? "bg-green-700/40" : ""))}
-                ${piece === null ? `scale-[30%] rounded-full` : `bg-transparent border-8 rounded-full ${isBluffing ? "border-red-700/40" : (ruleMovable ? "border-blue-700/40" : (movable ? "border-green-700/40" : ""))}`}`
-            }/> }
+            {anyMovable && !hovered &&
+                <svg
+                    viewBox={"0 0 100 100"}
+                    fill={isBluffing ? "var(--color-red-700)" : ruleMovable ? "var(--color-blue-700)" :"var(--color-green-700"}
+                    stroke={"none"}
+                    opacity={0.5}
+                    className={`absolute w-full h-full pointer-events-none`}
+                >
+                    {piece === null ?
+                        <g>
+                            <circle r={15} cx={50} cy={50}/>
+                        </g>
+                        :
+                        <g>
+                        <polygon points={`0, 0 0, ${CAPTURE_HIGHLIGHT_SIZE}, ${CAPTURE_HIGHLIGHT_SIZE}, 0`}/>
+                        <polygon points={`100, 0 100, ${CAPTURE_HIGHLIGHT_SIZE}, ${100-CAPTURE_HIGHLIGHT_SIZE}, 0`}/>
+                        <polygon points={`100, 100 100, ${100-CAPTURE_HIGHLIGHT_SIZE}, ${100-CAPTURE_HIGHLIGHT_SIZE}, 100`}/>
+                        <polygon points={`0, 100 0, ${100-CAPTURE_HIGHLIGHT_SIZE}, ${CAPTURE_HIGHLIGHT_SIZE}, 100`}/>
+                        </g>
+                    }
+                </svg>
+            }
 
             {/* Legal move on-hover-highlight */}
-            {hovered && (movable || ruleMovable) && !selected && <div className={`absolute w-full h-full top-0 left-0 ${isBluffing ? "bg-red-600/40" : (ruleMovable ? "bg-blue-600/40" : (movable ? "bg-green-600/40" : ""))}`}/>}
+            {hovered && anyMovable && !selected && <div className={`absolute w-full h-full top-0 left-0 ${isBluffing ? "bg-red-600/40" : (ruleMovable ? "bg-blue-600/40" : (movable ? "bg-green-600/40" : ""))}`}/>}
 
             {piece && <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} draggable={false} className={"w-full h-full z-20 pointer-events-none "} style={{ touchAction: "none" }}/>}
 
