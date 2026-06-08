@@ -114,7 +114,7 @@ function Home() {
         ruleCount: number,
         rulePoolIds: number[],
         botDifficulty: BotDifficulty,
-    ) {
+    ): Promise<boolean> {
         setCreateBotGameError("");
 
         if (!socket) {
@@ -122,7 +122,7 @@ function Home() {
             const error = "Server socket not connected";
             setCreateGameError(error);
             console.error(error);
-            return;
+            return false;
         }
 
         const payload: CreateBotGameRequest = {
@@ -147,13 +147,14 @@ function Home() {
             response.json().then((data) => {
                 console.error(data.error)
             })
-            return;
+            return false;
         }
 
-        response.json().then((data: CreateGameResponse) => {
+        return response.json().then((data: CreateGameResponse) => {
             const gameId = data.gameId;
             navigate(`/${gameId}`);
             console.log(`Created game: ${gameId}`);
+            return true;
         })
     }
 

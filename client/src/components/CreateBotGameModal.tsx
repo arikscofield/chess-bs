@@ -1,4 +1,4 @@
-import {Button, Center, Group, Modal, NativeSelect, NumberInput, Radio, SegmentedControl, Select} from "@mantine/core";
+import {Button, Center, Group, Modal, NumberInput, Radio, SegmentedControl, Select} from "@mantine/core";
 import {useState} from "react";
 import {allRules, BluffPunishment, BotDifficulty, CreateGameColor} from "@chess-bs/common";
 
@@ -15,7 +15,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
         ruleCount: number,
         rulePoolIds: number[],
         botDifficulty: BotDifficulty,
-    ) => void,
+    ) => Promise<boolean>,
     error?: string,
 }) {
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
@@ -193,7 +193,9 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
                             typeof ruleCount === "number" ? ruleCount : 3,
                             rulePoolIds,
                             botDifficulty,
-                        );
+                        ).then((success) => {
+                            if (!success) setCreatingGame(false);
+                        });
                     }}
                     disabled={
                         (typeof ruleCount === "string" || ruleCount > rulePoolIds.length)

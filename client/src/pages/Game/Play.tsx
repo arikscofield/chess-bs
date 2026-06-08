@@ -37,7 +37,7 @@ import {useGameViewer} from "../../hooks/GameViewer.ts";
 import {useSocket} from "../../components/context/SocketContext.ts";
 import {useEffect, useState} from "react";
 import GameActions from "../../components/GameActions.tsx";
-import {useLiveClock} from "../../hooks/LiveClock.ts";
+import {useClockState} from "../../hooks/LiveClock.ts";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
 
 function Play() {
@@ -65,7 +65,7 @@ function Play() {
     const addTurnTimestamp = useSetAtom(addTurnTimestampAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
-    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
+    const clockState = useClockState(turnHistory, clockInfo, -1);
     const { activeAnimations, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex, isDragMove);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
@@ -115,6 +115,8 @@ function Play() {
 
     const topColor: Color = view === undefined ? (player?.color === Color.White ? Color.Black : Color.White) : (view === Color.White ? Color.Black : Color.White)
     const bottomColor: Color = topColor === Color.White ? Color.Black : Color.White;
+    const topClock = clockState.get(topColor);
+    const bottomClock = clockState.get(bottomColor);
 
 
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen text-white "}>
@@ -158,9 +160,10 @@ function Play() {
                 <div className={"flex flex-row justify-between"}>
                     <div className={"flex text-start items-end text-white text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</div>
 
-                    {clockInfo.usesClock && <Timer
-                        clockMs={liveClocks.get(topColor)}
-                        isRunning={gameStatus !== GameStatus.DONE && ((view && view !== turnColor) || (view === undefined && player?.color !== turnColor))}
+                    {clockInfo.usesClock && topClock && <Timer
+                        baseMs={topClock.baseMs}
+                        anchorMs={topClock.anchorMs}
+                        isRunning={gameStatus !== GameStatus.DONE && topClock.running}
                     />}
                 </div>
                 {visibleBoard !== null && player && <Board
@@ -190,9 +193,10 @@ function Play() {
                             }
                         />
                     </div>
-                    {clockInfo.usesClock && <Timer
-                        clockMs={liveClocks.get(bottomColor)}
-                        isRunning={gameStatus !== GameStatus.DONE && ((view === turnColor) || (view === undefined && player?.color === turnColor))}
+                    {clockInfo.usesClock && bottomClock && <Timer
+                        baseMs={bottomClock.baseMs}
+                        anchorMs={bottomClock.anchorMs}
+                        isRunning={gameStatus !== GameStatus.DONE && bottomClock.running}
                     />}
                 </div>
 

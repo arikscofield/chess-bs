@@ -1,14 +1,15 @@
-import type {Socket} from "socket.io";
 import type Game from "../../game.js";
 import {
     BluffPunishment,
-    type BotDecision, Color,
+    type BotDecision,
+    Color,
     type GameChatSystemResponse,
-    type GameMoveAppliedResponse, GameResult
+    type GameMoveAppliedResponse,
+    GameResult,
+    GameStatus
 } from "@chess-bs/common";
 import BotGame from "../../botGame.js";
 import {io} from "../../server.js";
-import type Player from "../../player.js";
 
 
 export function isBotGame(game: Game) {
@@ -16,7 +17,7 @@ export function isBotGame(game: Game) {
 }
 
 export function handleBotMove(game: Game) {
-    if (!(game instanceof BotGame)) {
+    if (!(game instanceof BotGame) || game.gameStatus !== GameStatus.RUNNING) {
         return;
     }
 

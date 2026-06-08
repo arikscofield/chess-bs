@@ -3,7 +3,6 @@ import {
     Center,
     Group,
     Modal,
-    NativeSelect,
     NumberInput,
     Radio,
     SegmentedControl, Select,

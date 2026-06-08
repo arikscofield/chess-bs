@@ -20,6 +20,8 @@ import BoardClass from "@chess-bs/common/src/board"
 import Rule from "@chess-bs/common/src/rule.js";
 import type {AnimationPiece} from "../hooks/PieceAnimation.ts";
 import PieceAnimationOverlay from "./PieceAnimationOverlay.tsx";
+import {useArrows} from "../hooks/Arrows.ts";
+import ArrowLayer from "./ArrowLayer.tsx";
 
 
 
@@ -38,8 +40,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
     setIsDragMove?: (isDragMove: boolean) => void,
 }) {
 
+    const {arrows, handlers: arrowHandlers, draft, clear: clearArrows} = useArrows();
 
-    // State
     const [selectedSquare, setSelectedSquare] = useState<SquareType | null>(null);
     const [legalMoves, setLegalMoves] = useState<Move[]>([]);
     const [legalRuleMoves, setLegalRuleMoves] = useState<Move[]>([]);
@@ -76,14 +78,14 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
 
     // Helper to calculate row/col from pointer event
-    const getRowColFromEvent = (e: PointerEvent) => {
+    function getRowColFromEvent(e: PointerEvent): SquareType {
         if (!boardElementRef.current) return {row: -1, col: -1};
         const w = boardElementRef.current.offsetWidth;
         const h = boardElementRef.current.offsetHeight;
         const r = Math.floor(e.offsetY / (h / numRows));
         const c = Math.floor(e.offsetX / (w / numCols));
         return view === Color.Black ? {row: numRows - 1 - r, col: numCols - 1 - c} : {row: r, col: c};
-    };
+    }
 
 
     function getIsLegalMove(piece: Piece | null, dest: SquareType, isBluffing: boolean = false): boolean {
@@ -103,6 +105,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
         const {row, col} = getRowColFromEvent(e.nativeEvent as unknown as PointerEvent);
 
+        arrowHandlers.onPointerMove(e, {row, col});
+
         if (draggedPiecePortalRef.current) {
             const squareSize = boardElementRef.current.offsetWidth / 8;
             draggedPiecePortalRef.current.style.left = `${e.pageX - squareSize / 2}px`;
@@ -121,22 +125,27 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
         }
     }
 
-    function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+        // console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
+        const {row, col} = getRowColFromEvent(e.nativeEvent as unknown as PointerEvent);
+        const square = {row, col};
+
+        if (e.button === 2) {
+            arrowHandlers.onRightPointerDown(e, square);
+            return;
+        }
+
+        clearArrows();
+
         if (!canMove || turn !== player?.color || (gameStatus !== GameStatus.RUNNING && gameStatus !== GameStatus.WAITING_FOR_FIRST_MOVE)) return;
 
-        const {row, col} = getRowColFromEvent(event.nativeEvent as unknown as PointerEvent);
-
-        // console.log(`Pointer Down at relative: x: ${event.pageX} y: ${event.pageY} row: ${row}, col: ${col}`);
-
-        const square = {row, col};
         const piece = board?.getPiece(square);
-
         if (piece === undefined) { // Outside the board
             deselect();
             return;
         }
 
-        lastPointerPosRef.current = {x: event.pageX, y: event.pageY};
+        lastPointerPosRef.current = {x: e.pageX, y: e.pageY};
 
         // Selecting the promotion piece
         if (promotionMove && col === promotionMove.to.col) {
@@ -160,11 +169,16 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
     }
 
     function handlePointerUp(e: ReactPointerEvent<HTMLDivElement>) {
-        isDraggingRef.current = false;
-        if (!canMove) return; // TODO: Change when adding right-click arrow annotating
-        const isOverBoard = e.target === boardElementRef.current;
         const {row, col} = getRowColFromEvent(e.nativeEvent as unknown as PointerEvent);
+        if (e.button === 2) {
+            arrowHandlers.onRightPointerUp(e, {row, col});
+            return;
+        }
 
+        isDraggingRef.current = false;
+        if (!canMove) return;
+
+        const isOverBoard = e.target === boardElementRef.current;
         if (isOverBoard) {
             endDrag({row, col});
 
@@ -308,7 +322,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
             <div className={"absolute w-full h-full grid grid-rows-8 grid-cols-8 aspect-square pointer-events-none"}>
                 {rows.map((row, i) => (
                     cols.map((col, j) => {
-                        return <div key={col} className={"w-full h-full relative"}>
+                        return <div key={`${row}-${col}`} className={"w-full h-full relative"}>
                             {i === numRows-1 && (
                                 <span className={`absolute z-20 bottom-0 right-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
                                     {IndexToFile[col]}
@@ -368,7 +382,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                                 promotionOptionPieceType = promotionOptions[rowDiff];
                             }
                         }
-                        return <div key={col} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
+                        return <div key={`${row}-${col}`} className={"pointer-events-none select-none"} style={{ touchAction: "none" }}>
                             <Square row={row} col={col} color={player?.color || Color.White}
                                     piece={hiddenSquares?.has(`${row}-${col}`) || (draggedSquare?.row === row && draggedSquare?.col === col) ? null : board?.grid?.[row]?.[col] || null}
                                     hovered={hovered.row === row && hovered.col === col}
@@ -405,8 +419,9 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
                         </div>
                     </Portal>
-
                 }
+
+                <ArrowLayer arrows={arrows} draft={draft} view={view} rowCount={numRows} colCount={numCols}/>
             </div>
         </div>
     )

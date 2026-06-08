@@ -5,9 +5,7 @@
 
 
 import PieceClass from "./piece";
-import {
-    Color, FileToIndex, IndexToFile, PieceAscii, PrefixToPieceType, PieceType,
-} from "./types";
+import {Color, FileToIndex, IndexToFile, PieceAscii, PieceType, PrefixToPieceType,} from "./types";
 import type {Move, Piece, Square} from "./schemas/common";
 import Board from "./board";
 
@@ -72,7 +70,6 @@ export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, e
 
     return {grid, turn, enPassant, halfMove, fullMove};
 }
-
 
 
 export function getMoveNotation(board: Board, move: Move): string {
@@ -161,5 +158,15 @@ export function nextTurnColor(color: Color): Color {
 
 export function pickRandom(arr: any[]) {
     return arr[Math.floor(Math.random() * arr.length)];
+}
+
+export function squareEqual(square1: Square | undefined, square2: Square | undefined) {
+    return square1?.row === square2?.row && square1?.col === square2?.col;
+}
+
+export function squareFromPerspective(square: Square, view: Color, rowCount: number=8, colCount: number=8): Square {
+    const newRow = view === Color.White ? square.row : rowCount - 1 - square.row;
+    const newCol = view === Color.White ? square.col : colCount - 1 - square.col;
+    return {row: newRow, col: newCol};
 }
 

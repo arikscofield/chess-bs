@@ -1,6 +1,15 @@
+import {useEffect, useState} from "react";
 
 
-function Timer({clockMs, isRunning, }: {clockMs: number | undefined, isRunning: boolean, }) {
+function Timer({baseMs, anchorMs, isRunning, }: {baseMs: number | undefined, anchorMs: number, isRunning: boolean, }) {
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        if (!isRunning) return;
+        setNow(Date.now());
+        const id = setInterval(() => setNow(Date.now()), 100);
+        return () => clearInterval(id);
+    }, [isRunning, anchorMs, baseMs]);
 
     function formatTime(timeMs: number): string {
         let result = "";
@@ -25,9 +34,10 @@ function Timer({clockMs, isRunning, }: {clockMs: number | undefined, isRunning: 
     }
 
 
-    if (typeof clockMs !== "number") {
-        return;
-    }
+    if (typeof baseMs !== "number") return null;
+
+    const elapsed = isRunning ? Math.max(0, now - anchorMs) : 0;
+    const clockMs = Math.max(0, baseMs - elapsed);
 
     return (<div className={`flex justify-center items-center w-[100px] h-[50px] my-1 px-1 pb-0.5 rounded-md
      ${clockMs <= 0 ? "bg-red-400/30" : isRunning ? "bg-lime-700/50" : "bg-bg-2"}

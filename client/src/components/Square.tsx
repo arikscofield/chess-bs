@@ -2,10 +2,6 @@ import {BoardColorType, Color, type Piece, type PieceType} from "@chess-bs/commo
 import {pieceImages} from "../assets/pieceImages.ts";
 
 
-
-
-
-
 function Square(
     { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, handleSelectPromotion, boardType = BoardColorType.Brown }:
     {

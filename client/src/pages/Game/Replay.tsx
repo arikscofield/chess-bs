@@ -12,8 +12,8 @@ import {
     turnHistoryAtom,
     viewAtom
 } from "./atoms.ts";
-import {useLiveClock} from "../../hooks/LiveClock.ts";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
+import {useClockState} from "../../hooks/LiveClock.ts";
 
 function Replay() {
     const startBoard = useAtomValue(startBoardAtom);
@@ -24,11 +24,15 @@ function Replay() {
     const [view, setView] = useAtom(viewAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
-    const clocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, false, viewMoveIndex);
+    const clockState = useClockState(turnHistory, clockInfo, viewMoveIndex);
     const { activeAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex);
 
-    const oppColor = (view === undefined || view === Color.White) ? Color.Black : Color.White;
     const playerRuleIds: Map<Color, number[]> = new Map(players.map(player => [player.color, player.ruleIds ?? []]));
+
+    const topColor: Color = view === undefined ? (Color.Black) : (view === Color.White ? Color.Black : Color.White)
+    const bottomColor: Color = topColor === Color.White ? Color.Black : Color.White;
+    const topClock = clockState.get(topColor);
+    const bottomClock = clockState.get(bottomColor);
 
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-full"}>
@@ -39,11 +43,12 @@ function Replay() {
                     <div className={"float-start text-xl"}>{players.find(p => p.color === nextTurnColor(view || Color.White))?.username ?? nextTurnColor(view || Color.White)}</div>
 
                     <div className={"overflow-auto"}>
-                        <ReplayPlayerRuleList color={oppColor} playerRuleIds={playerRuleIds.get(oppColor) ?? []} className={"pb-1"}/>
+                        <ReplayPlayerRuleList color={topColor} playerRuleIds={playerRuleIds.get(topColor) ?? []} className={"pb-1"}/>
                     </div>
 
-                    {clockInfo.usesClock && <Timer
-                        clockMs={clocks.get(nextTurnColor(view || Color.White))}
+                    {clockInfo.usesClock && topClock && <Timer
+                        baseMs={topClock.baseMs}
+                        anchorMs={topClock.anchorMs}
                         isRunning={false}
                     />}
                 </div>
@@ -62,15 +67,16 @@ function Replay() {
                 />
                 }
                 <div className={"flex flex-row shrink justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === (view || Color.White))?.username ?? (view ?? Color.White)}</div>
+                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === bottomColor)?.username ?? (bottomColor)}</div>
 
                     <div className={"overflow-auto"}>
-                        <ReplayPlayerRuleList color={view ?? Color.White} playerRuleIds={playerRuleIds.get(view ?? Color.White) ?? []} className={"pt-1"}/>
+                        <ReplayPlayerRuleList color={bottomColor} playerRuleIds={playerRuleIds.get(bottomColor) ?? []} className={"pt-1"}/>
                     </div>
 
 
-                    {clockInfo.usesClock && <Timer
-                        clockMs={clocks.get(view ?? Color.White)}
+                    {clockInfo.usesClock && bottomClock && <Timer
+                        baseMs={bottomClock.baseMs}
+                        anchorMs={bottomClock.anchorMs}
                         isRunning={false}
                     />}
                 </div>

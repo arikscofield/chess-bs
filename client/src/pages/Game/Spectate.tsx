@@ -19,10 +19,10 @@ import Timer from "../../components/Timer.tsx";
 import Board from "../../components/Board.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
 import Chatroom from "../../components/Chatroom.tsx";
-import {useLiveClock} from "../../hooks/LiveClock.ts";
 import {useGameViewer} from "../../hooks/GameViewer.ts";
 import GameActions from "../../components/GameActions.tsx";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
+import {useClockState} from "../../hooks/LiveClock.ts";
 
 
 function Spectate() {
@@ -43,7 +43,7 @@ function Spectate() {
     const [view, setView] = useAtom(viewAtom);
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
-    const liveClocks = useLiveClock(turnHistory.filter(t => t.timestamp), clockInfo, true, -1, gameStatus);
+    const clockState = useClockState(turnHistory, clockInfo, -1);
     const { activeAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex);
 
     useEffect(() => {
@@ -66,6 +66,8 @@ function Spectate() {
 
     const topColor: Color = view === undefined ? (Color.Black) : (view === Color.White ? Color.Black : Color.White)
     const bottomColor: Color = topColor === Color.White ? Color.Black : Color.White;
+    const topClock = clockState.get(topColor);
+    const bottomClock = clockState.get(bottomColor);
 
     return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-[calc(90vh-50px)]"}>
@@ -95,9 +97,10 @@ function Spectate() {
                 <div className={"flex flex-row justify-between"}>
                     <div className={"float-start text-white text-xl"}>{players.find(p => p.color === topColor)?.username ?? topColor}</div>
 
-                    {clockInfo.usesClock && <Timer
-                        clockMs={liveClocks.get(topColor)}
-                        isRunning={gameStatus !== GameStatus.DONE && ((view && view !== turnColor) || (view === undefined && turnColor === topColor))}
+                    {clockInfo.usesClock && topClock && <Timer
+                        baseMs={topClock.baseMs}
+                        anchorMs={topClock.anchorMs}
+                        isRunning={gameStatus !== GameStatus.DONE && topClock.running}
                     />}
                 </div>
                 {visibleBoard !== null && <Board
@@ -115,9 +118,10 @@ function Spectate() {
                 />}
                 <div className={"flex flex-row justify-between"}>
                     <div className={"float-start text-white text-xl"}>{players.find(p => p.color === bottomColor)?.username ?? bottomColor}</div>
-                    {clockInfo.usesClock && <Timer
-                        clockMs={liveClocks.get(bottomColor)}
-                        isRunning={gameStatus !== GameStatus.DONE && ((view === turnColor) || (view === undefined && turnColor === bottomColor))}
+                    {clockInfo.usesClock && bottomClock && <Timer
+                        baseMs={bottomClock.baseMs}
+                        anchorMs={bottomClock.anchorMs}
+                        isRunning={gameStatus !== GameStatus.DONE && bottomClock.running}
                     />}
                 </div>
 

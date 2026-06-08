@@ -30,13 +30,13 @@ export function useGameViewer(
         const eventsToApply = turnHistory.slice(0, viewMoveIndex >= 0 ? viewMoveIndex : turnHistory.length);
         const boardStack: Board[] = [];
 
-        setHighlightedMove(null);
+        let newHighlightedMove: Move | null = null;
         for (const event of eventsToApply) {
             // If it's a Move event
             if ('from' in event && 'to' in event) {
                 boardStack.push(newBoard.clone());
                 newBoard.applyMove(event);
-                setHighlightedMove(event);
+                newHighlightedMove = event;
             }
             // If it's a CallBluff event
             else if ('successful' in event) {
@@ -48,11 +48,12 @@ export function useGameViewer(
                         newBoard.enPassant = null;
                     }
                 } else {
-                    setHighlightedMove(null);
+                    newHighlightedMove = null;
                 }
             }
         }
 
+        setHighlightedMove(newHighlightedMove);
         setVisibleBoard(newBoard);
     }, [startBoard, turnHistory, viewMoveIndex]);
 
