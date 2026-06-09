@@ -6,9 +6,8 @@ import {AuthContext} from "./AuthContext.ts";
 
 
 
-// const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP;
-const SERVER_IP = window.location.hostname;
-const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT;
+const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname;
+const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000;
 
 const MAX_DELAY_MS = 30_000;
 const BASE_DELAY_MS = 500;

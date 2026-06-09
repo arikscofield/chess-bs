@@ -15,8 +15,8 @@ import {useSocket} from "../../components/context/SocketContext.ts";
 import CreateGameModal from "../../components/CreateGameModal.tsx";
 import CreateBotGameModal from "../../components/CreateBotGameModal.tsx";
 
-const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT;
-const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP;
+const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname;
+const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000;
 
 function Home() {
     const navigate = useNavigate();
