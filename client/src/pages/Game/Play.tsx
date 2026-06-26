@@ -158,7 +158,12 @@ function Play() {
             {/* Board */}
             <div className={"relative flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"flex text-start items-end text-white text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</div>
+                    <div className={"flex flex-row justify-center items-end gap-1"}>
+                        {/* Player Name*/}
+                        <p className={"text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</p>
+                        {/* Piece Eval */}
+                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(topColor, true)}</p>
+                    </div>
 
                     {clockInfo.usesClock && topClock && <Timer
                         baseMs={topClock.baseMs}
@@ -181,7 +186,13 @@ function Play() {
                     setIsDragMove={setIsDragMove}
                 />}
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"flex text-start items-start text-white text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</div>
+                    <div className={"flex flex-row justify-center items-start gap-1"}>
+                        {/* Player Name*/}
+                        <p className={"text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</p>
+                        {/* Piece Eval */}
+                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(bottomColor, true)}</p>
+                    </div>
+
                     <div className={"flex flex-row justify-center gap-5 py-3"}>
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButtonOnline

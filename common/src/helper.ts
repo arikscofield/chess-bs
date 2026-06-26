@@ -11,6 +11,16 @@ import Board from "./board";
 
 export const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
+export const PIECE_VALUES: Record<PieceType, number> = {
+    [PieceType.Pawn]:   1,
+    [PieceType.Knight]: 3,
+    [PieceType.Bishop]: 3,
+    [PieceType.Rook]:   5,
+    [PieceType.Queen]:  9,
+    [PieceType.King]:   100,
+};
+
+
 export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {
     const grid: (Piece | null)[][] = [];
     let turn = Color.White;

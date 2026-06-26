@@ -1,6 +1,6 @@
 import {Color, PieceAscii, PieceType} from "./types";
 import PieceClass from "./piece"
-import {defaultFEN, nextTurnColor, parseFen} from "./helper";
+import {defaultFEN, nextTurnColor, parseFen, PIECE_VALUES} from "./helper";
 import type {BoardDTO as BoardDTO, Move, Piece, SideEffectMove, Square} from "./schemas/common"
 
 /*
@@ -379,6 +379,71 @@ export default class Board {
         return this.attackers(kingSquare, color === Color.White ? Color.Black : Color.White).length > 0
     }
 
+
+    /**
+     * Get all of the pieces of the specified color. If no color is provided, gets all pieces on the board.
+     * @param color
+     */
+    public getPieces(color?: Color): Piece[] {
+        const pieces: Piece[] = [];
+
+        for (const row of this.grid) {
+            for (const piece of row) {
+                if (piece && (color === undefined || piece.color === color)) {
+                    pieces.push(piece);
+                }
+            }
+        }
+
+        return pieces;
+    }
+
+
+    /**
+     * Get the piece-value evaluation for the given color. For example, +3 (3) when up a bishop.
+     * @param color
+     * @param formatted
+     */
+    public getPieceEval(color: Color, formatted: boolean = false): number | string {
+        const opponentColor = nextTurnColor(color);
+        let pieceEval = 0;
+        const extraPieces: PieceType[] = [];
+
+        const pieceLists = {} as Record<Color, Record<PieceType, number>>;
+        for (const c of Object.values(Color)) {
+            pieceLists[c] = {} as Record<PieceType, number>;
+            for (const pieceType of Object.values(PieceType)) {
+                pieceLists[c][pieceType] = 0;
+            }
+        }
+
+        for (const piece of this.getPieces()) {
+            pieceLists[piece.color][piece.pieceType] += 1;
+        }
+
+        for (const pieceType of Object.values(PieceType)) {
+            const diff = pieceLists[color][pieceType] - pieceLists[opponentColor][pieceType];
+
+            pieceEval += diff * PIECE_VALUES[pieceType];
+
+            if (diff > 0) {
+                for (let i=0; i < diff; i++) {
+                    extraPieces.push(pieceType);
+                }
+            }
+        }
+
+        if (formatted) {
+            let formatted = "";
+            for (const pieceType of extraPieces) {
+                formatted += PieceAscii[color][pieceType];
+            }
+            return formatted + (pieceEval > 0 ? "+" + pieceEval : "");
+        }
+
+        return pieceEval;
+    }
+
     /*
      * Get the location/squares of all the pieces of a specific color and piece type
      */
@@ -392,7 +457,6 @@ export default class Board {
                 }
             }
         }
-
 
         return squares;
     }

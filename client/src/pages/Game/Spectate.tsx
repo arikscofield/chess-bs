@@ -93,9 +93,14 @@ function Spectate() {
             </div>
 
             {/* Board */}
-            <div className={"relative flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
+            <div className={"relative flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)] text-white"}>
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === topColor)?.username ?? topColor}</div>
+                    <div className={"flex flex-row justify-center items-end gap-1"}>
+                        {/* Player Name*/}
+                        <p className={"text-xl"}>{players.find(p => p.color === topColor)?.username ?? topColor}</p>
+                        {/* Piece Eval */}
+                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(topColor, true)}</p>
+                    </div>
 
                     {clockInfo.usesClock && topClock && <Timer
                         baseMs={topClock.baseMs}
@@ -117,7 +122,13 @@ function Spectate() {
                     hiddenSquares={hiddenSquares}
                 />}
                 <div className={"flex flex-row justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === bottomColor)?.username ?? bottomColor}</div>
+                    <div className={"flex flex-row justify-center items-start gap-1"}>
+                        {/* Player Name*/}
+                        <p className={"text-xl"}>{players.find(p => p.color === bottomColor)?.username ?? bottomColor}</p>
+                        {/* Piece Eval */}
+                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(bottomColor, true)}</p>
+                    </div>
+
                     {clockInfo.usesClock && bottomClock && <Timer
                         baseMs={bottomClock.baseMs}
                         anchorMs={bottomClock.anchorMs}

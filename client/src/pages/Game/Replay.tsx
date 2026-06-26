@@ -34,13 +34,20 @@ function Replay() {
     const topClock = clockState.get(topColor);
     const bottomClock = clockState.get(bottomColor);
 
-    return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen"}>
+    return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen text-white"}>
         <div className={"flex flex-row gap-5 justify-center items-center h-full"}>
 
             {/* Board */}
-            <div className={"flex flex-1 flex-col justify-center min-w-0 max-w-[min(calc(80vh-50px),80vw)] text-white "}>
+            <div className={"relative flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)] "}>
                 <div className={"flex flex-row shrink justify-between items-end "}>
-                    <div className={"float-start text-xl"}>{players.find(p => p.color === nextTurnColor(view || Color.White))?.username ?? nextTurnColor(view || Color.White)}</div>
+
+
+                    <div className={"flex flex-row justify-center items-end gap-1"}>
+                        {/* Player Name*/}
+                        <p className={"text-xl"}>{players.find(p => p.color === nextTurnColor(view || Color.White))?.username ?? nextTurnColor(view || Color.White)}</p>
+                        {/* Piece Eval */}
+                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(topColor, true)}</p>
+                    </div>
 
                     <div className={"overflow-auto"}>
                         <ReplayPlayerRuleList color={topColor} playerRuleIds={playerRuleIds.get(topColor) ?? []} className={"pb-1"}/>
@@ -67,7 +74,12 @@ function Replay() {
                 />
                 }
                 <div className={"flex flex-row shrink justify-between"}>
-                    <div className={"float-start text-white text-xl"}>{players.find(p => p.color === bottomColor)?.username ?? (bottomColor)}</div>
+                    <div className={"flex flex-row justify-center items-start gap-1"}>
+                        {/* Player Name*/}
+                        <p className={"text-xl"}>{players.find(p => p.color === bottomColor)?.username ?? (bottomColor)}</p>
+                        {/* Piece Eval */}
+                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(bottomColor, true)}</p>
+                    </div>
 
                     <div className={"overflow-auto"}>
                         <ReplayPlayerRuleList color={bottomColor} playerRuleIds={playerRuleIds.get(bottomColor) ?? []} className={"pt-1"}/>
@@ -84,7 +96,7 @@ function Replay() {
             </div>
 
             {/* Right Side */}
-            <div className={"w-[300px] h-full "}>
+            <div className={"w-[300px] h-full max-h-[80vh]"}>
                 <div className={"flex flex-col rounded-md h-full bg-bg-2"}>
                     <TurnHistory
                         turnHistory={turnHistory}
