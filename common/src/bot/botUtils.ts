@@ -156,6 +156,18 @@ function* iteratePieces(board: Board): Generator<{ square: Square, piece: Piece 
     }
 }
 
+/** Iterate every (row, col) pair on the board with a piece of the specified color */
+function* iteratePiecesColor(board: Board, color: Color): Generator<{ square: Square, piece: Piece }> {
+    for (let r = 0; r < 8; r++) {
+        const row = board.grid[r];
+        if (!row) continue;
+        for (let c = 0; c < 8; c++) {
+            const piece = row[c];
+            if (piece && piece.color === color) yield { square: { row: r, col: c }, piece };
+        }
+    }
+}
+
 /** All standard chess moves available to `color`. */
 export function getAllChessMoves(board: Board, color: Color): Move[] {
     const moves: Move[] = [];
@@ -262,6 +274,20 @@ export function getPlausibleBluffs(
     return bluffs;
 }
 
+
+
+export function getAllBluffsInCheck(board: Board, color: Color): Move[] {
+    const moves: Move[] = [];
+    const king: Square | null = board.findKing(color);
+    if (!king) return moves;
+    const blockingSquares: Square[] = board.findBlockingSquares(king, color);
+    for (const piece of iteratePiecesColor(board, color)) {
+        for (const blockingSquare of blockingSquares) {
+            moves.push({from: piece.square, to: blockingSquare, piece: {type: piece.piece.pieceType, color: piece.piece.color}})
+        }
+    }
+    return moves;
+}
 
 // ============================================================
 // Bluff Detection (opponent's move analysis)

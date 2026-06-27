@@ -1,6 +1,6 @@
 import {Color, PieceAscii, PieceType} from "./types";
 import PieceClass from "./piece"
-import {defaultFEN, parseFen} from "./helper";
+import {defaultFEN, nextTurnColor, parseFen} from "./helper";
 import type {BoardDTO as BoardDTO, Move, Piece, SideEffectMove, Square} from "./schemas/common"
 
 /*
@@ -66,6 +66,43 @@ export default class Board {
 
     }
 
+
+    /**
+     * Gets all of the squares "between" the given square and it's attackers.
+     * aka. squares that would "block" an attacker on the given square
+     * @param square
+     * @param color the color of the attacked piece
+     */
+    public findBlockingSquares(square: Square, color: Color): Square[] {
+        const blockingSquares: Square[] = [];
+        const attackers: Square[] = this.attackers(square, nextTurnColor(color));
+        for (const attackerSquare of attackers) {
+            const piece = this.getPiece(attackerSquare);
+            switch (piece?.pieceType) {
+                case PieceType.Rook:
+                case PieceType.Bishop:
+                case PieceType.Queen:
+                    const dcol = square.col === attackerSquare.col ? 0 : square.col > attackerSquare.col ? 1 : -1;
+                    const drow = square.row === attackerSquare.row ? 0 : square.row > attackerSquare.row ? 1 : -1;
+                    let ccol = attackerSquare.col + dcol;
+                    let crow = attackerSquare.row + drow;
+                    while (this.getPiece({row: crow, col: ccol})) {
+                        blockingSquares.push({row: crow, col: ccol});
+                        ccol += dcol;
+                        crow += drow;
+                    }
+                    break;
+                case PieceType.Knight:
+                case PieceType.King:
+                case PieceType.Pawn:
+                default:
+                    break;
+            }
+        }
+
+        return blockingSquares;
+
+    }
 
     /*
     Return the piece on the given square

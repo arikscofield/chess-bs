@@ -14,7 +14,7 @@ import {
     HardBot,
     MediumBot,
     type Move,
-    nextTurnColor, pickRandom,
+    nextTurnColor, RandomBot,
     type Turn
 } from "@chess-bs/common";
 import Rule from "@chess-bs/common/dist/rule.js";
@@ -52,7 +52,6 @@ export default class BotGame extends Game {
         this.botRules = Rule.getRandomRules(ruleCount, rulePool);
 
         this.botDifficulty = botDifficulty;
-        if (botDifficulty === BotDifficulty.Random) botDifficulty = pickRandom(Object.values(BotDifficulty)) || BotDifficulty.Medium;
         let botUsername = "";
         switch (botDifficulty) {
             case BotDifficulty.Easy:
@@ -67,6 +66,10 @@ export default class BotGame extends Game {
             case BotDifficulty.Hard:
                 this.bot = new HardBot(this.botColor, this.botRules, rulePool);
                 botUsername = "Hard Bot";
+                break;
+            case BotDifficulty.Random:
+                this.bot = new RandomBot(this.botColor, this.botRules, rulePool);
+                botUsername = "Random Bot";
                 break;
         }
         this.botPlayer = new Player(BOT_UUID, this.botColor, this.botRules, botUsername);

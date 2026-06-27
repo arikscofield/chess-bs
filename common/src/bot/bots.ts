@@ -3,7 +3,7 @@ import { Move } from "../schemas/common";
 import {Color, PieceType} from "../types";
 import Rule, {allRules} from "../rule";
 import {
-    bluffSuspicion, evaluate,
+    bluffSuspicion, evaluate, getAllBluffsInCheck,
     getAllOwnLegalMoves, getExplainingRules,
     getPlausibleBluffs,
     PIECE_VALUES,
@@ -98,8 +98,11 @@ export class RandomBot extends Bot {
             if (bluffs.length > 0) {
                 return { type: "move", move: pickRandom(bluffs) };
             }
-            // Shouldn't happen in a real game.
-            throw new Error("RandomBot: no legal moves and no bluffs available");
+
+            const impossibleBluffs: Move[] = getAllBluffsInCheck(input.board, this.color);
+            if (impossibleBluffs.length === 0)
+                throw new Error("RandomBot: no moves and no bluffs available");
+            return {type: "move", move: pickRandom(impossibleBluffs)};
         }
 
         const move = withDefaultPromotion(pickRandom(legal));
@@ -143,7 +146,11 @@ export class EasyBot extends Bot {
             // No legal moves — try a bluff or resign-equivalent.
             const bluffs = getPlausibleBluffs(input.board, this.color, this.rulePool, [], true);
             if (bluffs.length > 0) return { type: "move", move: withDefaultPromotion(pickRandom(bluffs)) };
-            throw new Error("EasyBot: no moves and no bluffs available");
+
+            const impossibleBluffs: Move[] = getAllBluffsInCheck(input.board, this.color);
+            if (impossibleBluffs.length === 0)
+                throw new Error("EasyBot: no moves and no bluffs available");
+            return {type: "move", move: pickRandom(impossibleBluffs)};
         }
 
         scored.sort((a, b) => b.score - a.score);
@@ -223,7 +230,10 @@ export class MediumBot extends Bot {
         if (bluffs.length > 0) {
             return { type: "move", move: withDefaultPromotion(pickRandom(bluffs)) };
         }
-        throw new Error("MediumBot: no moves and no bluffs available");
+        const impossibleBluffs: Move[] = getAllBluffsInCheck(board, this.color);
+        if (impossibleBluffs.length === 0)
+            throw new Error("MediumBot: no moves and no bluffs available");
+        return {type: "move", move: pickRandom(impossibleBluffs)};
     }
 }
 
@@ -310,7 +320,10 @@ export class HardBot extends Bot {
         if (bluffs.length > 0) {
             return { type: "move", move: withDefaultPromotion(pickRandom(bluffs)) };
         }
-        throw new Error("HardBot: no moves and no bluffs available");
+        const impossibleBluffs: Move[] = getAllBluffsInCheck(board, this.color);
+        if (impossibleBluffs.length === 0)
+            throw new Error("HardBot: no moves and no bluffs available");
+        return {type: "move", move: pickRandom(impossibleBluffs)};
     }
 }
 
