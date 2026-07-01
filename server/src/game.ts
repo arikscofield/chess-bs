@@ -23,6 +23,7 @@ import {colorToCreateGameColor, createGameColorToColor} from "./helper.js";
 import {sendClockStarted, sendGameOver} from "./socket/events.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const REPETITION_THRESHOLD = 3;
 
 export default class Game {
     gameId: string;
@@ -36,7 +37,7 @@ export default class Game {
     creatorColor: CreateGameColor;
 
     turnHistory: Turn[];
-    // turnColor: Color;
+    positionCounts: Map<string, number> = new Map(); // Tracks how many times a position has occurred (for three-fold repetition)
     lastMoveWasBluff: boolean;
     prevBoard: Board | null;
     ruleCount: number;
@@ -257,6 +258,8 @@ export default class Game {
                 this.endGame(GameResult.Draw, "Fifty move rule")
             }
 
+            this.recordPosition(); // Detects for repetition
+
             return true;
         }
 
@@ -342,6 +345,19 @@ export default class Game {
         return null;
     }
 
+
+    /**
+     * Stores the current board position and checks for draw by repetition
+     */
+    public recordPosition(): void {
+        const key = this.currentBoard.getPositionKey();
+        const count = (this.positionCounts.get(key) ?? 0) + 1;
+        this.positionCounts.set(key, count);
+
+        if (count >= REPETITION_THRESHOLD) {
+            this.endGame(GameResult.Draw, "Repetition");
+        }
+    }
 
     public startGameTimer(now = Date.now()) {
         this.gameStatus = GameStatus.RUNNING;

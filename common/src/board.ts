@@ -297,40 +297,16 @@ export default class Board {
                 }
 
                 // Castling
-                // King can't have been moved before, and cannot be in check
-                if (castle && !piece.hasMoved && this.attackers({row, col}, piece.color === Color.White ? Color.Black : Color.White).length === 0) {
-
-                    // Rook cannot have been moved
-                    const queenSidePiece = this.getPiece({row: row, col: 0});
-                    if (queenSidePiece && queenSidePiece.pieceType === PieceType.Rook && !queenSidePiece.hasMoved) {
-                        let canCastle = true;
-                        for (let dc=-1; dc >= -3; dc--) {
-                            // Cannot have pieces in the way, and cannot castle "through" check. aka, the squares in between can't have any attackers
-                            if (this.getPiece({row: row, col: col+dc}) || this.attackers({row: row, col: col+dc}, piece.color === Color.White ? Color.Black : Color.White).length > 0) {
-                                canCastle = false;
-                                break;
-                            }
-                        }
-                        if (canCastle) {
-                            const sideEffect: SideEffectMove = {from: {row: row, col: 0}, to: {row: row, col: 3}, piece: {type: queenSidePiece.pieceType, color: queenSidePiece.color}};
-                            moves.push({from: {row, col}, to: {row: row, col: col-2}, piece: {type: piece.pieceType, color: piece.color}, sideEffectMoves: [sideEffect]});
-                        }
+                if (castle) {
+                    // Queen-side
+                    if (this.canCastle(piece.color, PieceType.Queen, square)) {
+                        const sideEffect: SideEffectMove = {from: {row: row, col: 0}, to: {row: row, col: 3}, piece: {type: PieceType.Rook, color: piece.color}};
+                        moves.push({from: {row, col}, to: {row: row, col: col-2}, piece: {type: piece.pieceType, color: piece.color}, sideEffectMoves: [sideEffect]});
                     }
-
-                    // Same thing on king side
-                    const kingSidePiece = this.getPiece({row: row, col: 7});
-                    if (kingSidePiece && kingSidePiece.pieceType === PieceType.Rook && !kingSidePiece.hasMoved) {
-                        let canCastle = true;
-                        for (let dc=1; dc <= 2; dc++) {
-                            if (this.getPiece({row: row, col: col+dc}) || this.attackers({row: row, col: col+dc}, piece.color === Color.White ? Color.Black : Color.White).length > 0) {
-                                canCastle = false;
-                                break;
-                            }
-                        }
-                        if (canCastle) {
-                            const sideEffect: SideEffectMove = {from: {row: row, col: 7}, to: {row: row, col: 5}, piece: {type: kingSidePiece.pieceType, color: kingSidePiece.color}};
-                            moves.push({from: {row, col}, to: {row: row, col: col+2}, piece: {type: piece.pieceType, color: piece.color}, sideEffectMoves: [sideEffect]});
-                        }
+                    // King-side
+                    if (this.canCastle(piece.color, PieceType.King, square)) {
+                        const sideEffect: SideEffectMove = {from: {row: row, col: 7}, to: {row: row, col: 5}, piece: {type: PieceType.Rook, color: piece.color}};
+                        moves.push({from: {row, col}, to: {row: row, col: col+2}, piece: {type: piece.pieceType, color: piece.color}, sideEffectMoves: [sideEffect]});
                     }
                 }
 
@@ -466,6 +442,61 @@ export default class Board {
         return squares;
     }
 
+
+    /**
+     * Gets whether or not the specific color can castle on the specific side.
+     * @param color
+     * @param side
+     * @param kingSquare
+     * @param rights returns whether the king has castling "rights", aka, skips any checks for legality in terms of checks/pieces in the way
+     */
+    public canCastle(color: Color, side: PieceType.King | PieceType.Queen, kingSquare?: Square | null, rights: boolean = false): boolean {
+        if (!kingSquare) kingSquare = this.findKing(color);
+        if (!kingSquare) return false;
+        const kingPiece = this.getPiece(kingSquare);
+        if (kingPiece?.pieceType !== PieceType.King) return false;
+
+        const opponnentColor = nextTurnColor(color);
+        // King cannot have moved
+        if (kingPiece.hasMoved) return false;
+
+        // King cannot be in check
+        if (!rights && this.attackers(kingSquare, opponnentColor).length !== 0) return false;
+
+        const rookSquare = side === PieceType.King ? {row: kingSquare.row, col: 7} : {row: kingSquare.row, col: 0};
+        const rookPiece = this.getPiece(rookSquare);
+        // Rook cannot have moved
+        if (!rookPiece || rookPiece.hasMoved) return false;
+
+        if (rights)
+            return true;
+
+        const direction = side === PieceType.King ? 1 : -1;
+        for (let col= kingSquare.col+direction; col !== rookSquare.col; col += direction) {
+            const square = {row: kingSquare.row, col: col};
+            if (this.getPiece(square)) return false; // Can't have pieces in the way
+            if (this.attackers(square, opponnentColor).length !== 0) return false; // Can't castle through check
+        }
+
+        return true;
+    }
+
+
+    public getPositionKey(): string {
+        let key = "";
+        for (const row of this.grid) {
+            for (const piece of row) {
+                key += piece ? `${piece.color}${piece.pieceType}` : "-";
+            }
+        }
+        key += `|${this.turnColor}`;
+        for (const color of Object.values(Color)) {
+            key += `|${this.canCastle(color, PieceType.Queen, undefined, true) ? "1" : "0"}${this.canCastle(color, PieceType.King, undefined, true) ? "1" : "0"}`
+        }
+        if (this.enPassant) key += `|ep${this.enPassant.row},${this.enPassant.col}`;
+
+        return key;
+    }
 
     public clone(): Board {
         const newGrid: (Piece | null)[][] = this.grid.map(row => row.map(piece => {
