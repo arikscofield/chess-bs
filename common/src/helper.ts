@@ -21,17 +21,17 @@ export const PIECE_VALUES: Record<PieceType, number> = {
 };
 
 
-export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMove: number, fullMove: number} {
+export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, enPassant: Square | null, halfMoveClock: number, fullMove: number} {
     const grid: (Piece | null)[][] = [];
     let turn = Color.White;
     let enPassant: Square | null = null;
-    let halfMove = 0;
+    let halfMoveClock = 0;
     let fullMove = 0;
 
-    if (fen.length === 0) return {grid, turn, enPassant, halfMove, fullMove};
+    if (fen.length === 0) return {grid, turn, enPassant, halfMoveClock, fullMove};
 
     const [allPieces, fenTurn, castle, fenEnPassant, fenHalfMove, fenFullMove] = fen.split(" ");
-    if (!allPieces) return {grid, turn, enPassant, halfMove, fullMove};
+    if (!allPieces) return {grid, turn, enPassant, halfMoveClock, fullMove};
     const pieces: string[] = allPieces.split("/");
 
     for (const row of pieces) {
@@ -74,11 +74,11 @@ export function parseFen(fen: string): {grid: (Piece | null)[][], turn: Color, e
     if (fenEnPassant && fenEnPassant !== "-") {
         enPassant = {row: parseInt(fenEnPassant[1] || "0"), col: FileToIndex[fenEnPassant[0] || "a"] || 0};
     }
-    if (fenHalfMove) halfMove = parseInt(fenHalfMove);
+    if (fenHalfMove) halfMoveClock = parseInt(fenHalfMove);
     if (fenFullMove) fullMove = parseInt(fenFullMove);
 
 
-    return {grid, turn, enPassant, halfMove, fullMove};
+    return {grid, turn, enPassant, halfMoveClock, fullMove};
 }
 
 

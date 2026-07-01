@@ -17,31 +17,24 @@ import type {BoardDTO as BoardDTO, Move, Piece, SideEffectMove, Square} from "./
 export default class Board {
     grid: (Piece | null)[][];
     enPassant: Square | null;
+    turnColor: Color;
+    halfMoveClock: number;
+    fullMove: number;
 
 
-    constructor(grid?: (Piece | null)[][], enPassant?: Square | null) {
-        if (grid) {
-            this.grid = grid;
-        } else {
-            this.grid = [];
-        }
-
-        if (enPassant) {
-            this.enPassant = enPassant;
-        } else {
-            this.enPassant = null;
-        }
+    constructor(grid?: (Piece | null)[][], enPassant?: Square | null, turnColor?: Color, halfMoveClock?: number, fullMove?: number) {
+        this.grid = grid ?? [];
+        this.enPassant = enPassant ?? null;
+        this.turnColor = turnColor ?? Color.White;
+        this.halfMoveClock = halfMoveClock ?? 0;
+        this.fullMove = fullMove ?? 0;
     }
 
 
     public static defaultBoard() {
-        const {grid, enPassant} = parseFen(defaultFEN);
+        const {grid, enPassant, turn, halfMoveClock, fullMove} = parseFen(defaultFEN);
 
-        const newBoard = new Board();
-        newBoard.grid = grid;
-        newBoard.enPassant = enPassant;
-
-        return newBoard;
+        return new Board(grid, enPassant, turn, halfMoveClock, fullMove);
     }
 
     /*
@@ -135,13 +128,14 @@ export default class Board {
         const {from, to} = move;
         const movingPiece = boardCopy.getPiece(from);
         if (!movingPiece) return false;
+        const destPiece = boardCopy.getPiece(to);
 
-        const isCastle = movingPiece.pieceType === PieceType.King && !movingPiece.hasMoved && Math.abs(from.col - to.col) == 2;
         const isDoublePawn = movingPiece.pieceType === PieceType.Pawn && Math.abs(from.row - to.row) > 1;
         const isEnPassant = movingPiece.pieceType === PieceType.Pawn && to.row === boardCopy.enPassant?.row && to.col === boardCopy.enPassant?.col;
         const isPromotion = movingPiece.pieceType === PieceType.Pawn &&
                 ((movingPiece.color === Color.White && to.row === 0) ||
                 (movingPiece.color === Color.Black && to.row === 7));
+        const isCapture = destPiece !== undefined && destPiece !== null;
 
         if (isPromotion && move.promotion === undefined) return false; // Must promote
 
@@ -177,6 +171,12 @@ export default class Board {
 
         this.grid = boardCopy.grid;
         this.enPassant = boardCopy.enPassant;
+        if (isCapture || movingPiece.pieceType === PieceType.Pawn) {
+            this.halfMoveClock += 1;
+        }
+        if (this.turnColor === Color.Black) {
+            this.fullMove += 1;
+        }
 
         return true;
     }
@@ -470,7 +470,7 @@ export default class Board {
             return newPiece;
         }))
         const newEnPassant: Square | null = this.enPassant ? { row: this.enPassant.row, col: this.enPassant.col } : null;
-        return new Board(newGrid, newEnPassant);
+        return new Board(newGrid, newEnPassant, this.turnColor, this.halfMoveClock, this.fullMove);
     }
 
 
@@ -496,6 +496,6 @@ export default class Board {
             }
             boardString += rowString + "\n"
         }
-        return boardString;
+        return boardString + "Half-move clock: " + this.halfMoveClock + "\nFull move count: " + this.fullMove + "\n";
     }
 }

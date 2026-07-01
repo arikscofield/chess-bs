@@ -12,12 +12,13 @@ import {
     GameStatus,
     getMoveNotation,
     type Move, nextTurnColor,
-    type Turn
+    type Turn,
+    parseFen
 } from "@chess-bs/common";
 import Rule from "@chess-bs/common/src/rule.js";
 import Board from "@chess-bs/common/src/board.js";
 import Player from "./player.js";
-import {colorToCreateGameColor, createGameColorToColor, parseFen} from "./helper.js";
+import {colorToCreateGameColor, createGameColorToColor} from "./helper.js";
 import {sendClockStarted, sendGameOver} from "./socket/events.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -352,7 +353,7 @@ export default class Game {
 
 
     public setFromFEN(fen: string): void {
-        const {grid, turn, enPassant, halfMove, fullMove} = parseFen(fen);
+        const {grid, turn, enPassant, halfMoveClock, fullMove} = parseFen(fen);
 
         this.currentBoard.grid = grid;
         this.turnColor = turn;
