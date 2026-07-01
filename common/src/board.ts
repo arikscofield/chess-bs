@@ -121,7 +121,8 @@ export default class Board {
 
     /*
      * Applies a move to the board.
-     * Does not do any check for legality
+     * Does not do any check for legality.
+     * Updates internals like turnColor
      */
     public applyMove(move: Move): boolean {
         const boardCopy = this.clone();
@@ -172,11 +173,15 @@ export default class Board {
         this.grid = boardCopy.grid;
         this.enPassant = boardCopy.enPassant;
         if (isCapture || movingPiece.pieceType === PieceType.Pawn) {
-            this.halfMoveClock += 1;
+            this.halfMoveClock = 0;
+        } else {
+            this.halfMoveClock++;
         }
         if (this.turnColor === Color.Black) {
             this.fullMove += 1;
         }
+
+        this.turnColor = nextTurnColor(this.turnColor);
 
         return true;
     }

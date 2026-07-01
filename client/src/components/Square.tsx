@@ -82,7 +82,7 @@ function Square(
             }
 
             {/* Legal move on-hover-highlight */}
-            {hovered && anyMovable && !selected && <div className={`absolute w-full h-full top-0 left-0 ${isBluffing ? "bg-red-600/40" : (ruleMovable ? "bg-blue-600/40" : (movable ? "bg-green-600/40" : ""))}`}/>}
+            {hovered && anyMovable && !selected && <div className={`absolute w-full h-full top-0 left-0 ${isBluffing ? "bg-red-600/30" : (ruleMovable ? "bg-blue-600/30" : (movable ? "bg-green-600/30" : ""))}`}/>}
 
             {piece && <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} draggable={false} className={"w-full h-full z-20 pointer-events-none "} style={{ touchAction: "none" }}/>}
 

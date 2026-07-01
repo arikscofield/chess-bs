@@ -11,9 +11,10 @@ import {
     type GameStateResponse,
     GameStatus,
     getMoveNotation,
-    type Move, nextTurnColor,
-    type Turn,
-    parseFen
+    type Move,
+    nextTurnColor,
+    parseFen,
+    type Turn
 } from "@chess-bs/common";
 import Rule from "@chess-bs/common/src/rule.js";
 import Board from "@chess-bs/common/src/board.js";
@@ -35,7 +36,7 @@ export default class Game {
     creatorColor: CreateGameColor;
 
     turnHistory: Turn[];
-    turnColor: Color;
+    // turnColor: Color;
     lastMoveWasBluff: boolean;
     prevBoard: Board | null;
     ruleCount: number;
@@ -93,13 +94,15 @@ export default class Game {
         this.currentBoard = this.startBoard.clone();
         this.players = [];
         this.turnHistory = [];
-        this.turnColor = Color.White;
         this.lastMoveWasBluff = false;
         this.prevBoard = new Board();
 
         this.setFromFEN(fen || defaultFEN);
     }
 
+    get turnColor(): Color {
+        return this.currentBoard.turnColor;
+    }
 
 
     public getState(): GameStateResponse {
@@ -250,8 +253,9 @@ export default class Game {
                 }
             }
 
-            // Change turn
-            this.turnColor = this.turnColor === Color.White ? Color.Black : Color.White;
+            if (this.currentBoard.halfMoveClock >= 50) {
+                this.endGame(GameResult.Draw, "Fifty move rule")
+            }
 
             return true;
         }
@@ -296,6 +300,8 @@ export default class Game {
             this.prevBoard = null;
             this.currentBoard.enPassant = null;
             this.turnHistory.push(newTurn)
+            if (this.bluffPunishment === BluffPunishment.Turn)
+                this.currentBoard.turnColor = nextTurnColor(this.currentBoard.turnColor);
             const responsePayload: GameMoveBluffCallSucceededResponse = {
                 turn: newTurn,
                 turnColor: this.turnColor,
@@ -307,9 +313,10 @@ export default class Game {
         } else {
             // Failed call
             const newTurn: CallBluff = {successful: false, callerColor: callerColor, timestamp: receivedAt}
-            this.turnColor = this.turnColor === Color.White ? Color.Black : Color.White;
             this.currentBoard.enPassant = null;
             this.turnHistory.push(newTurn)
+            if (this.bluffPunishment === BluffPunishment.Turn)
+                this.currentBoard.turnColor = nextTurnColor(this.currentBoard.turnColor);
             const responsePayload: GameMoveBluffCallFailedResponse = {
                 turn: newTurn,
                 turnColor: this.turnColor,
@@ -355,9 +362,7 @@ export default class Game {
     public setFromFEN(fen: string): void {
         const {grid, turn, enPassant, halfMoveClock, fullMove} = parseFen(fen);
 
-        this.currentBoard.grid = grid;
-        this.turnColor = turn;
-        this.currentBoard.enPassant = enPassant;
+        this.currentBoard = new Board(grid, enPassant, turn, halfMoveClock, fullMove);
     }
 
 
