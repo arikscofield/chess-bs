@@ -8,7 +8,7 @@ import {
     type BotInput,
     Color,
     CreateGameColor,
-    EasyBot,
+    EasyBot, GameResult,
     GameStatus,
     getMoveNotation,
     HardBot,
@@ -118,8 +118,11 @@ export default class BotGame extends Game {
             moveCopy.timestamp = appliedAt;
             this.turnHistory.push(moveCopy);
 
-            // Change turn
-            this.turnColor = this.turnColor === Color.White ? Color.Black : Color.White;
+            if (this.currentBoard.halfMoveClock >= 50) {
+                this.endGame(GameResult.Draw, "Fifty move rule")
+            }
+
+            this.recordPosition(); // Detects for repetition
 
             return true;
         }
