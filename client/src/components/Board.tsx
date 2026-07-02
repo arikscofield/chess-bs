@@ -9,7 +9,7 @@ import {
     BoardColorType,
     Color,
     GameStatus, IndexToFile,
-    type Move, type Piece,
+    type Move,
     PieceType, type PlayerDTO,
     type Square as SquareType,
 } from "@chess-bs/common";
@@ -88,14 +88,28 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
     }
 
 
-    function getIsLegalMove(piece: Piece | null, dest: SquareType, isBluffing: boolean = false): boolean {
-        return isBluffing
-            ? (piece === null || piece.color !== player?.color) && !legalMoves.concat(legalRuleMoves).some((move) =>
-                move.to.row === dest.row && move.to.col === dest.col
-            )
-            : legalMoves.concat(legalRuleMoves).some((move) =>
-                move.to.row === dest.row && move.to.col === dest.col
-            );
+    function getIsLegalMove(dest: SquareType, isBluffing: boolean = false): {legal: boolean, regularMove: boolean, ruleMove: boolean, bluffMove: boolean} {
+        if (selectedSquare === null) return {legal: false, regularMove: false, ruleMove: false, bluffMove: false};
+        const movable = legalMoves.some((move) => move.to.row === dest.row && move.to.col === dest.col);
+        const ruleMovable = legalRuleMoves.some((move) => move.to.row === dest.row && move.to.col === dest.col);
+
+        if (!isBluffing)
+            return {legal: movable || ruleMovable, regularMove: movable, ruleMove: ruleMovable, bluffMove: false};
+
+        const destPiece = board?.getPiece(dest);
+        const bluffMovable = !(movable || ruleMovable) && destPiece?.color !== player?.color;
+        if (!bluffMovable) return {legal: false, regularMove: false, ruleMove: false, bluffMove: false};
+
+        // Don't allow bluffing into check (Except if capturing opponent's king)
+        const selectedPiece = board?.getPiece(selectedSquare);
+        if (selectedPiece && destPiece?.pieceType !== PieceType.King) {
+            const move: Move = {from: selectedSquare, to: dest, piece: {type: selectedPiece.pieceType, color: selectedPiece.color}}
+            const movedBoard = board?.clone();
+            if (!movedBoard) return {legal: false, regularMove: false, ruleMove: false, bluffMove: false};
+            movedBoard.applyMove(move);
+            if (movedBoard?.isInCheck(selectedPiece.color)) return {legal: false, regularMove: false, ruleMove: false, bluffMove: false};
+        }
+        return {legal: true, regularMove: false, ruleMove: false, bluffMove: true};
     }
 
     function handlePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
@@ -156,7 +170,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
             }
         }
 
-        const isLegalMove = getIsLegalMove(piece, square, isBluffing);
+        const {legal: isLegalMove} = getIsLegalMove(square, isBluffing);
 
         if (isLegalMove && selectedSquare) {
             move(selectedSquare, square);
@@ -282,7 +296,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
             return;
         }
 
-        const isLegalMove = getIsLegalMove(piece, square, isBluffing);
+        const {legal: isLegalMove} = getIsLegalMove(square, isBluffing);
 
         if (isLegalMove && selectedSquare) {
             move(selectedSquare, square)
@@ -352,28 +366,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
             >
                 {rows.map((row) => (
                     cols.map((col) => {
-                        let movable = legalMoves.some((move) => move.to.row === row && move.to.col === col);
-                        let ruleMovable = legalRuleMoves.some((move) => move.to.row === row && move.to.col === col);
-
-                        if (isBluffing && selectedSquare !== null) {
-                            movable = !(movable || ruleMovable) && board?.grid[row][col]?.color !== player?.color;
-                            ruleMovable = false;
-
-                            // Don't allow bluffing into check (Except if capturing opponent's king)
-                            if (movable) {
-                                const piece = board?.getPiece(selectedSquare);
-                                if (piece && board?.getPiece({row: row, col: col})?.pieceType !== PieceType.King) {
-                                    const move: Move = {from: selectedSquare, to: {row: row, col: col}, piece: {type: piece.pieceType, color: piece.color}}
-                                    const movedBoard = board?.clone();
-                                    if (!movedBoard) return
-                                    movedBoard.applyMove(move);
-                                    const kingSquare = movedBoard.findKing(piece.color);
-                                    if (kingSquare && movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White).length > 0) {
-                                        movable = false;
-                                    }
-                                }
-                            }
-                        }
+                        const {legal, ruleMove} = getIsLegalMove({row, col}, isBluffing);
 
                         let promotionOptionPieceType = null;
                         if (promotionMove && col === promotionMove.to.col) {
@@ -388,8 +381,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                                     hovered={hovered.row === row && hovered.col === col}
                                     selected={selectedSquare?.row === row && selectedSquare?.col === col}
                                     highlighted={(highlightedMove?.to.row === row && highlightedMove?.to.col === col) || (highlightedMove?.from.row === row && highlightedMove?.from.col === col)}
-                                    movable={movable}
-                                    ruleMovable={ruleMovable}
+                                    movable={legal}
+                                    ruleMovable={ruleMove}
                                     isBluffing={isBluffing}
                                     promotionOptionPieceType={promotionOptionPieceType}
                                     handleSelectPromotion={selectPromotionPiece}
