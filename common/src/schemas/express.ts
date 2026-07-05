@@ -1,6 +1,10 @@
 import { z } from "zod";
-import {GameDTOSchema, UserDTOSchema, ZBluffPunishmentEnum, ZBotDifficultyEnum, ZCreateGameColorEnum} from "./common";
+import {
+    GameDTOSchema, UserDTOSchema, ZBluffPunishmentEnum, ZBotDifficultyEnum, ZCreateGameColorEnum,
+    ZGameVisibilityEnum
+} from "./common";
 import {DEFAULT_RULE_COUNT, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH} from "../const";
+import {GameVisibility} from "../types";
 
 
 
@@ -30,6 +34,7 @@ export const CreateGameSchema = z.object({
     usesClock: z.boolean().default(false),
     clockStartSeconds: z.coerce.number().int().nonnegative().optional(),
     clockIncrementSeconds: z.coerce.number().int().nonnegative().optional(),
+    gameVisibility: ZGameVisibilityEnum.default(ZGameVisibilityEnum.parse(GameVisibility.Private)).optional(),
 });
 export type CreateGameRequest = z.infer<typeof CreateGameSchema>;
 
@@ -57,12 +62,24 @@ export type UserIdParamRequest = z.infer<typeof UserIdParamSchema>;
 
 // QUERIES ---------------
 export const PaginationQuerySchema = z.object({
-    page: z.coerce.number().int().positive().default(1),
+    page: z.coerce.number().int().nonnegative().default(0),
     pageSize: z.coerce.number().int().positive().default(10),
 });
 export type PaginationQueryRequest = z.infer<typeof PaginationQuerySchema>;
 
-
+export const PublicGamesQuerySchema = z.object({
+    ...PaginationQuerySchema.shape,
+    usesClock: z.boolean().optional(),
+    minStartSeconds: z.coerce.number().int().nonnegative().optional(),
+    maxStartSeconds: z.coerce.number().int().nonnegative().optional(),
+    minIncrementSeconds: z.coerce.number().int().nonnegative().optional(),
+    maxIncrementSeconds: z.coerce.number().int().nonnegative().optional(),
+    minRuleCount: z.coerce.number().int().positive().optional(),
+    maxRuleCount: z.coerce.number().int().positive().optional(),
+    bluffPunishment: ZBluffPunishmentEnum.optional(),
+    creatorColor: ZCreateGameColorEnum.optional(),
+});
+export type PublicGamesQueryRequest = z.infer<typeof PublicGamesQuerySchema>;
 
 // RESPONSES ---------------
 
@@ -98,6 +115,12 @@ export type CreateBotGameResponse = z.infer<typeof CreateBotGameResponseSchema>;
 
 export const GetGameResponseSchema = GameDTOSchema;
 export type GetGameResponse = z.infer<typeof GetGameResponseSchema>;
+
+export const GetPublicGamesResponseSchema = z.object({
+    publicGames: z.array(GameDTOSchema),
+    total: z.coerce.number().int().nonnegative(),
+});
+export type GetPublicGamesResponse = z.infer<typeof GetPublicGamesResponseSchema>;
 
 export const GetUserGamesResponseSchema = z.object({
     games: z.array(GameDTOSchema),

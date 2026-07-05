@@ -119,25 +119,21 @@ function Play() {
     const bottomClock = clockState.get(bottomColor);
 
 
-    return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-screen text-white "}>
-        <div className={"flex flex-row gap-5 justify-center items-center h-[calc(90vh-50px)]"}>
+    return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-full text-white "}>
+
+        <div className={"flex flex-row gap-3 xl:gap-5 justify-center items-start h-[calc(100vh-90px)]"}>
 
             {/* Left Side*/}
             <div className={"w-[300px] h-full"}>
-                <Group className={""}
-                    // style={{ height: 'calc(90vh-50px)' }}
-                       orientation={"vertical"}
+                <Group orientation={"vertical"}
                        defaultLayout={{
                            "rule-pool": 1,
                            "own-rules": 1
                        }}
                 >
-                    <Panel
-                        id={"rule-pool"}
-                        minSize={"250px"}
-                    >
-                        <div className={"flex flex-col rounded-md h-full bg-bg-2 "}>
-                            <h3 className={"text-xl font-bold text-center"}>Game Rules</h3>
+                    <Panel id={"rule-pool"} minSize={"100px"}>
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10"}>
+                            <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Game Rules</h3>
                             <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true} wrapChips={true}/>
                         </div>
                     </Panel>
@@ -148,21 +144,26 @@ function Play() {
 
                     <Panel
                         id={"own-rules"}
-                        minSize={"200px"}
+                        minSize={"100px"}
                     >
-                        <OwnRules ruleIds={player?.ruleIds ?? []} color={player?.color || Color.White}/>
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10"}>
+                            <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Your Rules</h3>
+                            <OwnRules ruleIds={player?.ruleIds ?? []} color={player?.color || Color.White}/>
+                        </div>
                     </Panel>
                 </Group>
             </div>
 
             {/* Board */}
-            <div className={"relative flex flex-1 flex-col max-w-[min(calc(80vh-50px),80vw)]"}>
-                <div className={"flex flex-row justify-between"}>
+            <div className={"flex flex-col items-center justify-center flex-1 max-w-[min(calc(100vh-100px),75vw)] min-w-[300px]"}>
+
+                {/* Top Player */}
+                <div className={"flex flex-row justify-between w-full mb-0.5"}>
                     <div className={"flex flex-row justify-center items-end gap-1"}>
                         {/* Player Name*/}
-                        <p className={"text-xl"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</p>
+                        <p className={"text-base font-semibold"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</p>
                         {/* Piece Eval */}
-                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(topColor, true)}</p>
+                        <p className={"text-sm text-gray-400 "}>{visibleBoard?.getPieceEval(topColor, true)}</p>
                     </div>
 
                     {clockInfo.usesClock && topClock && <Timer
@@ -171,29 +172,35 @@ function Play() {
                         isRunning={gameStatus !== GameStatus.DONE && topClock.running}
                     />}
                 </div>
-                {visibleBoard !== null && player && <Board
-                    board={visibleBoard}
-                    gameStatus={gameStatus}
-                    player={player}
-                    view={view ?? player.color}
-                    turn={turnColor}
-                    canMove={viewMoveIndex == -1}
-                    isBluffing={isBluffing}
-                    handleMove={handleMove}
-                    highlightedMove={highlightedMove}
-                    animations={activeAnimations}
-                    hiddenSquares={hiddenSquares}
-                    setIsDragMove={setIsDragMove}
-                />}
-                <div className={"flex flex-row justify-between"}>
+
+                {/* Board */}
+                <div className={"w-full max-w-[min(calc(100vh-180px),65vw)] aspect-square"}>
+                    {visibleBoard !== null && player && <Board
+                        board={visibleBoard}
+                        gameStatus={gameStatus}
+                        player={player}
+                        view={view ?? player.color}
+                        turn={turnColor}
+                        canMove={viewMoveIndex == -1}
+                        isBluffing={isBluffing}
+                        handleMove={handleMove}
+                        highlightedMove={highlightedMove}
+                        animations={activeAnimations}
+                        hiddenSquares={hiddenSquares}
+                        setIsDragMove={setIsDragMove}
+                    />}
+                </div>
+
+                {/* Bottom Player */}
+                <div className={"flex flex-row justify-between w-full mt-1"}>
                     <div className={"flex flex-row justify-center items-start gap-1"}>
                         {/* Player Name*/}
-                        <p className={"text-xl"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</p>
+                        <p className={"text-base font-semibold"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</p>
                         {/* Piece Eval */}
-                        <p className={"text-gray-400 "}>{visibleBoard?.getPieceEval(bottomColor, true)}</p>
+                        <p className={"text-sm text-gray-400 "}>{visibleBoard?.getPieceEval(bottomColor, true)}</p>
                     </div>
 
-                    <div className={"flex flex-row justify-center gap-5 py-3"}>
+                    <div className={"hidden xl:flex flex-row justify-center gap-2"}>
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButtonOnline
                             gameId={gameId}
@@ -204,6 +211,7 @@ function Play() {
                             }
                         />
                     </div>
+
                     {clockInfo.usesClock && bottomClock && <Timer
                         baseMs={bottomClock.baseMs}
                         anchorMs={bottomClock.anchorMs}
@@ -211,13 +219,23 @@ function Play() {
                     />}
                 </div>
 
+                <div className={"xl:hidden flex flex-row justify-around gap-2 w-full"}>
+                    <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
+                    <CallBluffButtonOnline
+                        gameId={gameId}
+                        disabled={
+                            turnColor !== player?.color ||
+                            turnHistory.length === 0 ||
+                            !("from" in (turnHistory.at(-1) ?? {}))
+                        }
+                    />
+                </div>
+
             </div>
 
             {/* Right Side */}
-            <div className={"hidden lg:block w-[300px] h-full"}>
-                <Group className={""}
-                    // style={{ height: 'calc(90vh-50px)' }}
-                       orientation={"vertical"}
+            <div className={" w-[300px] h-full"}>
+                <Group orientation={"vertical"}
                        defaultLayout={{
                            "turn-history": 1.3,
                            "chat": 1
@@ -227,7 +245,7 @@ function Play() {
                         id={"turn-history"}
                         minSize={"100px"}
                     >
-                        <div className={"flex flex-col rounded-md h-full bg-bg-2 p-1"}>
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
                             <div className={"flex-1 min-h-0"}>
                                 <TurnHistory
                                     turnHistory={turnHistory}
@@ -259,9 +277,12 @@ function Play() {
                         id={"chat"}
                         minSize={"100px"}
                     >
-                        <Chatroom
-                            gameId={gameId}
-                        />
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
+                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
+                            <Chatroom
+                                gameId={gameId}
+                            />
+                        </div>
                     </Panel>
                 </Group>
 

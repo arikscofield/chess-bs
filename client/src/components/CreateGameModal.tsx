@@ -5,13 +5,14 @@ import {
     Modal,
     NumberInput,
     Radio,
-    SegmentedControl, Select,
+    SegmentedControl,
+    Select,
     Slider,
     Switch,
     Text
 } from "@mantine/core";
 import {useState} from "react";
-import {allRules, BluffPunishment, CreateGameColor} from "@chess-bs/common";
+import {allRules, BluffPunishment, CreateGameColor, GameVisibility} from "@chess-bs/common";
 
 import {pieceImages} from "../assets/pieceImages.ts";
 import RuleList from "./RuleList.tsx";
@@ -34,6 +35,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
         bluffPunishment: BluffPunishment,
         ruleCount: number,
         rulePoolIds: number[],
+        gameVisibility: GameVisibility,
         usesClock: boolean,
         clockStartSeconds?: number,
         clockIncrementSeconds?: number,
@@ -42,15 +44,16 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
 }) {
     const [bluffPunishment, setBluffPunishment] = useState<BluffPunishment>(BluffPunishment.Turn);
 
-
     const [ruleCount, setRuleCount] = useState<number | string>(3);
     const [rulePoolModalOpen, setRulePoolModalOpen] = useState<boolean>(false);
     const [rulePoolIds, setRulePoolIds] = useState<number[]>(allRules.map(rule => rule.id));
 
+    const [gameVisibility, setGameVisibility] = useState<GameVisibility>(GameVisibility.Private);
+
     const [clockEnabled, setClockEnabled] = useState<boolean>(false);
     const [clockStartMinutes, setClockStartMinutes] = useState<number>(5);
     const [clockStartIndex, setClockStartIndex] = useState(CLOCK_START_VALUES.indexOf(clockStartMinutes));
-    const [clockIncrementSeconds, setClockIncrementSeconds] = useState<number>(3)
+    const [clockIncrementSeconds, setClockIncrementSeconds] = useState<number>(3);
     const [clockIncrementIndex, setClockIncrementIndex] = useState(CLOCK_INCREMENT_VALUES.indexOf(clockIncrementSeconds));
 
     const [color, setColor] = useState<CreateGameColor>(CreateGameColor.White);
@@ -87,7 +90,23 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
         styles={{ title: {fontSize: "2em"}}}
     >
 
+        <div>
+            <Switch
+                checked={gameVisibility === GameVisibility.Public}
+                onChange={(event) => {
+                    if (event.target.checked) {
+                        setGameVisibility(GameVisibility.Public);
+                    } else {
+                        setGameVisibility(GameVisibility.Private);
+                    }
+                }}
+                label={"Public Game"}
+                size={"md"}
+                color={"var(--color-fg-1"}
+            />
+        </div>
 
+        {/* Time Control*/}
         <div className={`grid grid-cols-[1fr_2fr] gap-2 items-center w-full justify-items-center`}>
             <Switch
                 checked={clockEnabled}
@@ -98,7 +117,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
                 className={""}
             />
 
-            <div className={`w-full ${!clockEnabled && 'invisible' }`}>
+            <div className={`w-full ${!clockEnabled && 'opacity-50' }`}>
                 <Text size={"md"}>Minutes per side: {clockStartMinutes}</Text>
                 <Slider value={clockStartIndex}
                     color={"var(--color-fg-1)"}
@@ -247,6 +266,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
                             bluffPunishment,
                             typeof ruleCount === "number" ? ruleCount : 3,
                             rulePoolIds,
+                            gameVisibility,
                             clockEnabled,
                             clockEnabled ? clockStartMinutes * 60 : undefined,
                             clockEnabled ? clockIncrementSeconds : undefined,

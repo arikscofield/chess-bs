@@ -1,13 +1,14 @@
-import {Button, CopyButton, Modal} from "@mantine/core";
-import {LuClipboard, LuClipboardCheck} from "react-icons/lu";
-import {BluffPunishment, CreateGameColor} from "@chess-bs/common";
+import {Button, Card, CopyButton, Divider, Text, Title} from "@mantine/core";
+import {LuClipboard, LuClipboardCheck, LuClock, LuHash, LuPalette, LuShieldAlert} from "react-icons/lu";
+import {BluffPunishment} from "@chess-bs/common";
 import RuleList from "../../components/RuleList.tsx";
-import {useState} from "react";
 import {useAtomValue} from "jotai"
 import {
     bluffPunishmentAtom,
     clockIncrementMsAtom,
-    clockStartMsAtom, creatorColorAtom, gameIdAtom,
+    clockStartMsAtom,
+    creatorColorAtom,
+    gameIdAtom, ruleCountAtom,
     rulePoolIdsAtom,
     usesClockAtom
 } from "./atoms.ts";
@@ -19,83 +20,125 @@ function Lobby() {
     const creatorColor = useAtomValue(creatorColorAtom);
     const bluffPunishment = useAtomValue(bluffPunishmentAtom);
     const rulePoolIds = useAtomValue(rulePoolIdsAtom);
+    const ruleCount = useAtomValue(ruleCountAtom);
 
     const usesClock = useAtomValue(usesClockAtom)
     const clockStartMs = useAtomValue(clockStartMsAtom);
     const clockIncrementMs = useAtomValue(clockIncrementMsAtom);
 
-    const [rulePoolModalOpen, setRulePoolModalOpen] = useState(false);
-
-    const bluffPunishmentMap = {
+    const bluffPunishmentMap: Record<BluffPunishment, string> = {
         [BluffPunishment.Turn]: "Lose Turn",
         [BluffPunishment.Piece]: "Lose Piece (You Pick)",
         [BluffPunishment.PieceOpponent]: "Lose Piece (Opponent Picks)",
         [BluffPunishment.PieceRandom ]: "Lose Piece (Random)",
     }
 
-
     return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] w-screen text-white"}>
-        <div className={"flex flex-col min-w-[400px] max-w-[800px] min-h-[500px] h-[400px] rounded-xl bg-bg-2 "}>
-            {/*<p className={"text-2xl p-3 text-center"}>Game Lobby</p>*/}
-
-                <div className={"flex flex-row flex-1 justify-around items-center m-5 gap-3 bg-bg-2 rounded-xl"}>
-                    {/* Left */}
-                    <div className={"flex flex-col items-center justify-center gap-5 p-3 w-full h-full text-lg bg-bg-1 rounded-xl"}>
-                        {usesClock && clockStartMs !== undefined && clockIncrementMs != undefined && <div className={""}>
-                            <span className={"font-bold"}>Time: </span>
-                            {clockStartMs / 1000 / 60}+{clockIncrementMs / 1000}
-                        </div>}
-                        <div>
-                            <span className={"font-bold"}>Bluff Punishment: </span>
-                            {bluffPunishmentMap[bluffPunishment ?? BluffPunishment.Turn]}
-                        </div>
-                        <div>
-                            <span className={"font-bold"}>Color: </span>
-                            {creatorColor ?? CreateGameColor.White}
-                        </div>
-                        <Button
-                            color={"var(--color-fg-1)"}
-                            onClick={() => setRulePoolModalOpen(true)}
-                        >Game Rule Pool</Button>
-                    </div>
-
-                    {/* Right */}
-                    <div className={"flex flex-col items-center justify-center gap-5 w-full h-full px-2 py-1 bg-bg-1 rounded-xl"}>
-                        <p className={"text-lg"}>Game Code: <span className={"font-bold text-fg-1"}>{gameId}</span></p>
-                        <p>To invite someone, have them enter the game code, or visit the following link:</p>
-                        <div className={"flex flex-row border-2 border-bg-2 rounded-md "}>
-                            <p className={"text-lg m-2"}>{window.location.href}</p>
-                            <CopyButton value={window.location.href}>
-                                {({ copied, copy }) => (
-                                    <Button
-                                        color={copied ? "green" : "var(--color-fg-1)"}
-                                        onClick={() => {
-                                            copy();
-                                        }}
-                                        classNames={{root: "transition-colors duration-300"}}
-                                        styles={{root: { height: "100%" }}}
-                                    >
-                                        {copied
-                                            ? <LuClipboardCheck size={25}/>
-                                            : <LuClipboard size={25}/>}
-                                    </Button>
-                                )}
-                            </CopyButton>
-                        </div>
-                    </div>
-
-
-                    <Modal
-                        opened={rulePoolModalOpen}
-                        onClose={() => setRulePoolModalOpen(false)}
-                        title={"Possible Game Rules"}
-                        classNames={{title: "text-white text-xl!", content: "bg-bg-1! ", header: "bg-bg-1!", close: "text-white! hover:bg-bg-2! hover:text-gray-400! "}}
-                    >
-                        <div className={"flex flex-col flex-1 bg-bg-1 rounded-xl h-full overflow-auto"}>
-                            <RuleList enabledRuleIds={rulePoolIds} wrapChips={true} />
-                        </div>
-                    </Modal>
+        <div className={"w-full max-w-2xl"}>
+            {/* Header */}
+            <div className={"text-center mb-4"}>
+                <Title order={2}>Game Lobby</Title>
+                <Text size={"sm"} c={"gray"}>Share the game code or link with your opponent</Text>
             </div>
+
+            {/* Game Code/Link */}
+            <Card className={"bg-bg-2! mb-3"}>
+                <div className={"flex flex-col items-center gap-3 text-white"}>
+                    <div className={"flex flex-row justify-center items-center gap-5"}>
+                        <Text>
+                            Game Code:{" "}
+                            <Text span inherit c={"var(--color-fg-1)"} fw={700}>{gameId}</Text>
+                        </Text>
+                        <CopyButton value={window.location.href}>
+                            {({ copied, copy }) => (
+                                <Button
+                                    color={copied ? "green" : "var(--color-fg-1)"}
+                                    onClick={() => {
+                                        copy();
+                                    }}
+                                    classNames={{root: "transition-colors duration-300"}}
+                                >
+                                    {copied
+                                        ? <><LuClipboardCheck size={25} className={"mr-1"}/>Copy Link</>
+                                        : <><LuClipboard size={25} className={"mr-1"}/>Copy Link</>}
+                                </Button>
+                            )}
+                        </CopyButton>
+                    </div>
+
+                    <Text size="sm" className="text-gray-500 text-center">
+                        or visit: <span className="font-mono text-gray-400">{window.location.href}</span>
+                    </Text>
+                </div>
+            </Card>
+
+            {/* Game Settings/Info */}
+            <Card className={"bg-bg-2! mb-3"}>
+                <Title order={3} className={"text-white text-center"} mb={8}>Game Settings</Title>
+
+                <div className={"flex flex-col items-center gap-3 text-white"}>
+
+                    {/* Time Control */}
+                    {usesClock && clockStartMs !== undefined && clockIncrementMs !== undefined && (
+                        <div className={"flex flex-row items-center justify-between w-full"}>
+                            <div className={"flex flex-row justify-center items-center gap-2"}>
+                                <LuClock color={"var(--color-fg-1)"}/>
+                                <Text>Time Control</Text>
+                            </div>
+                            <Text>
+                                {clockStartMs / 1000 / 60}min + {clockIncrementMs / 1000}sec
+                            </Text>
+                        </div>
+                    )}
+
+                    <Divider color={"var(--color-fg-1)"} my={1} className={"w-full opacity-50"}/>
+
+                    {/* Bluff Punishment */}
+                    <div className={"flex flex-row items-center justify-between w-full"}>
+                        <div className={"flex flex-row justify-center items-center gap-2"}>
+                            <LuShieldAlert color={"var(--color-fg-1)"}/>
+                            <Text>Bluff Punishment</Text>
+                        </div>
+                        <Text>
+                            {bluffPunishmentMap[bluffPunishment ?? BluffPunishment.Turn]}
+                        </Text>
+                    </div>
+
+                    <Divider color={"var(--color-fg-1)"} my={1} className={"w-full opacity-50"}/>
+
+                    {/* Creator Color */}
+                    <div className={"flex flex-row items-center justify-between w-full"}>
+                        <div className={"flex flex-row justify-center items-center gap-2"}>
+                            <LuPalette color={"var(--color-fg-1)"}/>
+                            <Text>Creator Color</Text>
+                        </div>
+                        <Text>
+                            {creatorColor}
+                        </Text>
+                    </div>
+
+                    <Divider color={"var(--color-fg-1)"} my={1} className={"w-full opacity-50"}/>
+
+                    {/* Rule Count */}
+                    <div className={"flex flex-row items-center justify-between w-full"}>
+                        <div className={"flex flex-row justify-center items-center gap-2"}>
+                            <LuHash color={"var(--color-fg-1)"}/>
+                            <Text>Rule Count</Text>
+                        </div>
+                        <Text>
+                            {ruleCount}
+                        </Text>
+                    </div>
+
+                </div>
+            </Card>
+
+            {/* Rule Pool/Count */}
+            <Card className={"bg-bg-2!"}>
+                <Title order={3} className={"text-white text-center"} mb={8}>Rule Pool</Title>
+
+                <RuleList enabledRuleIds={rulePoolIds} size={"xs"}/>
+            </Card>
 
         </div>
     </div>)

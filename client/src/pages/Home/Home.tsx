@@ -9,7 +9,7 @@ import {
     type CreateBotGameRequest,
     CreateGameColor,
     type CreateGameRequest,
-    type CreateGameResponse
+    type CreateGameResponse, GameVisibility
 } from "@chess-bs/common";
 import {useSocket} from "../../components/context/SocketContext.ts";
 import CreateGameModal from "../../components/CreateGameModal.tsx";
@@ -48,6 +48,7 @@ function Home() {
         bluffPunishment: BluffPunishment,
         ruleCount: number,
         rulePoolIds: number[],
+        gameVisibility: GameVisibility,
         usesClock: boolean,
         clockStartSeconds?: number,
         clockIncrementSeconds?: number,
@@ -66,6 +67,7 @@ function Home() {
             bluffPunishment: bluffPunishment,
             ruleCount: ruleCount,
             rulePoolIds: rulePoolIds,
+            gameVisibility: gameVisibility,
             usesClock: usesClock,
         }
         if (usesClock) {

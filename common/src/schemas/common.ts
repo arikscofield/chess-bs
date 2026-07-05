@@ -1,5 +1,5 @@
 import { z } from "zod";
-import {Color, PieceType, CreateGameColor, BluffPunishment, GameStatus, GameResult} from "../types";
+import {Color, PieceType, CreateGameColor, BluffPunishment, GameStatus, GameResult, GameVisibility} from "../types";
 import {BotDifficulty} from "../bot/bots";
 
 
@@ -10,6 +10,7 @@ export const ZBluffPunishmentEnum = z.enum(BluffPunishment);
 export const ZGameStatusEnum = z.enum(GameStatus);
 export const ZGameResultEnum = z.enum(GameResult);
 export const ZBotDifficultyEnum = z.enum(BotDifficulty);
+export const ZGameVisibilityEnum = z.enum(GameVisibility);
 
 
 export const SquareSchema = z.object({
@@ -107,6 +108,7 @@ export const GameDTOSchema = z.object({
     gameId: z.string(),
     gameStatus: ZGameStatusEnum,
     startBoard: BoardDTOSchema,
+    ruleCount: z.coerce.number().int().positive(),
     rulePoolIds: z.array(z.number().int()),
     turnHistory: z.array(TurnSchema),
     bluffPunishment: ZBluffPunishmentEnum,

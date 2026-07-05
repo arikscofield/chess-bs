@@ -56,6 +56,7 @@ export const setGameStateAtom = atom(null, (_, set, state: GameStateResponse) =>
 // Game Info/State (Typically Static)
 export const gameIdAtom = atom<string>("");
 export const startBoardAtom = atom<BoardClass>(BoardClass.defaultBoard());
+export const ruleCountAtom = atom<number>(0);
 export const rulePoolIdsAtom = atom<number[]>([]);
 export const rulePoolAtom = atom(get => get(rulePoolIdsAtom).map(id => Rule.getRuleFromId(id)).filter(rule => rule !== undefined));
 export const playerAtom = atom<PlayerDTO>();

@@ -13,7 +13,8 @@ import {
     LoginSchema, LogoutResponseSchema, PaginationQuerySchema, RegisterResponseSchema,
     RegisterSchema, UserIdParamSchema,
     DEFAULT_GUEST_SESSION_EXPIRATION, DEFAULT_USER_SESSION_EXPIRATION,
-    UserType, CreateBotGameSchema, type CreateBotGameRequest, CreateBotGameResponseSchema
+    UserType, CreateBotGameSchema, type CreateBotGameRequest, CreateBotGameResponseSchema,
+    GetPublicGamesResponseSchema, PublicGamesQuerySchema
 } from "@chess-bs/common";
 import {
     addUser,
@@ -36,7 +37,7 @@ const clientPort = parseInt(process.env.CLIENT_PORT || "5173");
 const app = express();
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://192.168.1.201:5173'],
+    origin: [`http://localhost:${clientPort}`, `http://localhost:${clientPort+1}`, `http://192.168.1.201:${clientPort}`],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
@@ -280,17 +281,29 @@ app.post('/api/auth/login', validate({ body: LoginSchema }), async (req, res) =>
 app.post('/api/games', validate({ body: CreateGameSchema }), requireAuth, async (req, res) => {
 
     const user = req.user!;
-    const { color, bluffPunishment, ruleCount, rulePoolIds, usesClock, clockStartSeconds, clockIncrementSeconds } = req.body as CreateGameRequest;
+    const { color, bluffPunishment, ruleCount, rulePoolIds, gameVisibility, usesClock, clockStartSeconds, clockIncrementSeconds } = req.body as CreateGameRequest;
     const rulePool = rulePoolIds.map(ruleId => Rule.getRuleFromId(ruleId)).filter(rule => rule !== undefined);
 
 
     let gameId = generateGameId(6);
     while (await gameIdExists(gameId))
         gameId = generateGameId(6);
-    const game = new Game(gameId, ruleCount, rulePool, bluffPunishment, user.id, color, usesClock, clockStartSeconds !== undefined ? clockStartSeconds * 1000 : undefined, clockIncrementSeconds !== undefined ? clockIncrementSeconds * 1000 : undefined);
+    const game = new Game(
+        gameId,
+        ruleCount,
+        rulePool,
+        bluffPunishment,
+        user.id,
+        color,
+        usesClock,
+        clockStartSeconds !== undefined ? clockStartSeconds * 1000 : undefined,
+        clockIncrementSeconds !== undefined ? clockIncrementSeconds * 1000 : undefined,
+        undefined,
+        gameVisibility,
+    );
 
     gameRepository.save(game);
-    console.log(`Creating game ${gameId} for player ${user.id} with options: Color: ${color}, timeStart: ${clockStartSeconds} * 1000, timeIncrement: ${clockIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, ruleCount: ${ruleCount}, rulePool: ${rulePoolIds}`);
+    console.log(`Creating game ${gameId} for player ${user.id} with options: Color: ${color}, timeStart: ${clockStartSeconds} * 1000, timeIncrement: ${clockIncrementSeconds} * 1000, bluffPunishment: ${bluffPunishment}, gameVisibility: ${gameVisibility}, ruleCount: ${ruleCount}, rulePool: ${rulePoolIds}`);
 
     const response = CreateGameResponseSchema.safeParse({ gameId });
     if (!response.success) {
@@ -352,6 +365,24 @@ app.get('/api/games/:gameId', validate({ params: GameIdParamSchema }), async (re
 
 })
 
+
+// Get public games
+app.get('/api/publicgames', validate({ query: PublicGamesQuerySchema }), async (req, res) => {
+    // const { usesClock, minStartSeconds, maxStartSeconds, minIncrementSeconds, maxIncrementSeconds, minRuleCount, maxRuleCount, bluffPunishment, creatorColor } = PublicGamesParamSchema.parse(req.params);
+    const publicGamesQuery = PublicGamesQuerySchema.parse(req.query);
+
+    const {games: publicGames, total} = gameRepository.getPublicGames(publicGamesQuery);
+
+    const response = GetPublicGamesResponseSchema.safeParse({
+        publicGames: publicGames,
+        total: total,
+    });
+    if (!response.success) {
+        console.error("GET /publicgames : Error crafting response: ", z.prettifyError(response.error));
+        return res.status(500).json({error: "Internal server error"});
+    }
+    return res.status(200).json(response.data);
+});
 // USERS --------------------
 
 // Get the games a user has played

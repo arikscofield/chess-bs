@@ -17,7 +17,6 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
 
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
-
             switch (e.key) {
                 case "ArrowRight":
                     if (document.activeElement == document.getElementById("chat-input"))
@@ -37,23 +36,23 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
                     break;
             }
         }
-        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener("keydown", handleKeyDown);
 
         return () => {
-            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener("keydown", handleKeyDown);
         };
     })
 
     const parsedTurnHistory: ([Turn | null, number])[] = [];
     for (const [i, turn] of turnHistory.entries()) {
         parsedTurnHistory.push([turn, i]);
-        if ('successful' in turn && turn.successful) {
+        if ("successful" in turn && turn.successful) {
             parsedTurnHistory.push([null, i]);
         }
     }
 
-    const turnRows = []
-    let i = 0
+    const turnRows = [];
+    let i = 0;
     while (i < parsedTurnHistory.length) {
         const row = []
         for (let j=0; j<2; j++) {
@@ -73,10 +72,9 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
             row.push(<div
                 key={i+j}
                 onClick={() => {
-                    console.log("Setting view move index to ", turnViewIndex+1)
                     setViewMoveIndex(turnViewIndex+1)
                 }}
-                className={`px-1 py-0.5 flex-1 rounded-md transition-colors hover:cursor-pointer ${viewMoveIndex == turnViewIndex+1 || (viewMoveIndex === -1 && turnViewIndex === turnHistory.length-1) ? "bg-fg-1/50" : "hover:bg-fg-1/30"}`}
+                className={`px-1 py-0.5 flex-1 rounded-md transition-colors hover:cursor-pointer ${viewMoveIndex == turnViewIndex+1 || (viewMoveIndex === -1 && turnViewIndex === turnHistory.length-1) ? "bg-fg-1/50 text-white" : "hover:bg-white/10 text-gray-300"}`}
             >
                 {content}
             </div>)
@@ -89,7 +87,7 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
         if (viewMoveIndex == -1)
             setViewMoveIndex(turnHistory.length - 1);
         else
-            setViewMoveIndex((prev) => Math.max(0, prev-1))
+            setViewMoveIndex((prev) => Math.max(0, prev-1));
     }
 
     function handleFastBackward() {
@@ -98,9 +96,9 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
 
     function handleStepForward() {
         if (viewMoveIndex == -1) return;
-        let newViewMoveIndex = viewMoveIndex+1
-        if (newViewMoveIndex >= turnHistory.length) newViewMoveIndex = -1
-        setViewMoveIndex(newViewMoveIndex)
+        let newViewMoveIndex = viewMoveIndex+1;
+        if (newViewMoveIndex >= turnHistory.length) newViewMoveIndex = -1;
+        setViewMoveIndex(newViewMoveIndex);
     }
 
     function handleFastForward() {
@@ -112,7 +110,7 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
             <ol className={"flex flex-col justify-start overflow-y-auto pb-1"}>
                 {turnRows.map((row, i) => (
                     <div key={i} className={"flex flex-row justify-between"}>
-                        <div className={"px-1 py-0.5 text-gray-400"}>{i}</div>
+                        <div className={"px-1 py-0.5 text-gray-400/80"}>{i+1}</div>
                         {row[0]}
                         {row[1]}
                     </div>
@@ -121,10 +119,10 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
 
 
             {/* Buttons */}
-            <div className={"flex flex-col justify-between "}>
+            <div className={"flex flex-col justify-between border-t border-white/20"}>
 
                 {/* Misc Buttons */}
-                <div className={"flex flex-row justify-end "}>
+                <div className={"flex flex-row justify-end pt-1"}>
                     {setView && <FlipBoardButton setView={setView} playerColor={playerColor}/>}
                 </div>
 

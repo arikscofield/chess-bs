@@ -43,7 +43,7 @@ import {
     clockIncrementMsAtom, clockInfoAtom,
     clockStartMsAtom, clockStartTimestampAtom, drawOfferedColorAtom,
     gameCreatedTimestampAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
-    gameStatusAtom, playerAtom, playersAtom,
+    gameStatusAtom, playerAtom, playersAtom, ruleCountAtom,
     rulePoolIdsAtom, setGameStateAtom,
     startBoardAtom, turnColorAtom, turnHistoryAtom,
     usesClockAtom,
@@ -65,6 +65,7 @@ function Game() {
     const setGameId = useSetAtom(gameIdAtom);
     const setGameStatus = useSetAtom(gameStatusAtom);
     const setStartBoard = useSetAtom(startBoardAtom);
+    const setRuleCount = useSetAtom(ruleCountAtom);
     const setRulePoolIds = useSetAtom(rulePoolIdsAtom);
     const setBluffPunishment = useSetAtom(bluffPunishmentAtom);
     const setGameCreatedTimestamp = useSetAtom(gameCreatedTimestampAtom);
@@ -119,6 +120,7 @@ function Game() {
                 setGameId(gameData.gameId);
                 setGameStatus(gameData.gameStatus);
                 setStartBoard(new BoardClass(gameData.startBoard.grid, gameData.startBoard.enPassant));
+                setRuleCount(gameData.ruleCount);
                 setRulePoolIds(gameData.rulePoolIds);
                 setTurnHistory(gameData.turnHistory);
                 setBluffPunishment(gameData.bluffPunishment);
@@ -377,33 +379,9 @@ function Game() {
         }) as GenericCallback);
     }
 
-    // function startTimers() {
-    //     if (timerInterval.current) return;
-    //     timerUpdateTimestamp.current = Date.now();
-    //     timerInterval.current = setInterval(() => {
-    //         setTimers(prevTimers => {
-    //             const newTimers = new Map(prevTimers);
-    //             const now = Date.now();
-    //             const elapsed = now - timerUpdateTimestamp.current;
-    //             const current = newTimers.get(turnColor.current);
-    //             if (current === undefined) return newTimers;
-    //             newTimers.set(turnColor.current, Math.max(0, current - elapsed));
-    //             timerUpdateTimestamp.current = now;
-    //             return newTimers;
-    //         })
-    //     }, 100)
-    // }
-
-    // function endTimers() {
-    //     if (timerInterval.current)
-    //         clearInterval(timerInterval.current);
-    //     timerInterval.current = null;
-    // }
-
-
     switch (page) {
         case "join":
-            return (<Join handleJoinGame={handleJoinGame} />)
+            return <Join handleJoinGame={handleJoinGame} />
         case "lobby":
             return (<Lobby/>)
         case "play":

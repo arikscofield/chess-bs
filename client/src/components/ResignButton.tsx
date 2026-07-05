@@ -33,7 +33,7 @@ function ResignButton({gameId}: {gameId: string}) {
             }) as GenericCallback)
         } else {
             setConfirming(true);
-            resetConfirmingTimeout.current = setTimeout(() => {
+            resetConfirmingTimeout.current = window.setTimeout(() => {
                 setConfirming(false);
             }, 5000)
         }
@@ -46,11 +46,12 @@ function ResignButton({gameId}: {gameId: string}) {
     }
 
     return (
-        <div className={"flex justify-center relative"}>
+        <div className={"flex justify-center relative"}  title={"Resign"}>
             <Button
                 color={confirming ? "orange" : "red"}
                 onClick={handleClick}
                 mr={0}
+                w={80}
                 className={`transition-colors `}
             >
                 <FaRegFlag />

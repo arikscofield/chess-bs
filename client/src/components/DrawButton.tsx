@@ -66,7 +66,7 @@ function DrawButton(
             setConfirming(false)
         } else if (!sentOffer) {
             setConfirming(true);
-            resetConfirmingTimeout.current = setTimeout(() => {
+            resetConfirmingTimeout.current = window.setTimeout(() => {
                 setConfirming(false);
             }, 5000)
         }
@@ -99,16 +99,16 @@ function DrawButton(
 
 
     return (
-        <div className={"flex justify-center relative"}>
+        <div className={"flex justify-center relative"} title={"Offer Draw"}>
             <Button
                 color={confirming ? "teal" : "var(--color-fg-1)"}
                 onClick={handleClick}
                 mr={0}
                 loading={waitingForResponse}
                 disabled={sentOffer && !waitingForResponse}
+                w={80}
                 className={`transition-colors `}
             >
-                {/*<FaRegFlag />*/}
                 Draw
             </Button>
             {(confirming || waitingForResponse) && <button

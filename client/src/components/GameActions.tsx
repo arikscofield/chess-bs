@@ -70,8 +70,8 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
 
     // Game over UI
     if (gameStatus === GameStatus.DONE) {
-        const resultText = isSpectating ?
-            RESULT_TEXT[1][gameResult ?? GameResult.White]
+        const resultText = isSpectating
+            ? RESULT_TEXT[1][gameResult ?? GameResult.White]
             : RESULT_TEXT[0][color ?? Color.White][gameResult ?? GameResult.White]
 
         return (<div className={"flex flex-col gap-3 w-full"}>

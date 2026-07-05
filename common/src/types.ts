@@ -131,6 +131,11 @@ export enum BluffPunishment {
     PieceRandom = "pieceRandom",
 }
 
+export enum GameVisibility {
+    Private = "private",
+    Public = "public",
+}
+
 
 export type GenericCallback = (ok: boolean, message?: string, data?: any) => void;
 

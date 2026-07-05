@@ -7,13 +7,14 @@ function NavBar() {
     const [settingsOpened, { open: settingsOpen, close: settingsClose }] = useDisclosure(false);
 
     return (
-        <div className={"w-full h-full bg-bg-1 text-white"}>
-            <Group h={"100%"} px={"md"} className={"float-start"}>
+        <div className={"w-full h-full bg-bg-1/95 backdrop-blur-md text-white"}>
+            <Group h={"100%"} px={"md"}>
                 <Title order={2} ><a href={"/"}>Bluff Chess</a></Title>
-            </Group>
-            <Group h={"100%"} px={"md"} className={"float-end"}>
+
+                <div className={"flex-1"}/>
+
                 <UnstyledButton onClick={settingsOpen}>
-                    <FiSettings size={30}/>
+                    <FiSettings size={30} className={"text-white hover:text-gray-300 transition-colors"}/>
                 </UnstyledButton>
 
                 <Drawer

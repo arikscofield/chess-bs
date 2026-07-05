@@ -8,7 +8,7 @@ import {useAuth} from "./context/AuthContext.ts";
 
 
 const PLAYER_COLOR = "text-blue-500";
-const OPPONENT_COLOR = "text-red-500";
+const OPPONENT_COLOR = "text-red-400/80";
 const ERROR_COLOR = "text-red-300/80";
 const SYSTEM_COLOR = "text-gray-400";
 
@@ -19,7 +19,7 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
         message: string;
         messageColor?: string;
         centered?: boolean;
-    }
+    };
 
     const [inputMessage, setInputMessage] = useInputState("");
     const [messages, setMessages] = useState<Message[]>([]);
@@ -40,7 +40,7 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
                 usernameColor: OPPONENT_COLOR,
                 message: payload.message,
             };
-            setMessages(prevMessages => [...prevMessages, message])
+            setMessages(prevMessages => [...prevMessages, message]);
         }
 
         function onSystem(payload: GameChatSystemResponse) {
@@ -50,15 +50,15 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
                 messageColor: SYSTEM_COLOR,
                 centered: true,
             };
-            setMessages(prevMessages => [...prevMessages, message])
+            setMessages(prevMessages => [...prevMessages, message]);
         }
 
-        socket.on('game:chat:message', onMessage);
-        socket.on('game:chat:system', onSystem)
+        socket.on("game:chat:message", onMessage);
+        socket.on("game:chat:system", onSystem);
 
         return () => {
-            socket.off('game:chat:message', onMessage);
-            socket.off('game:chat:system', onSystem)
+            socket.off("game:chat:message", onMessage);
+            socket.off("game:chat:system", onSystem);
         }
     }, [socket])
 
@@ -93,16 +93,20 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
     }
 
 
-    return (<div className={"w-full h-full flex flex-col rounded-md p-2 gap-2 bg-bg-2 text-white"}>
-        <h2 className={"w-full text-center text-xl font-bold"}>Chat</h2>
-
+    return (<div className={"w-full h-full flex flex-col rounded-lg p-2 gap-2 bg-bg-2 text-white"}>
         <div ref={scrollRef} className={"flex flex-col grow overflow-auto min-h-0 "}>
             {messages.map((message, index) => (
                 <div key={index} className={`wrap-anywhere ${message.centered && "text-center"}`}>
-                    {message.username && <p className={`inline font-bold ${message.usernameColor ?? ''}`}>{message.username}: </p>}
-                    <p className={`inline ${message.messageColor ?? ""}`}>{message.message}</p>
+                    {message.username && <p className={`inline font-semibold ${message.usernameColor ?? ""}`}>{message.username}: </p>}
+                    <p className={`inline ${message.messageColor ?? "text-gray-200"}`}>{message.message}</p>
                 </div>
             ))}
+
+            {messages.length === 0 && (
+                <div className="flex items-center justify-center h-full text-gray-600 text-sm">
+                    No messages yet
+                </div>
+            )}
         </div>
 
         {canSend && <div className={"flex flex-row gap-2"}>
@@ -124,6 +128,7 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
             />
             <Button
                 onClick={handleSendMessage}
+                disabled={!inputMessage.trim()}
                 className={""}
                 color={"var(--color-fg-1)"}
             >

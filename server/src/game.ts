@@ -10,6 +10,7 @@ import {
     GameResult,
     type GameStateResponse,
     GameStatus,
+    GameVisibility,
     getMoveNotation,
     type Move,
     nextTurnColor,
@@ -35,6 +36,7 @@ export default class Game {
     spectators: Set<string> = new Set<string>()
     creatorId: string;
     creatorColor: CreateGameColor;
+    gameVisibility: GameVisibility;
 
     turnHistory: Turn[];
     positionCounts: Map<string, number> = new Map(); // Tracks how many times a position has occurred (for three-fold repetition)
@@ -68,6 +70,7 @@ export default class Game {
         clockStartMs?: number,
         clockIncrementMs?: number,
         fen?: string,
+        gameVisibility?: GameVisibility,
         ) {
         this.gameId = gameId;
         this.ruleCount = ruleCount;
@@ -75,6 +78,7 @@ export default class Game {
         this.bluffPunishment = bluffPunishment;
         this.creatorId = creatorId;
         this.creatorColor = creatorColor;
+        this.gameVisibility = gameVisibility ?? GameVisibility.Private;
 
         this.hasMoved = new Map();
 
@@ -388,6 +392,7 @@ export default class Game {
             gameId: this.gameId,
             bluffPunishment: this.bluffPunishment,
             gameStatus: this.gameStatus,
+            ruleCount: this.ruleCount,
             rulePoolIds: this.rulePool.map((rule) => rule.id),
             turnHistory: this.turnHistory,
             startBoard: this.startBoard.getBoardDTO(),

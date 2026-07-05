@@ -8,18 +8,17 @@ function MainLayout() {
         padding={"md"}
         header={{ height: 50 }}
         classNames={{
-            main: "flex justify-center"
+            main: "flex flex-col"
         }}
     >
         <AppShell.Header>
-
             <NavBar/>
-
         </AppShell.Header>
 
-        <AppShell.Main>
-
-            <Outlet/>
+        <AppShell.Main className={"flex-1"}>
+            <div className={"flex-1 w-full max-w-[1920px] mx-auto"}>
+                <Outlet/>
+            </div>
         </AppShell.Main>
     </AppShell>)
 }
