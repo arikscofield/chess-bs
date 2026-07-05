@@ -35,10 +35,19 @@ import {
 } from "./atoms.ts";
 import {useGameViewer} from "../../hooks/GameViewer.ts";
 import {useSocket} from "../../components/context/SocketContext.ts";
-import {useEffect, useState} from "react";
+import {type CSSProperties, useEffect, useState} from "react";
 import GameActions from "../../components/GameActions.tsx";
 import {useClockState} from "../../hooks/LiveClock.ts";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
+
+// Usable height inside AppShell.Main, derived from Mantine's own CSS vars
+// (header height + top/bottom padding). Stays correct if you change either.
+// dvh keeps the bottom row from being cut off by the mobile browser toolbar.
+const PLAY_AREA_STYLE = {
+    "--play-h": "calc(100dvh - var(--app-shell-header-offset) - var(--app-shell-padding) * 2)",
+} as CSSProperties;
+
+type MobileTab = "rules" | "history" | "chat";
 
 function Play() {
     const socket = useSocket();
@@ -69,6 +78,7 @@ function Play() {
     const { activeAnimations, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex, isDragMove);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
+    const [mobileTab, setMobileTab] = useState<MobileTab>("history");
 
 
     useEffect(() => {
@@ -118,13 +128,24 @@ function Play() {
     const topClock = clockState.get(topColor);
     const bottomClock = clockState.get(bottomColor);
 
+    const bluffCallDisabled =
+        turnColor !== player?.color ||
+        turnHistory.length === 0 ||
+        !("from" in (turnHistory.at(-1) ?? {}));
 
-    return (<div className={"flex flex-col min-h-[calc(100vh-82px)] w-full text-white "}>
+    const mobileTabs: { id: MobileTab; label: string }[] = [
+        { id: "rules", label: "Rules" },
+        { id: "history", label: "History" },
+        { id: "chat", label: "Chat" },
+    ];
 
-        <div className={"flex flex-row gap-3 xl:gap-5 justify-center items-start h-[calc(100vh-90px)]"}>
 
-            {/* Left Side*/}
-            <div className={"w-[300px] h-full"}>
+    return (<div style={PLAY_AREA_STYLE} className={"flex flex-col min-h-[var(--play-h)] w-full text-white"}>
+
+        <div className={"flex flex-col xl:flex-row gap-3 xl:gap-5 justify-center items-stretch xl:items-start min-h-[var(--play-h)] xl:h-[var(--play-h)]"}>
+
+            {/* Left Side (desktop only) */}
+            <div className={"hidden xl:block w-[300px] h-full"}>
                 <Group orientation={"vertical"}
                        defaultLayout={{
                            "rule-pool": 1,
@@ -155,7 +176,7 @@ function Play() {
             </div>
 
             {/* Board */}
-            <div className={"flex flex-col items-center justify-center flex-1 max-w-[min(calc(100vh-100px),75vw)] min-w-[300px]"}>
+            <div className={"flex flex-col items-center justify-center flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh_-_100px),75vw)]"}>
 
                 {/* Top Player */}
                 <div className={"flex flex-row justify-between w-full mb-0.5"}>
@@ -174,7 +195,7 @@ function Play() {
                 </div>
 
                 {/* Board */}
-                <div className={"w-full max-w-[min(calc(100vh-180px),65vw)] aspect-square"}>
+                <div className={"w-full max-w-[min(92vw,calc(100dvh_-_240px))] xl:max-w-[min(calc(100dvh_-_180px),65vw)] aspect-square"}>
                     {visibleBoard !== null && player && <Board
                         board={visibleBoard}
                         gameStatus={gameStatus}
@@ -204,11 +225,7 @@ function Play() {
                         <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                         <CallBluffButtonOnline
                             gameId={gameId}
-                            disabled={
-                                turnColor !== player?.color ||
-                                turnHistory.length === 0 ||
-                                !("from" in (turnHistory.at(-1) ?? {}))
-                            }
+                            disabled={bluffCallDisabled}
                         />
                     </div>
 
@@ -219,22 +236,85 @@ function Play() {
                     />}
                 </div>
 
-                <div className={"xl:hidden flex flex-row justify-around gap-2 w-full"}>
+                <div className={"xl:hidden flex flex-row justify-around gap-2 w-full mt-2 [&>*]:min-h-11 [&>*]:flex-1"}>
                     <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                     <CallBluffButtonOnline
                         gameId={gameId}
-                        disabled={
-                            turnColor !== player?.color ||
-                            turnHistory.length === 0 ||
-                            !("from" in (turnHistory.at(-1) ?? {}))
-                        }
+                        disabled={bluffCallDisabled}
                     />
                 </div>
 
             </div>
 
-            {/* Right Side */}
-            <div className={" w-[300px] h-full"}>
+            {/* Mobile secondary content: tabbed Rules / History / Chat */}
+            <div className={"xl:hidden flex flex-col w-full mt-3"}>
+                <div className={"flex flex-row gap-1 mb-2"}>
+                    {mobileTabs.map(({ id, label }) => (
+                        <button
+                            key={id}
+                            type={"button"}
+                            onClick={() => setMobileTab(id)}
+                            className={`flex-1 min-h-11 rounded-lg text-sm font-semibold uppercase transition-colors ${
+                                mobileTab === id ? "bg-bg-2 text-white" : "bg-bg-2/40 text-gray-400 hover:bg-bg-2/70"
+                            }`}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className={"h-[50dvh] min-h-[300px]"}>
+                    {mobileTab === "rules" && (
+                        <div className={"flex flex-col gap-2 h-full overflow-y-auto"}>
+                            <div className={"flex flex-col rounded-lg bg-bg-2 border border-white/10"}>
+                                <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Your Rules</h3>
+                                <OwnRules ruleIds={player?.ruleIds ?? []} color={player?.color || Color.White}/>
+                            </div>
+                            <div className={"flex flex-col rounded-lg bg-bg-2 border border-white/10"}>
+                                <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Game Rules</h3>
+                                <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true} wrapChips={true}/>
+                            </div>
+                        </div>
+                    )}
+
+                    {mobileTab === "history" && (
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
+                            <div className={"flex-1 min-h-0"}>
+                                <TurnHistory
+                                    turnHistory={turnHistory}
+                                    viewMoveIndex={viewMoveIndex}
+                                    setViewMoveIndex={setViewMoveIndex}
+                                    setView={setView}
+                                    playerColor={player?.color ?? Color.White}
+                                />
+                            </div>
+
+                            <div className={"shrink-0 w-full pt-2 pb-1"}>
+                                <GameActions gameId={gameId}
+                                             color={player?.color ?? Color.White}
+                                             drawOfferedColor={drawOfferedColor}
+                                             setDrawOfferedColor={setDrawOfferedColor}
+                                             gameStatus={gameStatus}
+                                             gameResult={gameResult}
+                                             gameResultReason={gameResultReason}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {mobileTab === "chat" && (
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
+                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
+                            <Chatroom
+                                gameId={gameId}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Right Side (desktop only) */}
+            <div className={"hidden xl:block w-[300px] h-full"}>
                 <Group orientation={"vertical"}
                        defaultLayout={{
                            "turn-history": 1.3,
