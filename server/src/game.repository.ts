@@ -1,5 +1,36 @@
 import type Game from "./game.js";
-import {GameVisibility, type PublicGamesQueryRequest} from "@chess-bs/common";
+import {
+    BluffPunishment,
+    CreateGameColor,
+    GameVisibility,
+    PublicGameSortBy, SortDir,
+    type PublicGamesQueryRequest
+} from "@chess-bs/common";
+
+
+const bluffPunishmentKeys: Record<BluffPunishment, number> = {
+    [BluffPunishment.Turn]: 0,
+    [BluffPunishment.Piece]: 1,
+    [BluffPunishment.PieceRandom]: 2,
+    [BluffPunishment.PieceOpponent]: 3,
+}
+
+const creatorColorKeys: Record<CreateGameColor, number> = {
+    [CreateGameColor.Random]: 0,
+    [CreateGameColor.White]: 1,
+    [CreateGameColor.Black]: 2,
+}
+
+const sortKeys: Record<PublicGameSortBy, (g: Game) => number> = {
+    [PublicGameSortBy.CreatedAt]: g => g.gameCreatedTimestamp,
+    [PublicGameSortBy.RuleCount]: g => g.ruleCount,
+    [PublicGameSortBy.Clock]: g => (g.clockStartMs ?? 0) + (g.clockIncrementMs ?? 0) * 25,
+    [PublicGameSortBy.ClockStart]: g => g.clockStartMs ?? 0,
+    [PublicGameSortBy.ClockIncrement]: g => g.clockIncrementMs ?? 0,
+    [PublicGameSortBy.BluffPunishment]: g => bluffPunishmentKeys[g.bluffPunishment],
+    [PublicGameSortBy.CreatorColor]: g => creatorColorKeys[g.creatorColor],
+}
+
 
 export class InMemoryGameRepository {
     private readonly games: Map<string, Game> = new Map();
@@ -11,11 +42,14 @@ export class InMemoryGameRepository {
     }
 
     getPublicGames(filter: PublicGamesQueryRequest) {
+        const sortKey = sortKeys[filter.sortBy];
+        const sortDir = filter.sortDir === SortDir.Asc ? 1 : -1;
+
         const all = [...this.publicGames]
             .map(id => this.games.get(id))
             .filter(g => g !== undefined)
             .filter(g => this.matchesFilter(g, filter))
-            .sort((a, b) => b.gameCreatedTimestamp - a.gameCreatedTimestamp);
+            .sort((a, b) => (sortKey(a) - sortKey(b)) * sortDir);
 
         const start = filter.page * filter.pageSize;
         return {
@@ -29,19 +63,19 @@ export class InMemoryGameRepository {
     private matchesFilter(game: Game, filter: PublicGamesQueryRequest) {
         const { usesClock, minStartSeconds, maxStartSeconds, minIncrementSeconds, maxIncrementSeconds, minRuleCount, maxRuleCount, bluffPunishment, creatorColor } = filter;
 
-        if (usesClock && !game.usesClock) return false;
-        if (minStartSeconds && game.clockStartMs && game.clockStartMs * 1000 < minStartSeconds) return false;
-        if (maxStartSeconds && game.clockStartMs && game.clockStartMs * 1000 > maxStartSeconds) return false;
+        if (usesClock !== undefined && ((usesClock && !game.usesClock) || (!usesClock && game.usesClock))) return false;
+        if (minStartSeconds !== undefined && game.clockStartMs && game.clockStartMs / 1000 < minStartSeconds) return false;
+        if (maxStartSeconds !== undefined && game.clockStartMs && game.clockStartMs / 1000 > maxStartSeconds) return false;
 
-        if (minIncrementSeconds && game.clockIncrementMs && game.clockIncrementMs * 1000 < minIncrementSeconds) return false;
-        if (maxIncrementSeconds && game.clockIncrementMs && game.clockIncrementMs * 1000 > maxIncrementSeconds) return false;
+        if (minIncrementSeconds !== undefined && game.clockIncrementMs && game.clockIncrementMs / 1000 < minIncrementSeconds) return false;
+        if (maxIncrementSeconds !== undefined && game.clockIncrementMs && game.clockIncrementMs / 1000 > maxIncrementSeconds) return false;
 
-        if (minRuleCount && game.ruleCount < minRuleCount) return false;
-        if (maxRuleCount && game.ruleCount > maxRuleCount) return false;
+        if (minRuleCount !== undefined && game.ruleCount < minRuleCount) return false;
+        if (maxRuleCount !== undefined && game.ruleCount > maxRuleCount) return false;
 
-        if (bluffPunishment && game.bluffPunishment !== bluffPunishment) return false;
+        if (bluffPunishment !== undefined && game.bluffPunishment !== bluffPunishment) return false;
 
-        if (creatorColor && game.creatorColor !== creatorColor) return false;
+        if (creatorColor !== undefined && game.creatorColor !== creatorColor) return false;
 
         return true;
     }

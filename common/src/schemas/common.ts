@@ -1,5 +1,8 @@
 import { z } from "zod";
-import {Color, PieceType, CreateGameColor, BluffPunishment, GameStatus, GameResult, GameVisibility} from "../types";
+import {
+    Color, PieceType, CreateGameColor, BluffPunishment, GameStatus, GameResult, GameVisibility,
+    PublicGameSortBy, SortDir
+} from "../types";
 import {BotDifficulty} from "../bot/bots";
 
 
@@ -11,6 +14,8 @@ export const ZGameStatusEnum = z.enum(GameStatus);
 export const ZGameResultEnum = z.enum(GameResult);
 export const ZBotDifficultyEnum = z.enum(BotDifficulty);
 export const ZGameVisibilityEnum = z.enum(GameVisibility);
+export const ZPublicGameSortByEnum = z.enum(PublicGameSortBy);
+export const ZPublicGameSortDirEnum = z.enum(SortDir);
 
 
 export const SquareSchema = z.object({

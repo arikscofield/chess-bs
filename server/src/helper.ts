@@ -54,6 +54,7 @@ export async function getGameDTOFromFinishedGame(finishedGame: FinishedGame): Pr
         gameStatus: GameStatus.DONE,
         startBoard: finishedGame.startBoard,
         rulePoolIds: finishedGame.rulePoolIds,
+        ruleCount: players[0]?.ruleIds?.length ?? 0,
         turnHistory: finishedGame.turnHistory,
         bluffPunishment: finishedGame.bluffPunishment,
         gameCreatedTimestamp: finishedGame.createdAt.getTime(),

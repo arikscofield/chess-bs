@@ -15,7 +15,7 @@ import PublicGames from "./pages/PublicGames/PublicGames.tsx";
 
 createRoot(document.getElementById('root')!).render(
   // <StrictMode>
-      <MantineProvider>
+      <MantineProvider defaultColorScheme={"auto"}>
           <AuthProvider>
               <SocketProvider>
                   <BrowserRouter>

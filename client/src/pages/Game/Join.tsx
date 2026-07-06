@@ -16,7 +16,7 @@ function Join({handleJoinGame}: {handleJoinGame: (gameId: string) => void}) {
     const { isConnected } = useAuth();
 
     if (!isConnected || !socket) {
-        return <div className="flex flex-col justify-center items-center min-h-[calc(100vh-82px)] w-screen text-white">
+        return <div className="flex flex-col justify-center items-center min-h-[calc(100vh-82px)] w-full text-white">
             <Card className={"bg-bg-2/50! text-white! border-white/20!"} padding="xl" withBorder shadow={"md"}>
                 <div className={"flex flex-col items-center gap-4"}>
                     <Loader />
@@ -27,7 +27,7 @@ function Join({handleJoinGame}: {handleJoinGame: (gameId: string) => void}) {
     }
 
 
-    return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] w-screen text-white"}>
+    return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] text-white"}>
         <div className={"w-full max-w-md"}>
             <Card padding={"xl"} className={"bg-bg-2!"}>
                 <div className={"flex flex-col items-center gap-6"}>

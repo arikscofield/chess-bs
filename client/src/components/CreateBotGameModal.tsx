@@ -133,15 +133,15 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
             onChange={(val) => {setBluffPunishment(val as BluffPunishment);}}
             name={"blushPunishment"}
             label={"Called Bluff Punishment"}
-            // description={"The punishment for getting called out for bluffing, or incorrectly calling a bluff"}
             size={"md"}
             className={"hidden lg:block "}
         >
             <Group mt={"xs"}>
                 <Radio value={BluffPunishment.Turn} label={"Lose Turn"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
-                <Radio value={BluffPunishment.Piece} label={"Lose Piece (You Pick)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
-                <Radio value={BluffPunishment.PieceOpponent} label={"Lose Piece (Opponent Picks)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
-                <Radio value={BluffPunishment.PieceRandom} label={"Lose Piece (Random)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}}/>
+                {/* TODO: un-disable other bluff punishments once working */}
+                <Radio value={BluffPunishment.Piece} label={"Lose Piece (You Pick)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}} disabled={true}/>
+                <Radio value={BluffPunishment.PieceOpponent} label={"Lose Piece (Opponent Picks)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}} disabled={true}/>
+                <Radio value={BluffPunishment.PieceRandom} label={"Lose Piece (Random)"} color={"var(--color-fg-1)"} classNames={{body: "items-center"}} disabled={true}/>
             </Group>
         </Radio.Group>
 

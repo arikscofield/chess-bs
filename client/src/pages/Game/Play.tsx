@@ -175,7 +175,7 @@ function Play() {
                 </Group>
             </div>
 
-            {/* Board */}
+            {/* Board Area */}
             <div className={"flex flex-col items-center justify-center flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh_-_100px),75vw)]"}>
 
                 {/* Top Player */}
@@ -246,6 +246,62 @@ function Play() {
 
             </div>
 
+            {/* Right Side (desktop only) */}
+            <div className={"hidden xl:block w-[300px] h-full"}>
+                <Group orientation={"vertical"}
+                       defaultLayout={{
+                           "turn-history": 1.3,
+                           "chat": 1
+                       }}
+                >
+                    <Panel
+                        id={"turn-history"}
+                        minSize={"100px"}
+                    >
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
+                            <div className={"flex-1 min-h-0"}>
+                                <TurnHistory
+                                    turnHistory={turnHistory}
+                                    viewMoveIndex={viewMoveIndex}
+                                    setViewMoveIndex={setViewMoveIndex}
+                                    setView={setView}
+                                    playerColor={player?.color ?? Color.White}
+                                />
+                            </div>
+
+                            <div className={"shrink-0 w-full pt-2 pb-1"}>
+                                <GameActions gameId={gameId}
+                                             color={player?.color ?? Color.White}
+                                             drawOfferedColor={drawOfferedColor}
+                                             setDrawOfferedColor={setDrawOfferedColor}
+                                             gameStatus={gameStatus}
+                                             gameResult={gameResult}
+                                             gameResultReason={gameResultReason}
+                                />
+                            </div>
+                        </div>
+                    </Panel>
+
+                    <Separator className={"flex flex-row justify-center h-4 my-1 outline-none bg-bg-2/50 hover:bg-bg-2"}>
+                        <MdOutlineDragIndicator color={"gray"} className={"rotate-90"}/>
+                    </Separator>
+
+                    <Panel
+                        id={"chat"}
+                        minSize={"100px"}
+                    >
+                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
+                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
+                            <Chatroom
+                                gameId={gameId}
+                            />
+                        </div>
+                    </Panel>
+                </Group>
+
+
+            </div>
+
             {/* Mobile secondary content: tabbed Rules / History / Chat */}
             <div className={"xl:hidden flex flex-col w-full mt-3"}>
                 <div className={"flex flex-row gap-1 mb-2"}>
@@ -311,62 +367,6 @@ function Play() {
                         </div>
                     )}
                 </div>
-            </div>
-
-            {/* Right Side (desktop only) */}
-            <div className={"hidden xl:block w-[300px] h-full"}>
-                <Group orientation={"vertical"}
-                       defaultLayout={{
-                           "turn-history": 1.3,
-                           "chat": 1
-                       }}
-                >
-                    <Panel
-                        id={"turn-history"}
-                        minSize={"100px"}
-                    >
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <div className={"flex-1 min-h-0"}>
-                                <TurnHistory
-                                    turnHistory={turnHistory}
-                                    viewMoveIndex={viewMoveIndex}
-                                    setViewMoveIndex={setViewMoveIndex}
-                                    setView={setView}
-                                    playerColor={player?.color ?? Color.White}
-                                />
-                            </div>
-
-                            <div className={"shrink-0 w-full pt-2 pb-1"}>
-                                <GameActions gameId={gameId}
-                                             color={player?.color ?? Color.White}
-                                             drawOfferedColor={drawOfferedColor}
-                                             setDrawOfferedColor={setDrawOfferedColor}
-                                             gameStatus={gameStatus}
-                                             gameResult={gameResult}
-                                             gameResultReason={gameResultReason}
-                                />
-                            </div>
-                        </div>
-                    </Panel>
-
-                    <Separator className={"flex flex-row justify-center h-4 my-1 outline-none bg-bg-2/50 hover:bg-bg-2"}>
-                        <MdOutlineDragIndicator color={"gray"} className={"rotate-90"}/>
-                    </Separator>
-
-                    <Panel
-                        id={"chat"}
-                        minSize={"100px"}
-                    >
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
-                            <Chatroom
-                                gameId={gameId}
-                            />
-                        </div>
-                    </Panel>
-                </Group>
-
-
             </div>
         </div>
     </div>)

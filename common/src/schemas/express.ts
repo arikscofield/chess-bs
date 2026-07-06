@@ -1,10 +1,10 @@
 import { z } from "zod";
 import {
     GameDTOSchema, UserDTOSchema, ZBluffPunishmentEnum, ZBotDifficultyEnum, ZCreateGameColorEnum,
-    ZGameVisibilityEnum
+    ZGameVisibilityEnum, ZPublicGameSortByEnum, ZPublicGameSortDirEnum
 } from "./common";
 import {DEFAULT_RULE_COUNT, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH} from "../const";
-import {GameVisibility} from "../types";
+import {GameVisibility, PublicGameSortBy, SortDir} from "../types";
 
 
 
@@ -69,7 +69,7 @@ export type PaginationQueryRequest = z.infer<typeof PaginationQuerySchema>;
 
 export const PublicGamesQuerySchema = z.object({
     ...PaginationQuerySchema.shape,
-    usesClock: z.boolean().optional(),
+    usesClock: z.stringbool().optional(),
     minStartSeconds: z.coerce.number().int().nonnegative().optional(),
     maxStartSeconds: z.coerce.number().int().nonnegative().optional(),
     minIncrementSeconds: z.coerce.number().int().nonnegative().optional(),
@@ -78,6 +78,8 @@ export const PublicGamesQuerySchema = z.object({
     maxRuleCount: z.coerce.number().int().positive().optional(),
     bluffPunishment: ZBluffPunishmentEnum.optional(),
     creatorColor: ZCreateGameColorEnum.optional(),
+    sortBy: ZPublicGameSortByEnum.default(PublicGameSortBy.CreatedAt),
+    sortDir: ZPublicGameSortDirEnum.default(SortDir.Desc),
 });
 export type PublicGamesQueryRequest = z.infer<typeof PublicGamesQuerySchema>;
 

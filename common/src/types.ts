@@ -136,6 +136,21 @@ export enum GameVisibility {
     Public = "public",
 }
 
+export enum PublicGameSortBy {
+    CreatedAt = "createdAt",
+    RuleCount = "ruleCount",
+    Clock = "clock",
+    ClockStart = "clockStart",
+    ClockIncrement = "clockIncrement",
+    BluffPunishment = "bluffPunishment",
+    CreatorColor = "creatorColor",
+}
+
+export enum SortDir {
+    Asc = "asc",
+    Desc = "desc",
+}
+
 
 export type GenericCallback = (ok: boolean, message?: string, data?: any) => void;
 
