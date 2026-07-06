@@ -86,7 +86,7 @@ function CreateGameModal({opened, onClose, onSubmit, error}: {
         size={"auto"}
         title={"Create Game"}
         centered
-        classNames={{body: "flex flex-col justify-center items-center gap-4"}}
+        classNames={{body: "flex flex-col justify-center items-center gap-4", content: "border-2! border-white/20"}}
         styles={{ title: {fontSize: "2em"}}}
     >
 

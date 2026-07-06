@@ -33,7 +33,7 @@ function Lobby() {
         [BluffPunishment.PieceRandom ]: "Lose Piece (Random)",
     }
 
-    return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] w-screen text-white"}>
+    return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] w-full text-white"}>
         <div className={"w-full max-w-2xl"}>
             {/* Header */}
             <div className={"text-center mb-4"}>
