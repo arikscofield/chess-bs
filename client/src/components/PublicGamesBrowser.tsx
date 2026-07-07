@@ -45,7 +45,7 @@ const DEFAULT_QUERY: PublicGamesQueryRequest = PublicGamesQuerySchema.parse({
 const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 
 function buildUrl(query: PublicGamesQueryRequest) {
-    const url = new URL(`${API_BASE}/api/publicgames`);
+    const url = new URL(`${API_BASE}/api/publicgames`, window.location.origin);
     const p = url.searchParams;
 
     p.set("page", String(query.page));
