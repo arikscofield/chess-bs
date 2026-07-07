@@ -2,8 +2,8 @@ import { z } from "zod";
 import {
     Color, PieceType, CreateGameColor, BluffPunishment, GameStatus, GameResult, GameVisibility,
     PublicGameSortBy, SortDir
-} from "../types";
-import {BotDifficulty} from "../bot/bots";
+} from "../types.js";
+import {BotDifficulty} from "../bot/bots.js";
 
 
 export const ZPieceTypeEnum = z.enum(PieceType);

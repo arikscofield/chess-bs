@@ -272,6 +272,7 @@ function Home() {
             opened={createBotGameModalOpen}
             onClose={() => setCreateBotGameModalOpen(false)}
             onSubmit={createBotGame}
+            error={createBotGameError}
         />
     </div>
     )

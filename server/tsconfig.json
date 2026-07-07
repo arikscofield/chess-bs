@@ -41,5 +41,7 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "references": [{ "path": "../common"}]
+  "references": [{ "path": "../common"}],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "drizzle.config.ts", "dist"]
 }

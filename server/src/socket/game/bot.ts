@@ -38,7 +38,7 @@ export function handleBotMove(game: Game) {
             io.to(gameId).emit("game:move:applied", movePayload);
         } else {
             const {ok, callSuccessful, response, message} = game.callBluff(game.botColor);
-            if (!ok) {
+            if (!ok || !response) {
                 // callback(false, "Failed to generate bot move: " + message);
                 return;
             }

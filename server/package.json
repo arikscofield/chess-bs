@@ -6,7 +6,8 @@
   "main": "src/server.ts",
   "scripts": {
     "dev": "npx tsx src/server.ts",
-    "start": "ts-node-dev --esm --respawn src/server.ts"
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",

@@ -1,8 +1,8 @@
-import {Color, PieceType} from "../types";
-import Piece from "../piece";
-import {Move, Square} from "../schemas/common";
-import Board from "../board";
-import Rule from "../rule";
+import {Color, PieceType} from "../types.js";
+import Piece from "../piece.js";
+import {Move, Square} from "../schemas/common.js";
+import Board from "../board.js";
+import Rule from "../rule.js";
 
 
 // ============================================================

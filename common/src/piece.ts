@@ -1,5 +1,5 @@
-import {Color, PieceType} from "./types";
-import type {Piece as ZPiece} from "./schemas/common"
+import {Color, PieceType} from "./types.js";
+import type {Piece as ZPiece} from "./schemas/common.js"
 
 
 export default class Piece implements ZPiece {

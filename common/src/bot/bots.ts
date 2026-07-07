@@ -1,7 +1,7 @@
-import Board from "../board"
-import { Move } from "../schemas/common";
-import {Color, PieceType} from "../types";
-import Rule, {allRules} from "../rule";
+import Board from "../board.js"
+import { Move } from "../schemas/common.js";
+import {Color, PieceType} from "../types.js";
+import Rule, {allRules} from "../rule.js";
 import {
     bluffSuspicion, evaluate, getAllBluffsInCheck,
     getAllOwnLegalMoves, getExplainingRules,
@@ -9,7 +9,7 @@ import {
     PIECE_VALUES,
     searchBestMove,
     withDefaultPromotion
-} from "./botUtils";
+} from "./botUtils.js";
 
 
 // ============================================================

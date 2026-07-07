@@ -4,10 +4,10 @@
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
 
-import PieceClass from "./piece";
-import {Color, FileToIndex, IndexToFile, PieceAscii, PieceType, PrefixToPieceType,} from "./types";
-import type {Move, Piece, Square} from "./schemas/common";
-import Board from "./board";
+import PieceClass from "./piece.js";
+import {Color, FileToIndex, IndexToFile, PieceAscii, PieceType, PrefixToPieceType,} from "./types.js";
+import type {Move, Piece, Square} from "./schemas/common.js";
+import Board from "./board.js";
 
 export const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 

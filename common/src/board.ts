@@ -1,7 +1,7 @@
-import {Color, PieceAscii, PieceType} from "./types";
-import PieceClass from "./piece"
-import {defaultFEN, nextTurnColor, parseFen, PIECE_VALUES} from "./helper";
-import type {BoardDTO as BoardDTO, Move, Piece, SideEffectMove, Square} from "./schemas/common"
+import {Color, PieceAscii, PieceType} from "./types.js";
+import PieceClass from "./piece.js"
+import {defaultFEN, nextTurnColor, parseFen, PIECE_VALUES} from "./helper.js";
+import type {BoardDTO as BoardDTO, Move, Piece, SideEffectMove, Square} from "./schemas/common.js"
 
 /*
 

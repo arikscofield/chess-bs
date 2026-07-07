@@ -1,4 +1,3 @@
-import * as schema from "./schema.js";
 import {
     type Game as DBGame,
     games,
@@ -18,9 +17,10 @@ import Game from "../game.js";
 import {BOT_UUID, Color, UserType} from "@chess-bs/common";
 
 
-let db: NodePgDatabase<typeof schema> | null = null;
+
+let db: NodePgDatabase<any> | null = null;
 if (process.env.DATABASE_URL) {
-    db = drizzle(process.env.DATABASE_URL, { schema });
+    db = drizzle(process.env.DATABASE_URL);
 } else {
     console.warn("DATABASE_URL is missing. Running without database.")
 }

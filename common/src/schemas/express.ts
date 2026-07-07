@@ -2,9 +2,9 @@ import { z } from "zod";
 import {
     GameDTOSchema, UserDTOSchema, ZBluffPunishmentEnum, ZBotDifficultyEnum, ZCreateGameColorEnum,
     ZGameVisibilityEnum, ZPublicGameSortByEnum, ZPublicGameSortDirEnum
-} from "./common";
-import {DEFAULT_RULE_COUNT, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH} from "../const";
-import {GameVisibility, PublicGameSortBy, SortDir} from "../types";
+} from "./common.js";
+import {DEFAULT_RULE_COUNT, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH} from "../const.js";
+import {GameVisibility, PublicGameSortBy, SortDir} from "../types.js";
 
 
 

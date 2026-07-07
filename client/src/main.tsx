@@ -10,7 +10,6 @@ import {ColorSchemeScript, MantineProvider} from "@mantine/core";
 import Game from "./pages/Game/Game.tsx";
 import SocketProvider from "./components/context/SocketProvider.tsx";
 import {AuthProvider} from "./components/context/AuthProvider.tsx";
-import Bot from "./pages/Bot/Bot.tsx";
 import PublicGames from "./pages/PublicGames/PublicGames.tsx";
 
 createRoot(document.getElementById('root')!).render(
@@ -24,7 +23,6 @@ createRoot(document.getElementById('root')!).render(
                               <Route index element={<Home />}/>
                               <Route path={"/:gameId"} element={<Game />}/>
                               <Route path={"/games"} element={<PublicGames/>}/>
-                              <Route path={"/bot"} element={<Bot />}/>
                           </Route>
                       </Routes>
                   </BrowserRouter>

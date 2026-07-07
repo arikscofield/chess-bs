@@ -7,7 +7,7 @@ import {
     BoardDTOSchema,
     ZGameStatusEnum,
     ZBluffPunishmentEnum, TurnSchema, ZGameResultEnum, PlayerDTOSchema, ClockInfoSchema
-} from "./common";
+} from "./common.js";
 
 
 // REQUESTS -----------------------------------------------------------------------------------------------------------

@@ -6,17 +6,11 @@
 import {
     Color,
     CreateGameColor,
-    FileToIndex,
     type GameDTO,
     GameStatus,
-    type Piece,
-    PieceType,
     type PlayerDTO,
-    PrefixToPieceType,
-    type Square,
     type UserDTO
 } from "@chess-bs/common";
-import PieceClass from "@chess-bs/common/src/piece.js"
 import {v4 as uuidv4} from "uuid";
 import type {Game as FinishedGame, User} from "./db/schema.js";
 import {getFinishedGameById, getPlayersFromGameWithUser} from "./db/helper.js";

@@ -26,7 +26,7 @@ import {
 } from "./db/helper.js";
 import {gameIdExists, generateGameId, generateUUID, getGameDTOFromFinishedGame} from "./helper.js";
 import Game from "./game.js";
-import Rule from "@chess-bs/common/src/rule.js";
+import Rule from "@chess-bs/common/dist/rule.js";
 import {hash, verify} from "argon2"
 import BotGame from "./botGame.js";
 

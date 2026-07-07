@@ -15,8 +15,7 @@ import type {
     GameRematchOfferedResponse, GameRematchOfferRequest,
     GameRequestStateRequest, GameResignRequest,
     GameSpectateRequest, GameStartedResponse, GameStateResponse
-} from "./schemas/socket";
-import type {Move,} from "./schemas/common";
+} from "./schemas/socket.js";
 
 export enum PieceType {
     Pawn = "Pawn",

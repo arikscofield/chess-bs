@@ -1,6 +1,6 @@
-import {Color, PieceType} from "./types";
-import type {Move, Rule as RuleType, Square} from "./schemas/common";
-import Board from "./board"
+import {Color, PieceType} from "./types.js";
+import type {Move, Rule as RuleType, Square} from "./schemas/common.js";
+import Board from "./board.js"
 
 
 class Rule implements RuleType {

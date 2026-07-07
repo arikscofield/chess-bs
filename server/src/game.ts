@@ -17,8 +17,8 @@ import {
     parseFen,
     type Turn
 } from "@chess-bs/common";
-import Rule from "@chess-bs/common/src/rule.js";
-import Board from "@chess-bs/common/src/board.js";
+import Rule from "@chess-bs/common/dist/rule.js";
+import Board from "@chess-bs/common/dist/board.js";
 import Player from "./player.js";
 import {colorToCreateGameColor, createGameColorToColor} from "./helper.js";
 import {sendClockStarted, sendGameOver} from "./socket/events.js";
