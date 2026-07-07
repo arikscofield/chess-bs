@@ -48,6 +48,7 @@ export class InMemoryGameRepository {
         const all = [...this.publicGames]
             .map(id => this.games.get(id))
             .filter(g => g !== undefined)
+            .filter(g => g.players.length < g.maxPlayers)
             .filter(g => this.matchesFilter(g, filter))
             .sort((a, b) => (sortKey(a) - sortKey(b)) * sortDir);
 
@@ -87,6 +88,10 @@ export class InMemoryGameRepository {
 
     deleteById(id: string): void {
         this.games.delete(id);
+        if (this.publicGames.has(id)) this.publicGames.delete(id);
+    }
+
+    deleteFromPublicGames(id: string): void {
         if (this.publicGames.has(id)) this.publicGames.delete(id);
     }
 }

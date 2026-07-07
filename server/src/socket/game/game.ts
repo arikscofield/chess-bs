@@ -104,6 +104,8 @@ export default function gameHandler(io: Server) {
                 startedAt: Date.now(),
             }
             io.to(gameId).emit("game:started", gameStartedPayload);
+
+            gameRepository.deleteFromPublicGames(gameId);
         }
         return;
     }
