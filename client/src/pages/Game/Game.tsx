@@ -50,8 +50,9 @@ import {
 } from "./atoms.ts";
 
 
-const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname;
-const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000;
+const API_BASE = import.meta.env.DEV
+    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
+    : '';
 
 function Game() {
     const { gameId } = useParams();
@@ -96,7 +97,7 @@ function Game() {
             }
 
             try {
-                const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/games/${gameId}`, {
+                const response = await fetch(`${API_BASE}/api/games/${gameId}`, {
                     method: "GET",
                     credentials: "include",
                 });

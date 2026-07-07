@@ -4,10 +4,9 @@ import {AuthContext} from "./AuthContext.ts";
 
 
 
-
-
-const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname;
-const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000;
+const API_BASE = import.meta.env.DEV
+    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
+    : '';
 
 const MAX_DELAY_MS = 30_000;
 const BASE_DELAY_MS = 500;
@@ -33,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             let attempt = 0;
             while (!controller.signal.aborted) {
                 try {
-                    const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/auth/me`, {
+                    const response = await fetch(`${API_BASE}/api/auth/me`, {
                         method: "GET",
                         credentials: "include",
                         signal: controller.signal,

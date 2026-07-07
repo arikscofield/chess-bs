@@ -14,13 +14,13 @@ import {BluffPunishment, Color, type Turn, type Piece, type Square, UserType} fr
 import { defineRelations } from 'drizzle-orm';
 import {createInsertSchema} from "drizzle-orm/zod";
 
-const bluffPunishmentEnum = pgEnum("bluffPunishment",
+export const bluffPunishmentEnum = pgEnum("bluffPunishment",
     [BluffPunishment.Turn, BluffPunishment.Piece, BluffPunishment.PieceOpponent, BluffPunishment.PieceRandom]
 )
 
-const colorEnum = pgEnum("color", Object.values(Color) as [string, ...string[]]);
+export const colorEnum = pgEnum("color", Object.values(Color) as [string, ...string[]]);
 
-const userTypeEnum = pgEnum("userType", Object.values(UserType) as [string, ...string[]])
+export const userTypeEnum = pgEnum("userType", Object.values(UserType) as [string, ...string[]])
 
 type PlayerData = {
     playerId: string;

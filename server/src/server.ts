@@ -29,7 +29,7 @@ const httpServer = createServer(app);
 // TODO: Fix hard coded-ips
 export const io = new Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>(httpServer, {
     cors: {
-        origin: [`http://localhost:${clientPort}`, `http://localhost:${clientPort+1}`,`http://192.168.1.201:${clientPort}`],
+        origin: [`http://localhost:${clientPort}`, `http://localhost:${clientPort+1}`],
         methods: ["GET", "POST"],
         credentials: true,
     },

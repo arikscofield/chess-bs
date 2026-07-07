@@ -37,7 +37,7 @@ const clientPort = parseInt(process.env.CLIENT_PORT || "5173");
 const app = express();
 
 app.use(cors({
-    origin: [`http://localhost:${clientPort}`, `http://localhost:${clientPort+1}`, `http://192.168.1.201:${clientPort}`],
+    origin: [`http://localhost:${clientPort}`, `http://localhost:${clientPort+1}`],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));

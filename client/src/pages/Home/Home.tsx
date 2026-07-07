@@ -16,8 +16,9 @@ import CreateGameModal from "../../components/CreateGameModal.tsx";
 import CreateBotGameModal from "../../components/CreateBotGameModal.tsx";
 import {FaRobot} from "react-icons/fa";
 
-const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname;
-const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000;
+const API_BASE = import.meta.env.DEV
+    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
+    : '';
 
 function Home() {
     const navigate = useNavigate();
@@ -76,7 +77,7 @@ function Home() {
             payload.clockIncrementSeconds = clockIncrementSeconds;
         }
 
-        const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/games`, {
+        const response = await fetch(`${API_BASE}/api/games`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -136,7 +137,7 @@ function Home() {
             botDifficulty: botDifficulty,
         }
 
-        const response = await fetch(`http://${SERVER_IP}:${SERVER_PORT}/api/games/bot`, {
+        const response = await fetch(`${API_BASE}/api/games/bot`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

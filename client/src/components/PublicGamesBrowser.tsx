@@ -33,8 +33,9 @@ import RuleList from "./RuleList.tsx";
 import {IoRefresh} from "react-icons/io5";
 import {useMediaQuery} from "@mantine/hooks";
 
-const SERVER_IP = import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname;
-const SERVER_PORT = import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000;
+const API_BASE = import.meta.env.DEV
+    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
+    : '';
 
 const DEFAULT_QUERY: PublicGamesQueryRequest = PublicGamesQuerySchema.parse({
     sortBy: PublicGameSortBy.CreatedAt,
@@ -44,7 +45,7 @@ const DEFAULT_QUERY: PublicGamesQueryRequest = PublicGamesQuerySchema.parse({
 const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 
 function buildUrl(query: PublicGamesQueryRequest) {
-    const url = new URL(`http://${SERVER_IP}:${SERVER_PORT}/api/publicgames`);
+    const url = new URL(`${API_BASE}/api/publicgames`);
     const p = url.searchParams;
 
     p.set("page", String(query.page));
