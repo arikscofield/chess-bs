@@ -77,7 +77,6 @@ export const PlayerDTOSchema = z.object({
     username: z.string(),
     color: ZColorEnum,
     ruleIds: z.array(z.number().int()).optional(),
-    clockMs: z.number().int().optional(),
 })
 export type PlayerDTO = z.infer<typeof PlayerDTOSchema>;
 

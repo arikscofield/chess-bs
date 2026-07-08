@@ -1,14 +1,35 @@
 import type Game from "../game.js";
 import {
     type GameClockStartedResponse,
-    type GameOverResponse,
+    type GameOverResponse, type GamePlayerStateResponse,
     type GameRematchAcceptedResponse,
-    GameResult
+    GameResult, type GameStartedResponse, type GameStateResponse
 } from "@chess-bs/common";
 import {gameRepository, io} from "../server.js";
 import {saveFinishedGame} from "../db/helper.js";
 import {generateGameId} from "../helper.js";
 
+
+export async function sendGameStart(game: string | Game) {
+    if (typeof game === "string") game = gameRepository.getById(game) ?? "";
+    if (typeof game === "string") return;
+
+    const sockets = await io.in(game.gameId).fetchSockets();
+
+    // Give each player their state
+    for (const socket of sockets) {
+        const player = game.players.find(player => player.userId === socket.data.user?.id)
+        if (player) socket.emit("game:player:state", player.getState());
+    }
+
+    io.to(game.gameId).emit("game:state", game.getState());
+    io.to(game.gameId).emit("game:started", {
+        gameStatus: game.gameStatus,
+        startedAt: Date.now(),
+    } as GameStartedResponse);
+
+    gameRepository.deleteFromPublicGames(game.gameId);
+}
 
 export function sendGameOver(game: string | Game, gameResult: GameResult, reason: string): boolean {
     let gameId: string = "";

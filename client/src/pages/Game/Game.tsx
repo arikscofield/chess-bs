@@ -189,7 +189,6 @@ function Game() {
                 username: payload.username,
                 color: payload.color,
                 ruleIds: payload.ruleIds,
-                clockMs: payload.clockMs
             }
             if (user && newPlayer.userId !== user.userId) {
                 console.log("Received player state for other user: ", newPlayer.userId);

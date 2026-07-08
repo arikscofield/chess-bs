@@ -10,6 +10,7 @@ import {
 import {validateSocketPayload} from "../index.js";
 import type {User} from "../../db/schema.js";
 import {gameRepository} from "../../server.js";
+import {sendGameStart} from "../events.js";
 
 
 
@@ -27,87 +28,35 @@ export default function gameHandler(io: Server) {
         }
 
         let player = game.getPlayer(user.id);
+        const isRejoining = player !== null;
 
-        // Rejoining
-        if (player) {
-            console.log(`User: ${user.username} rejoining match: ${gameId}`)
-            this.join(gameId);
-
-            const playerStatePayload: GamePlayerStateResponse = {
-                userId: player.userId,
-                username: player.username,
-                color: player.color,
-                ruleIds: player.rules.map(rule => rule.id),
-                clockMs: game.clockStartMs
+        if (!isRejoining) {
+            if (game.gameStatus !== GameStatus.WAITING_FOR_PLAYER || game.players.length >= game.maxPlayers) {
+                callback(false, "Cannot join game");
+                return;
             }
-            this.emit("game:player:state", playerStatePayload);
-
-            const playerJoined: GamePlayerJoinedResponse = {
-                userId: user.id,
-                username: user.username,
+            player = game.addPlayer(user.id, undefined, user.username);
+            if (!player) {
+                callback(false, "Cannot join game");
+                return;
             }
-            this.to(gameId).emit("game:player:joined", playerJoined)
-
-            const state: GameStateResponse = game.getState();
-            callback(true, "Successfully rejoined game", state);
-            return;
         }
 
-        if (game.gameStatus !== GameStatus.WAITING_FOR_PLAYER || game.players.length >= game.maxPlayers) {
-            callback(false, "Cannot join game");
-            return;
-        }
-
-
-        player = game.addPlayer(user.id, undefined, user.username);
-
-        if (!player) {
-            callback(false, "Cannot join game");
-            return;
-        }
-
-        console.log(`User ${user.username} first time joining: ${gameId}`);
+        console.log(`User: ${user.username} ${isRejoining ? "rejoining" : "joining"} match: ${gameId}`)
         this.join(gameId);
 
-        const state: GameStateResponse = game.getState();
-        const playerJoined: GamePlayerJoinedResponse = {
+        this.to(gameId).emit("game:player:joined", {
             userId: user.id,
             username: user.username,
+        } as GamePlayerJoinedResponse)
+
+        this.emit("game:player:state", player?.getState());
+
+        callback(true, isRejoining? "Successfully rejoined game" : "Successfully joined game", game.getState());
+
+        if (!isRejoining && game.players.length >= game.maxPlayers) {
+            await sendGameStart(game);
         }
-        this.to(gameId).emit("game:player:joined", playerJoined)
-
-        callback(true, "Successfully joined game", state);
-
-
-
-        if (game.players.length >= game.maxPlayers) {
-            const sockets = await io.in(gameId).fetchSockets();
-
-            for (const socket of sockets) {
-                const player = game.players.find(player => player.userId === socket.data.user.id)
-                if (!player) break;
-                const playerStatePayload: GamePlayerStateResponse = {
-                    userId: player.userId,
-                    username: player.username,
-                    color: player.color,
-                    ruleIds: player.rules.map(rule => rule.id),
-                    clockMs: game.clockStartMs
-                }
-                socket.emit("game:player:state", playerStatePayload);
-            }
-
-            const state: GameStateResponse = game.getState();
-            io.to(gameId).emit("game:state", state);
-
-            const gameStartedPayload: GameStartedResponse = {
-                gameStatus: game.gameStatus,
-                startedAt: Date.now(),
-            }
-            io.to(gameId).emit("game:started", gameStartedPayload);
-
-            gameRepository.deleteFromPublicGames(gameId);
-        }
-        return;
     }
 
     function spectateGame(this: Socket, payload: GameSpectateRequest, callback: GenericCallback) {
@@ -136,27 +85,16 @@ export default function gameHandler(io: Server) {
             return;
         }
 
-        const state: GameStateResponse = game.getState();
-        this.emit("game:state", state);
+        this.emit("game:state", game.getState());
 
         const player = game.players.find(player => player.userId === this.data.user.id)
         if (!player) {
             callback(false, "Cannot find player state");
             return;
         }
-        const playerStatePayload: GamePlayerStateResponse = {
-            userId: player.userId,
-            username: player.username,
-            color: player.color,
-            ruleIds: player.rules.map(rule => rule.id),
-            clockMs: game.clockStartMs
-        }
-        this.emit("game:player:state", playerStatePayload);
-
+        this.emit("game:player:state", player.getState());
 
         callback(true, "Successfully sent game and player state");
-        return;
-
     }
 
     function resign(this: Socket, payload: GameResignRequest, callback: GenericCallback) {

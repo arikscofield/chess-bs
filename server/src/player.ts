@@ -1,4 +1,4 @@
-import {type Color, allRules} from "@chess-bs/common";
+import {type Color, allRules, type GamePlayerStateResponse} from "@chess-bs/common";
 import Rule from "@chess-bs/common/dist/rule.js"
 import {getUserById} from "./db/helper.js";
 
@@ -30,6 +30,15 @@ class Player {
 
     public setRandomRules(count: number, rulePool: Rule[]) {
         this.rules = Rule.getRandomRules(count, rulePool);
+    }
+
+    public getState(): GamePlayerStateResponse {
+        return {
+            userId: this.userId,
+            username: this.username,
+            color: this.color,
+            ruleIds: this.rules.map((rule) => rule.id),
+        }
     }
 }
 

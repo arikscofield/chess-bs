@@ -6,7 +6,7 @@ import {
     type GameClockStateResponse,
     type GameDTO,
     type GameMoveBluffCallFailedResponse,
-    type GameMoveBluffCallSucceededResponse,
+    type GameMoveBluffCallSucceededResponse, type GamePlayerStateResponse,
     GameResult,
     type GameStateResponse,
     GameStatus,
@@ -53,6 +53,7 @@ export default class Game {
     clockIncrementMs?: number | undefined;
     clocksMs: Map<Color, number>;
     clockUpdateTimestamp: number;
+    private flagTimer: ReturnType<typeof setTimeout> | null = null;
     hasMoved: Map<Color, boolean>;
 
     drawOfferedColor: Color | null = null;
@@ -152,11 +153,46 @@ export default class Game {
         if (current === undefined) return;
         this.clocksMs.set(this.turnColor, Math.max(0, current - elapsed));
         this.clockUpdateTimestamp = now;
+        console.log(`Updating timers: White: ${this.clocksMs.get(Color.White)} Black: ${this.clocksMs.get(Color.Black)}`);
+    }
+
+    public clearFlagTimer() {
+        if (this.flagTimer) {
+            clearTimeout(this.flagTimer);
+            this.flagTimer = null;
+        }
+    }
+
+    public scheduleFlagTimer(now: number = Date.now()) {
+        this.clearFlagTimer();
+        if (!this.usesClock || this.gameStatus !== GameStatus.RUNNING) return;
+
+        this.updateTimers(now);
+        const remaining = this.clocksMs.get(this.turnColor);
+        if (remaining === undefined) return;
+
+        const color = this.turnColor;
+        this.flagTimer = setTimeout(() => this.flag(color), Math.max(0, remaining));
+        console.log(`Scheduling flag timer om ${Math.max(0, remaining) / 1000}s`);
+    }
+
+    private flag(color: Color) {
+        this.flagTimer = null;
+        this.updateTimers();
+        if (this.gameStatus !== GameStatus.RUNNING || this.turnColor !== color) return;
+
+        const remaining = this.clocksMs.get(this.turnColor);
+        if (remaining !== undefined && remaining > 0) {
+            this.scheduleFlagTimer();
+            return;
+        }
+
+        this.endGame(color === Color.White ? GameResult.Black : GameResult.White, "Timeout");
     }
 
 
     public addPlayer(playerId: string, color?: Color, username?: string): Player | null {
-        if (this.players.length >= 2) {
+        if (this.players.length >= this.maxPlayers) {
             return null;
         }
 
@@ -198,6 +234,12 @@ export default class Game {
         return null;
     }
 
+    public getPlayerState(playerId: string): GamePlayerStateResponse | null {
+        const player = this.getPlayer(playerId);
+        if (!player) return null;
+        return player.getState();
+    }
+
     public addSpectator(userId: string): void {
         this.spectators.add(userId);
     }
@@ -220,7 +262,7 @@ export default class Game {
         if (this.usesClock) {
             this.updateTimers(appliedAt);
             const currentTimeLeft = this.clocksMs.get(this.turnColor);
-            if (currentTimeLeft !== undefined && currentTimeLeft <= 0) {
+            if (currentTimeLeft !== undefined && currentTimeLeft <= 0 && this.gameStatus === GameStatus.RUNNING) {
                 const gameResult: GameResult = this.turnColor === Color.White ? GameResult.Black : GameResult.White;
                 this.endGame(gameResult, "Timeout");
                 return false;
@@ -234,6 +276,7 @@ export default class Game {
 
 
         const applyMove = (wasBluff: boolean) => {
+            const color = this.turnColor;
             if (!this.currentBoard.applyMove(move)) {
                 return false;
             }
@@ -249,8 +292,8 @@ export default class Game {
 
             // Increment
             if (this.usesClock) {
-                this.clocksMs.set(this.turnColor, (this.clocksMs.get(this.turnColor) || 0) + (this.clockIncrementMs ?? 0));
-                this.hasMoved.set(this.turnColor, true);
+                this.clocksMs.set(color, (this.clocksMs.get(color) || 0) + (this.clockIncrementMs ?? 0));
+                this.hasMoved.set(color, true);
 
                 // Start the timer if each player has made a move
                 if (this.gameStatus === GameStatus.WAITING_FOR_FIRST_MOVE && Array.from(this.hasMoved.values()).every(v => v)) {
@@ -263,6 +306,8 @@ export default class Game {
             }
 
             this.recordPosition(); // Detects for repetition
+
+            this.scheduleFlagTimer(appliedAt);
 
             return true;
         }
@@ -316,6 +361,7 @@ export default class Game {
                 punished: this.turnColor === Color.White ? Color.Black : Color.White,
                 appliedAt: receivedAt,
             }
+            this.scheduleFlagTimer(receivedAt);
             return {ok: true, callSuccessful: true, response: responsePayload, message: "Bluff call correct"}
         } else {
             // Failed call
@@ -331,6 +377,7 @@ export default class Game {
                 punished: callerColor,
                 appliedAt: receivedAt,
             }
+            this.scheduleFlagTimer(receivedAt);
             return {ok: true, callSuccessful: false, response: responsePayload, message: "Bluff call incorrect"}
         }
     }
@@ -367,6 +414,7 @@ export default class Game {
         this.gameStatus = GameStatus.RUNNING;
         this.clockUpdateTimestamp = now;
         this.clockStartTimestamp = now;
+        this.scheduleFlagTimer(now);
         sendClockStarted(this);
     }
 
@@ -374,6 +422,7 @@ export default class Game {
     public endGame(gameResult: GameResult, reason: string): boolean {
         console.log(`Game ${this.gameId} ended: Result: ${gameResult}. Reason: ${reason}`);
         this.gameStatus = GameStatus.DONE;
+        this.clearFlagTimer();
         return sendGameOver(this.gameId, gameResult, reason);
     }
 
