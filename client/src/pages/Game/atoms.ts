@@ -84,20 +84,6 @@ export const clockInfoAtom = atom(
         set(clockStartTimestampAtom, clockInfo.startTimestamp);
     }
 )
-export const clocksAtom = atom(
-    (get) => {
-        const times = new Map<Color, number>();
-        for (const player of get(playersAtom)) {
-            times.set(player.color, player.clockMs ?? 0);
-        }
-        return times;
-    },
-    (_get, set, clockTimes: Map<Color, number>) => {
-        set(playersAtom, (oldPlayers) =>
-            oldPlayers.map(player => ({...player, clockMs: clockTimes.get(player.color) ?? 0}))
-        )
-    }
-)
 
 // Other
 export const isBluffingAtom = atom<boolean>(false);
