@@ -1,5 +1,5 @@
 // hooks/ClockState.ts
-import {useMemo} from "react";
+import {useMemo, useRef} from "react";
 import {Color, type ClockInfo, nextTurnColor, type Turn} from "@chess-bs/common";
 
 export interface ClockState {
@@ -16,6 +16,14 @@ export function useClockState(
     clockInfo: ClockInfo,
     viewMoveIndex: number = -1,
 ): Map<Color, ClockState> {
+
+    // Tracks the local time when receiving the latest move from the server.
+    // For use when showing the live view of your time without concurrent server authority
+    const localAnchorRef = useRef<{ serverAnchorMs: number, localAnchorMs: number}>({
+        serverAnchorMs: -1,
+        localAnchorMs: Date.now(),
+    })
+
     return useMemo(() => {
         const result = new Map<Color, ClockState>();
         const base = new Map<Color, number>();
@@ -49,12 +57,16 @@ export function useClockState(
             prevTimestamp = turn.timestamp;
         }
 
+        if (prevTimestamp !== localAnchorRef.current.serverAnchorMs) {
+            localAnchorRef.current = { serverAnchorMs: prevTimestamp, localAnchorMs: Date.now() };
+        }
+
         const clockStarted = clockInfo.startTimestamp !== undefined;
         for (const color of Object.values(Color)) {
             result.set(color, {
                 baseMs: base.get(color) ?? 0,
                 running: clockStarted && color === turnColor,
-                anchorMs: prevTimestamp,
+                anchorMs: localAnchorRef.current.localAnchorMs,
             });
         }
         return result;
