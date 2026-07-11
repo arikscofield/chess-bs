@@ -1,7 +1,7 @@
-import {Drawer, Group, Title, UnstyledButton} from "@mantine/core";
+import {Drawer, Group, UnstyledButton} from "@mantine/core";
 import {FiSettings} from "react-icons/fi";
 import {useDisclosure} from "@mantine/hooks";
-import {Link} from "react-router";
+import Logo from "./Logo.tsx";
 
 function NavBar() {
 
@@ -10,7 +10,7 @@ function NavBar() {
     return (
         <div className={"w-full h-full bg-bg-1/95 backdrop-blur-md text-white"}>
             <Group h={"100%"} px={"md"}>
-                <Title order={2} ><Link to={"/"}>Bluff Chess</Link></Title>
+                <Logo/>
 
                 <div className={"flex-1"}/>
 
