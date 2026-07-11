@@ -21,10 +21,18 @@ import Rule from "@chess-bs/common/dist/rule.js";
 import Board from "@chess-bs/common/dist/board.js";
 import Player from "./player.js";
 import {colorToCreateGameColor, createGameColorToColor} from "./helper.js";
-import {sendClockStarted, sendGameOver} from "./socket/events.js";
+import {
+    cleanupGame,
+    sendClockStarted,
+    sendGameOver,
+    sendPlayerDisconnected,
+    sendPlayerReconnected
+} from "./socket/events.js";
 
 const defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const REPETITION_THRESHOLD = 3;
+const LOBBY_ABANDON_MS = 1000 * 60;
+const DISCONNECT_LOSS_MS = 1000 * 60 * 3;
 
 export default class Game {
     gameId: string;
@@ -55,6 +63,10 @@ export default class Game {
     clockUpdateTimestamp: number;
     private flagTimer: ReturnType<typeof setTimeout> | null = null;
     hasMoved: Map<Color, boolean>;
+
+    private connectedSockets: Map<string, Set<string>> = new Map(); // Maps userIds to currently open sockets for this game
+    private leaveTimers: Map<string, ReturnType<typeof setTimeout>> = new Map(); // Maps userIds to currently running disconnect timers
+    private playerLeftAfterGameOver: Set<string> = new Set<string>(); // Players that have left the game screen after the game has finished
 
     drawOfferedColor: Color | null = null;
     rematchOfferedColor: Color | null = null;
@@ -112,6 +124,10 @@ export default class Game {
 
 
     public getState(): GameStateResponse {
+        const playersConnected: string[] = [];
+        for (const [userId, socketIds] of this.connectedSockets.entries()) {
+            if (socketIds.size > 0) playersConnected.push(userId);
+        }
         return {
             startBoard: this.startBoard,
             gameStatus: this.gameStatus,
@@ -125,6 +141,7 @@ export default class Game {
                 username: player.username,
                 color: player.color,
             })),
+            playersConnected,
             drawOfferedColor: this.drawOfferedColor,
         };
     }
@@ -153,7 +170,6 @@ export default class Game {
         if (current === undefined) return;
         this.clocksMs.set(this.turnColor, Math.max(0, current - elapsed));
         this.clockUpdateTimestamp = now;
-        console.log(`Updating timers: White: ${this.clocksMs.get(Color.White)} Black: ${this.clocksMs.get(Color.Black)}`);
     }
 
     public clearFlagTimer() {
@@ -173,7 +189,6 @@ export default class Game {
 
         const color = this.turnColor;
         this.flagTimer = setTimeout(() => this.flag(color), Math.max(0, remaining));
-        console.log(`Scheduling flag timer om ${Math.max(0, remaining) / 1000}s`);
     }
 
     private flag(color: Color) {
@@ -248,6 +263,72 @@ export default class Game {
         return this.spectators.delete(userId);
     }
 
+    public playerConnect(userId: string, socketId: string): void {
+        let sockets = this.connectedSockets.get(userId);
+        if (!sockets) {
+            sockets = new Set();
+            this.connectedSockets.set(userId, sockets);
+        }
+
+        const wasDisconnected = sockets.size === 0;
+        sockets.add(socketId);
+        this.clearLeaveTimer(userId);
+
+        if (wasDisconnected) sendPlayerReconnected(this.gameId, userId);
+    }
+
+
+    public playerDisconnect(userId: string, socketId: string): void {
+        const sockets = this.connectedSockets.get(userId);
+        if (!sockets) return;
+
+        sockets.delete(socketId);
+        if (sockets.size > 0) { // Player still has another socket/tab open for this game
+            // console.log(`Not broadcasting disconnect since there's another open socket/tab: ${sockets}`)
+            return;
+        }
+
+        switch (this.gameStatus) {
+            case GameStatus.DONE:
+                this.markPlayerLeftAfterGameOver(userId);
+                return;
+            case GameStatus.WAITING_FOR_PLAYER:
+                this.leaveTimers.set(userId, setTimeout(() => cleanupGame(this.gameId), LOBBY_ABANDON_MS));
+                return;
+            case GameStatus.WAITING_FOR_FIRST_MOVE:
+            case GameStatus.RUNNING:
+                sendPlayerDisconnected(this.gameId, userId, this.usesClock ? DISCONNECT_LOSS_MS : undefined);
+                if (!this.usesClock) return; // Can't lose by afk in Unlimited time games
+                this.leaveTimers.set(userId, setTimeout(() => this.loseByDisconnect(userId), DISCONNECT_LOSS_MS));
+                return;
+        }
+    }
+
+    private markPlayerLeftAfterGameOver(userId: string) {
+        this.playerLeftAfterGameOver.add(userId);
+        if (this.players.length > 0 && this.players.every(p => this.playerLeftAfterGameOver.has(p.userId))) {
+            cleanupGame(this.gameId);
+        }
+    }
+
+    private clearLeaveTimer(userId: string) {
+        const timer = this.leaveTimers.get(userId);
+        if (timer) {
+            clearTimeout(timer);
+            this.leaveTimers.delete(userId);
+        }
+    }
+
+    private loseByDisconnect(userId: string) {
+        this.leaveTimers.delete(userId);
+        if (this.gameStatus !== GameStatus.RUNNING && this.gameStatus !== GameStatus.WAITING_FOR_FIRST_MOVE) return;
+
+        const player = this.getPlayer(userId);
+        if (!player) return;
+
+        const winner = player.color === Color.White ? GameResult.Black : GameResult.White;
+        this.endGame(winner, `${player.color} disconnected`);
+    }
 
     /**
      * Makes a given move for the given player. Does NOT validate whether the player is allowed to make a move.

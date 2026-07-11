@@ -6,6 +6,7 @@ import drawHandler from "./game/draw.js";
 import rematchHandler from "./game/rematch.js";
 import type {ZodObject} from "zod";
 import type {Server} from "socket.io";
+import {gameRepository} from "../server.js";
 
 
 export function validateSocketPayload(payload: Object, schema: ZodObject, source: string = ""): any {
@@ -22,7 +23,7 @@ export function validateSocketPayload(payload: Object, schema: ZodObject, source
 
 export function setUpSocketHandlers(io: Server) {
 
-    const { joinGame, spectateGame, getState, resign } = gameHandler(io);
+    const { joinGame, spectateGame, getState, resign, disconnect } = gameHandler(io);
     const { sendChat,  } = chatHandler(io);
     const { sendMove, callBluff, punishmentChoosePiece } = moveHandler(io);
     const { offerDraw, cancelDraw, acceptDraw, declineDraw } = drawHandler(io);
@@ -33,6 +34,7 @@ export function setUpSocketHandlers(io: Server) {
 
         socket.on("game:join", joinGame);
         socket.on("game:spectate", spectateGame);
+        socket.on("game:disconnect", disconnect);
         socket.on("game:request-state", getState);
         socket.on("game:resign", resign);
 
@@ -53,12 +55,23 @@ export function setUpSocketHandlers(io: Server) {
         socket.on("game:rematch:decline", declineRematch);
 
         socket.on("disconnecting", () => {
-            console.log(`User disconnecting:  ${socket.data.user?.username} (${socket.data.user?.id})`)
+            const user = socket.data.user;
             const rooms = socket.rooms;
-            // for (const room of rooms.entries()) {
-            //     console.log(room)
-                // TODO: Remove spectators, trigger disconnect from live games
-            // }
+            // console.log(`User disconnecting:  ${user?.username} (${user?.id})`);
+            // console.log(rooms);
+            for (const room of rooms) {
+                if (room === socket.id) continue;
+
+                const game = gameRepository.getById(room);
+                if (!game) continue;
+
+                if (game.getPlayer(user.id)) {
+                    game.playerDisconnect(user.id, socket.id);
+                } else {
+                    // TODO: Remove spectators
+                }
+            }
+
         })
     })
 }

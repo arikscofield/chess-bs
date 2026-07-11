@@ -2,14 +2,15 @@ import type {
     GameAbortedResponse,
     GameChatMessageResponse,
     GameChatSendRequest, GameChatSystemResponse,
-    GameClockStartedResponse, GameClockStateResponse, GameDrawAcceptRequest, GameDrawCancelledResponse,
+    GameClockStartedResponse, GameClockStateResponse,
+    GameDisconnectRequest, GameDrawAcceptRequest, GameDrawCancelledResponse,
     GameDrawCancelOfferRequest,
     GameDrawDeclinedResponse, GameDrawDeclineRequest, GameDrawOfferedResponse, GameDrawOfferRequest,
     GameJoinRequest,
     GameMoveAppliedResponse, GameMoveBluffCallFailedResponse, GameMoveBluffCallRequest,
     GameMoveBluffCallSucceededResponse, GameMoveBluffChoosePieceRequest, GameMoveBluffLostPieceResponse,
-    GameMoveSendRequest, GameOverResponse,
-    GamePlayerJoinedResponse,
+    GameMoveSendRequest, GameOverResponse, GamePlayerDisconnectedResponse,
+    GamePlayerJoinedResponse, GamePlayerReconnectedResponse,
     GamePlayerStateResponse, GameRematchAcceptedResponse, GameRematchAcceptRequest,
     GameRematchCancelledResponse, GameRematchCancelOfferRequest, GameRematchDeclinedResponse, GameRematchDeclineRequest,
     GameRematchOfferedResponse, GameRematchOfferRequest,
@@ -156,7 +157,8 @@ export type GenericCallback = (ok: boolean, message?: string, data?: any) => voi
 export interface ClientToServerEvents {
     "game:join": (payload: GameJoinRequest, callback: GenericCallback) => void;
     "game:spectate": (payload: GameSpectateRequest, callback: GenericCallback) => void;
-    // "game:leave": (payload: any) => void;
+    // "game:leave": (payload: GameLeaveRequest, callback: GenericCallback) => void;
+    "game:disconnect": (payload: GameDisconnectRequest, callback: GenericCallback) => void;
 
     "game:request-state": (payload: GameRequestStateRequest, callback: GenericCallback) => void;
 
@@ -185,6 +187,8 @@ export interface ServerToClientEvents {
 
     "game:player:joined": (payload: GamePlayerJoinedResponse) => void;
     "game:player:state": (payload: GamePlayerStateResponse) => void;
+    "game:player:disconnected": (payload: GamePlayerDisconnectedResponse) => void;
+    "game:player:reconnected": (payload: GamePlayerReconnectedResponse) => void;
 
     "game:aborted": (payload: GameAbortedResponse) => void;
 

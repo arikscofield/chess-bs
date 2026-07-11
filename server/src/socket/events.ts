@@ -1,9 +1,12 @@
 import type Game from "../game.js";
 import {
     type GameClockStartedResponse,
-    type GameOverResponse, type GamePlayerStateResponse,
+    type GameOverResponse,
+    type GamePlayerDisconnectedResponse,
+    type GamePlayerReconnectedResponse,
     type GameRematchAcceptedResponse,
-    GameResult, type GameStartedResponse, type GameStateResponse
+    GameResult,
+    type GameStartedResponse,
 } from "@chess-bs/common";
 import {gameRepository, io} from "../server.js";
 import {saveFinishedGame} from "../db/helper.js";
@@ -57,10 +60,10 @@ export function sendGameOver(game: string | Game, gameResult: GameResult, reason
 
     // Move game to db
     saveFinishedGame(gameObj).then(r => {
-        // Delete after 5 minutes to allow for chat messages
-        // setTimeout(() => {
-        //     gameRepository.deleteById(gameId);
-        // }, 1000 * 60 * 5)
+        // Force delete after 10 minutes
+        setTimeout(() => {
+            gameRepository.deleteById(gameId);
+        }, 1000 * 60 * 10)
     });
 
     return true;
@@ -95,3 +98,23 @@ export function sendClockStarted(game: Game) {
     }
     io.to(game.gameId).emit("game:clock:started", payload);
 }
+
+
+export function sendPlayerReconnected(gameId: string, userId: string) {
+    io.to(gameId).emit("game:player:reconnected", {
+        userId: userId,
+    } as GamePlayerReconnectedResponse);
+}
+
+export function sendPlayerDisconnected(gameId: string, userId: string, timeoutMs?: number) {
+    io.to(gameId).emit("game:player:disconnected", {
+        userId: userId,
+        disconnectedAt: Date.now(),
+        timeoutMs: timeoutMs,
+    } as GamePlayerDisconnectedResponse)
+}
+
+export function cleanupGame(gameId: string) {
+    gameRepository.deleteById(gameId);
+}
+

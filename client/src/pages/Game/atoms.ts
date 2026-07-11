@@ -35,6 +35,7 @@ export const addTurnTimestampAtom = atom<null, [timestamp: number, index: number
 })
 export const turnColorAtom = atom<Color>(Color.White);
 export const playersAtom = atom<PlayerDTO[]>([]);
+export const playersConnectedAtom = atom<Set<string>>(new Set<string>());
 export const gameResultAtom = atom<GameResult>(GameResult.Draw);
 export const gameResultReasonAtom = atom<string>("");
 export const viewAtom = atom<Color | undefined>(undefined);
@@ -48,8 +49,9 @@ export const setGameStateAtom = atom(null, (_, set, state: GameStateResponse) =>
     set(turnColorAtom, state.turnColor);
     set(turnHistoryAtom, state.turnHistory);
     set(playersAtom, state.players);
+    set(playersConnectedAtom, new Set(state.playersConnected));
     set(drawOfferedColorAtom, state.drawOfferedColor ?? null);
-    set(clockInfoAtom, state.clock)
+    set(clockInfoAtom, state.clock);
 })
 
 
@@ -59,7 +61,7 @@ export const startBoardAtom = atom<BoardClass>(BoardClass.defaultBoard());
 export const ruleCountAtom = atom<number>(0);
 export const rulePoolIdsAtom = atom<number[]>([]);
 export const rulePoolAtom = atom(get => get(rulePoolIdsAtom).map(id => Rule.getRuleFromId(id)).filter(rule => rule !== undefined));
-export const playerAtom = atom<PlayerDTO>();
+export const playerAtom = atom<PlayerDTO | null>(null);
 export const playerRulePoolAtom = atom(get => (get(playerAtom)?.ruleIds ?? []).map(id => Rule.getRuleFromId(id)).filter(rule => rule !== undefined));
 export const bluffPunishmentAtom = atom<BluffPunishment>(BluffPunishment.Turn);
 export const creatorColorAtom = atom<CreateGameColor>(CreateGameColor.Random);

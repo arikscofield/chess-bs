@@ -25,7 +25,8 @@ import {
     type GameRematchAcceptedResponse,
     type GameRematchDeclinedResponse,
     type GameOverResponse,
-    type GameJoinRequest, type GenericCallback
+    type GameJoinRequest, type GenericCallback, type GamePlayerDisconnectedResponse, type GamePlayerReconnectedResponse,
+    type GameDisconnectRequest
 } from "@chess-bs/common";
 import {useSocket} from "../../components/context/SocketContext.ts";
 import BoardClass from "@chess-bs/common/dist/board.js";
@@ -43,7 +44,7 @@ import {
     clockIncrementMsAtom, clockInfoAtom,
     clockStartMsAtom, clockStartTimestampAtom, drawOfferedColorAtom,
     gameCreatedTimestampAtom, gameIdAtom, gameResultAtom, gameResultReasonAtom,
-    gameStatusAtom, playerAtom, playersAtom, ruleCountAtom,
+    gameStatusAtom, playerAtom, playersAtom, playersConnectedAtom, ruleCountAtom,
     rulePoolIdsAtom, setGameStateAtom,
     startBoardAtom, turnColorAtom, turnHistoryAtom,
     usesClockAtom,
@@ -84,6 +85,7 @@ function Game() {
     const setClockInfo = useSetAtom(clockInfoAtom);
 
     const setPlayer = useSetAtom(playerAtom);
+    const setPlayersConnected = useSetAtom(playersConnectedAtom);
 
     const setDrawOfferedColor = useSetAtom(drawOfferedColorAtom);
 
@@ -172,14 +174,14 @@ function Game() {
 
     // Setup socket event handlers
     useEffect(() => {
-
         if (!isConnected || !socket) {
             return;
         }
 
-
         function onPlayerJoined(payload: GamePlayerJoinedResponse) {
             console.log("game:player:joined received", payload);
+            const {userId} = payload;
+            setPlayersConnected(c => new Set(c).add(userId))
         }
 
         function onPlayerState(payload: GamePlayerStateResponse) {
@@ -308,11 +310,29 @@ function Game() {
             setGameResultReason(reason);
         }
 
+        function onPlayerDisconnected(payload: GamePlayerDisconnectedResponse) {
+            console.log("game:player:disconnected received", payload);
+            const {userId, disconnectedAt, timeoutMs} = payload;
+            setPlayersConnected(c => {
+                const newSet = new Set(c);
+                newSet.delete(userId);
+                return newSet;
+            })
+        }
+
+        function onPlayerReconnected(payload: GamePlayerReconnectedResponse) {
+            console.log("game:player:reconnected received", payload);
+            const {userId} = payload;
+            setPlayersConnected(c =>  new Set(c).add(userId))
+        }
+
 
         socket.on('game:player:joined', onPlayerJoined);
         socket.on('game:player:state', onPlayerState);
         socket.on('game:aborted', onGameAborted);
         socket.on('game:state', onGameState);
+        socket.on('game:player:disconnected', onPlayerDisconnected);
+        socket.on('game:player:reconnected', onPlayerReconnected);
         socket.on('game:started', onGameStarted);
         socket.on('game:move:applied', onMoveApplied);
         socket.on('game:move:bluff:call-succeeded', onBluffCallSucceeded);
@@ -332,11 +352,12 @@ function Game() {
 
         // Cleanup
         return () => {
-
             socket.off('game:player:joined', onPlayerJoined);
             socket.off('game:player:state', onPlayerState);
             socket.off('game:aborted', onGameAborted);
             socket.off('game:state', onGameState);
+            socket.off('game:player:disconnected', onPlayerDisconnected);
+            socket.off('game:player:reconnected', onPlayerReconnected);
             socket.off('game:started', onGameStarted);
             socket.off('game:move:applied', onMoveApplied);
             socket.off('game:move:bluff:call-succeeded', onBluffCallSucceeded);
@@ -354,6 +375,19 @@ function Game() {
             socket.off('game:over', onGameOver);
         }
     }, [isConnected, gameId]);
+
+
+    //
+    useEffect(() => {
+        if (!socket || !gameId) return;
+
+        return () => {
+            console.log("Leaving game", gameId);
+            socket.emit("game:disconnect", { gameId: gameId } as GameDisconnectRequest, () => {
+
+            });
+        }
+    }, [socket, gameId])
 
 
     function handleJoinGame(gameId: string): void {

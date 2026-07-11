@@ -18,6 +18,16 @@ export const GameJoinSchema = z.object({
 })
 export type GameJoinRequest = z.infer<typeof GameJoinSchema>;
 
+export const GameLeaveSchema = z.object({
+    gameId: z.string(),
+});
+export type GameLeaveRequest = z.infer<typeof GameLeaveSchema>;
+
+export const GameDisconnectSchema = z.object({
+    gameId: z.string(),
+});
+export type GameDisconnectRequest = z.infer<typeof GameDisconnectSchema>;
+
 export const GameSpectateSchema = z.object({
     gameId: z.string(),
 })
@@ -123,13 +133,20 @@ export const GamePlayerJoinedSchema = z.object({
 })
 export type GamePlayerJoinedResponse = z.infer<typeof GamePlayerJoinedSchema>;
 
-// export const GamePlayerState = z.object({
-//     userId: z.string(),
-//     color: ZColorEnum,
-//     ruleIds: z.array(z.number().int()),
-// })
 export const GamePlayerState = PlayerDTOSchema;
 export type GamePlayerStateResponse = z.infer<typeof GamePlayerState>;
+
+export const GamePlayerDisconnectedSchema = z.object({
+    userId: z.string(),
+    disconnectedAt: z.number().int(),
+    timeoutMs: z.number().int().optional(),
+});
+export type GamePlayerDisconnectedResponse = z.infer<typeof GamePlayerDisconnectedSchema>;
+
+export const GamePlayerReconnectedSchema = z.object({
+    userId: z.string(),
+});
+export type GamePlayerReconnectedResponse = z.infer<typeof GamePlayerReconnectedSchema>;
 
 export const GameAbortedSchema = z.object({
 
@@ -154,6 +171,7 @@ export const GameStateSchema = z.object({
     turnColor: ZColorEnum,
     turnHistory: z.array(TurnSchema),
     players: z.array(PlayerDTOSchema),
+    playersConnected: z.array(z.string()).optional(),
     drawOfferedColor: ZColorEnum.nullable().optional(),
 })
 export type GameStateResponse = z.infer<typeof GameStateSchema>;

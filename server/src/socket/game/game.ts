@@ -5,7 +5,7 @@ import {
     type GameRequestStateRequest, GameRequestStateSchema,
     type GameResignRequest, GameResignSchema, GameResult,
     type GameSpectateRequest, GameSpectateSchema, type GameStateResponse, GameStatus, type GenericCallback,
-    type GamePlayerStateResponse, type GameStartedResponse,
+    type GameDisconnectRequest, GameDisconnectSchema,
 } from "@chess-bs/common";
 import {validateSocketPayload} from "../index.js";
 import type {User} from "../../db/schema.js";
@@ -44,12 +44,12 @@ export default function gameHandler(io: Server) {
 
         console.log(`User: ${user.username} ${isRejoining ? "rejoining" : "joining"} match: ${gameId}`)
         this.join(gameId);
+        game.playerConnect(user.id, this.id);
 
         this.to(gameId).emit("game:player:joined", {
             userId: user.id,
             username: user.username,
         } as GamePlayerJoinedResponse)
-
         this.emit("game:player:state", player?.getState());
 
         callback(true, isRejoining? "Successfully rejoined game" : "Successfully joined game", game.getState());
@@ -127,11 +127,33 @@ export default function gameHandler(io: Server) {
         return;
     }
 
+    function disconnect(this: Socket, payload: GameDisconnectRequest, callback: GenericCallback) {
+        const parsed: GameDisconnectRequest = validateSocketPayload(payload, GameDisconnectSchema, "game:disconnect");
+        const { gameId } = parsed;
+        const user: User = this.data.user;
+        const game = gameRepository.getById(gameId);
+
+        this.leave(gameId);
+
+        if (!game) {
+            callback(false, "Game not found");
+            return;
+        }
+
+        if (game.getPlayer(user.id)) {
+            game.playerDisconnect(user.id, this.id);
+        } else {
+            // TODO: remove spectators
+        }
+
+        callback(true, "Successfully disconnected from game");
+    }
 
     return {
         joinGame,
         spectateGame,
         getState,
-        resign
+        resign,
+        disconnect,
     }
 }

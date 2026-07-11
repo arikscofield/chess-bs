@@ -25,7 +25,7 @@ import {
     gameStatusAtom,
     isBluffingAtom, isDragMoveAtom,
     playerAtom,
-    playersAtom,
+    playersAtom, playersConnectedAtom,
     removeTurnAtom,
     rulePoolIdsAtom,
     startBoardAtom,
@@ -39,6 +39,7 @@ import {type CSSProperties, useEffect, useState} from "react";
 import GameActions from "../../components/GameActions.tsx";
 import {useClockState} from "../../hooks/LiveClock.ts";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
+import ConnectionIcon from "../../components/ConnectionIcon.tsx";
 
 // Usable height inside AppShell.Main, derived from Mantine's own CSS vars
 // (header height + top/bottom padding). Stays correct if you change either.
@@ -58,6 +59,7 @@ function Play() {
     const rulePoolIds = useAtomValue(rulePoolIdsAtom);
     const players = useAtomValue(playersAtom);
     const player = useAtomValue(playerAtom);
+    const playersConnected = useAtomValue(playersConnectedAtom);
     const turnHistory = useAtomValue(turnHistoryAtom);
     const clockInfo = useAtomValue(clockInfoAtom);
     const gameResult = useAtomValue(gameResultAtom);
@@ -123,8 +125,10 @@ function Play() {
         })
     }
 
-    const topColor: Color = view === undefined ? (player?.color === Color.White ? Color.Black : Color.White) : (view === Color.White ? Color.Black : Color.White)
-    const bottomColor: Color = topColor === Color.White ? Color.Black : Color.White;
+    const topPlayer: PlayerDTO | null = (view === undefined || view === player?.color) ? opponent : player;
+    const bottomPlayer: PlayerDTO | null = topPlayer?.color === opponent?.color ? player : opponent;
+    const topColor: Color = topPlayer?.color ?? Color.Black;
+    const bottomColor: Color = bottomPlayer?.color ?? Color.White;
     const topClock = clockState.get(topColor);
     const bottomClock = clockState.get(bottomColor);
 
@@ -140,12 +144,12 @@ function Play() {
     ];
 
 
-    return (<div style={PLAY_AREA_STYLE} className={"flex flex-col min-h-[var(--play-h)] w-full text-white"}>
+    return (<div style={PLAY_AREA_STYLE} className={"flex flex-col min-h-(--play-h) w-full text-white"}>
 
-        <div className={"flex flex-col xl:flex-row gap-3 xl:gap-5 justify-center items-stretch xl:items-start min-h-[var(--play-h)] xl:h-[var(--play-h)]"}>
+        <div className={"flex flex-col xl:flex-row gap-3 xl:gap-5 justify-center items-stretch xl:items-start min-h-(--play-h) xl:h-(--play-h)"}>
 
             {/* Left Side (desktop only) */}
-            <div className={"hidden xl:block w-[300px] h-full"}>
+            <div className={"hidden xl:block w-75 h-full"}>
                 <Group orientation={"vertical"}
                        defaultLayout={{
                            "rule-pool": 1,
@@ -176,11 +180,12 @@ function Play() {
             </div>
 
             {/* Board Area */}
-            <div className={"flex flex-col items-center justify-center flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh_-_100px),75vw)]"}>
+            <div className={"flex flex-col items-center justify-center flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh-100px),75vw)]"}>
 
                 {/* Top Player */}
                 <div className={"flex flex-row justify-between w-full mb-0.5"}>
                     <div className={"flex flex-row justify-center items-end gap-1"}>
+                        <ConnectionIcon connected={topPlayer?.color === player?.color ? !!socket : playersConnected.has(topPlayer?.userId ?? "")} mb={5}/>
                         {/* Player Name*/}
                         <p className={"text-base font-semibold"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</p>
                         {/* Piece Eval */}
@@ -195,7 +200,7 @@ function Play() {
                 </div>
 
                 {/* Board */}
-                <div className={"w-full max-w-[min(92vw,calc(100dvh_-_240px))] xl:max-w-[min(calc(100dvh_-_180px),65vw)] aspect-square"}>
+                <div className={"w-full max-w-[min(92vw,calc(100dvh-240px))] xl:max-w-[min(calc(100dvh-180px),65vw)] aspect-square"}>
                     {visibleBoard !== null && player && <Board
                         board={visibleBoard}
                         gameStatus={gameStatus}
@@ -215,6 +220,7 @@ function Play() {
                 {/* Bottom Player */}
                 <div className={"flex flex-row justify-between w-full mt-1"}>
                     <div className={"flex flex-row justify-center items-start gap-1"}>
+                        <ConnectionIcon connected={bottomPlayer?.color === player?.color ? !!socket : playersConnected.has(bottomPlayer?.userId ?? "")} mt={6}/>
                         {/* Player Name*/}
                         <p className={"text-base font-semibold"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</p>
                         {/* Piece Eval */}
@@ -236,7 +242,7 @@ function Play() {
                     />}
                 </div>
 
-                <div className={"xl:hidden flex flex-row justify-around gap-2 w-full mt-2 [&>*]:min-h-11 [&>*]:flex-1"}>
+                <div className={"xl:hidden flex flex-row justify-around gap-2 w-full mt-2 *:min-h-11 *:flex-1"}>
                     <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
                     <CallBluffButtonOnline
                         gameId={gameId}
@@ -247,7 +253,7 @@ function Play() {
             </div>
 
             {/* Right Side (desktop only) */}
-            <div className={"hidden xl:block w-[300px] h-full"}>
+            <div className={"hidden xl:block w-75 h-full"}>
                 <Group orientation={"vertical"}
                        defaultLayout={{
                            "turn-history": 1.3,
@@ -319,7 +325,7 @@ function Play() {
                     ))}
                 </div>
 
-                <div className={"h-[50dvh] min-h-[300px]"}>
+                <div className={"h-[50dvh] min-h-75"}>
                     {mobileTab === "rules" && (
                         <div className={"flex flex-col gap-2 h-full overflow-y-auto"}>
                             <div className={"flex flex-col rounded-lg bg-bg-2 border border-white/10"}>
