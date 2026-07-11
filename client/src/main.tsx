@@ -6,7 +6,7 @@ import {BrowserRouter, Route, Routes} from "react-router";
 import './index.css'
 import Home from "./pages/Home/Home.tsx";
 import MainLayout from "./pages/MainLayout.tsx";
-import {ColorSchemeScript, MantineProvider} from "@mantine/core";
+import {MantineProvider} from "@mantine/core";
 import Game from "./pages/Game/Game.tsx";
 import SocketProvider from "./components/context/SocketProvider.tsx";
 import {AuthProvider} from "./components/context/AuthProvider.tsx";
@@ -30,11 +30,4 @@ createRoot(document.getElementById('root')!).render(
           </AuthProvider>
       </MantineProvider>
   // </StrictMode>,
-)
-
-
-createRoot(document.getElementById('head')!).render(
-    <>
-        <ColorSchemeScript/>
-    </>
 )

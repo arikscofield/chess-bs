@@ -312,7 +312,7 @@ function Game() {
 
         function onPlayerDisconnected(payload: GamePlayerDisconnectedResponse) {
             console.log("game:player:disconnected received", payload);
-            const {userId, disconnectedAt, timeoutMs} = payload;
+            const {userId} = payload;
             setPlayersConnected(c => {
                 const newSet = new Set(c);
                 newSet.delete(userId);
