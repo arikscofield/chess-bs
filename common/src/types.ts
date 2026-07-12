@@ -97,10 +97,6 @@ export const PieceAscii: Record<Color, Record<PieceType, string>> = {
     }
 }
 
-export const BoardColorType: Record<string, [string, string, string, string]> = {
-    Brown: ["bg-board-brown-light", "bg-board-brown-dark", "text-board-brown-light", "text-board-brown-dark"],
-    Green: ["bg-board-green-light", "bg-board-green-dark", "text-board-green-light", "text-board-green-dark"],
-}
 
 export enum GameStatus {
     WAITING_FOR_PLAYER = "WAITING_FOR_PLAYER",

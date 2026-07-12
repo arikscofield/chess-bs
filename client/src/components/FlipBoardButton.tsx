@@ -13,7 +13,7 @@ function FlipBoardButton({playerColor, setView}: {
 
     return <Button
         variant={"subtle"}
-        color={"white"}
+        color={"var(--color-fg-2)"}
         onClick={() => setView((prevColor) => prevColor === opponentColor ? undefined : opponentColor)}
         title={"Flip Board"}
         aria-label={"Flip Board"}

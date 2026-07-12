@@ -31,3 +31,7 @@ createRoot(document.getElementById('root')!).render(
       </MantineProvider>
   // </StrictMode>,
 )
+
+if (import.meta.env.DEV) {
+    document.getElementById('title')!.innerText = "Bluff Chess Dev"
+}

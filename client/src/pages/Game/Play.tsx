@@ -2,6 +2,7 @@ import {Group, Panel, Separator} from "react-resizable-panels";
 import RuleList from "../../components/RuleList.tsx";
 import {MdOutlineDragIndicator} from "react-icons/md";
 import {
+    BOT_UUID,
     Color,
     type GameMoveSendRequest, GameStatus,
     getMoveNotation,
@@ -40,6 +41,7 @@ import GameActions from "../../components/GameActions.tsx";
 import {useClockState} from "../../hooks/LiveClock.ts";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
 import ConnectionIcon from "../../components/ConnectionIcon.tsx";
+import {Text, Title} from "@mantine/core";
 
 // Usable height inside AppShell.Main, derived from Mantine's own CSS vars
 // (header height + top/bottom padding). Stays correct if you change either.
@@ -158,7 +160,7 @@ function Play() {
                 >
                     <Panel id={"rule-pool"} minSize={"100px"}>
                         <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10"}>
-                            <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Game Rules</h3>
+                            <Title order={5} c={"var(--color-fg-3)"} className={"font-semibold! text-center pt-2 uppercase "}>Game Rules</Title>
                             <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true} wrapChips={true}/>
                         </div>
                     </Panel>
@@ -172,7 +174,7 @@ function Play() {
                         minSize={"100px"}
                     >
                         <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10"}>
-                            <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Your Rules</h3>
+                            <Title order={5} c={"var(--color-fg-3)"} className={"font-semibold! text-center pt-2 uppercase "}>Your Rules</Title>
                             <OwnRules ruleIds={player?.ruleIds ?? []} color={player?.color || Color.White}/>
                         </div>
                     </Panel>
@@ -185,11 +187,11 @@ function Play() {
                 {/* Top Player */}
                 <div className={"flex flex-row justify-between w-full mb-0.5"}>
                     <div className={"flex flex-row justify-center items-end gap-1"}>
-                        <ConnectionIcon connected={topPlayer?.color === player?.color ? !!socket : playersConnected.has(topPlayer?.userId ?? "")} mb={5}/>
+                        <ConnectionIcon connected={topPlayer?.userId === BOT_UUID || (topPlayer?.color === player?.color ? !!socket : playersConnected.has(topPlayer?.userId ?? ""))} mb={3}/>
                         {/* Player Name*/}
-                        <p className={"text-base font-semibold"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</p>
+                        <Text className={"font-semibold!"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</Text>
                         {/* Piece Eval */}
-                        <p className={"text-sm text-gray-400 "}>{visibleBoard?.getPieceEval(topColor, true)}</p>
+                        <Text size={"sm"} c={"var(--color-fg-3)"}>{visibleBoard?.getPieceEval(topColor, true)}</Text>
                     </div>
 
                     {clockInfo.usesClock && topClock && <Timer
@@ -220,11 +222,11 @@ function Play() {
                 {/* Bottom Player */}
                 <div className={"flex flex-row justify-between w-full mt-1"}>
                     <div className={"flex flex-row justify-center items-start gap-1"}>
-                        <ConnectionIcon connected={bottomPlayer?.color === player?.color ? !!socket : playersConnected.has(bottomPlayer?.userId ?? "")} mt={6}/>
+                        <ConnectionIcon connected={bottomPlayer?.userId === BOT_UUID || (bottomPlayer?.color === player?.color ? !!socket : playersConnected.has(bottomPlayer?.userId ?? ""))} mt={5}/>
                         {/* Player Name*/}
-                        <p className={"text-base font-semibold"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</p>
+                        <Text className={"font-semibold!"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</Text>
                         {/* Piece Eval */}
-                        <p className={"text-sm text-gray-400 "}>{visibleBoard?.getPieceEval(bottomColor, true)}</p>
+                        <Text size={"sm"} c={"var(--color-fg-3)"} pt={1.5}>{visibleBoard?.getPieceEval(bottomColor, true)}</Text>
                     </div>
 
                     <div className={"hidden xl:flex flex-row justify-center gap-2"}>
@@ -297,7 +299,7 @@ function Play() {
                         minSize={"100px"}
                     >
                         <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
+                            <Title order={5} c={"var(--color-fg-3)"} className={"font-semibold! text-center pt-1 uppercase"}>Chat</Title>
                             <Chatroom
                                 gameId={gameId}
                             />

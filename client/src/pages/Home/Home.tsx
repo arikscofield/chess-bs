@@ -166,7 +166,7 @@ function Home() {
 
 
     return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-82px)] w-full py-8 px-4 sm:px-6 text-white">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-82px)] w-full py-8 px-4 sm:px-6 text-fg-2">
         <div className={"w-full max-w-4xl"}>
             <div className={"text-center mb-5"}>
                 <Title order={1}>
@@ -176,23 +176,23 @@ function Home() {
 
             {/* How to play */}
             <Card className={"bg-bg-2! border border-white/10 "} mb={20}>
-                <Title order={3} c={"white"} mb={10}>
+                <Title order={3} mb={10}>
                     How to Play
                 </Title>
                 <div className={"grid grid-cols-1 sm:grid-cols-3 gap-3"}>
-                    <div className={"bg-bg-1/75 text-gray-200 rounded-lg p-4"}>
+                    <div className={"bg-bg-1/75 rounded-lg p-4"}>
                         <div className={"text-fg-1 font-bold text-lg"}>1. Get Rules</div>
-                        <Text>Each player is assigned secret rules that can change how their own pieces can move.</Text>
+                        <Text c={"var(--color-fg-3)"}>Each player is assigned secret rules that can change how their own pieces can move.</Text>
                     </div>
 
-                    <div className={"bg-bg-1/75 text-gray-200 rounded-lg p-4"}>
+                    <div className={"bg-bg-1/75 rounded-lg p-4"}>
                         <div className={"text-fg-1 font-bold text-lg"}>2. Bluff</div>
-                        <Text>Bluff by making illegal moves disguised as one of your secret rules, or call out your opponent when they bluff.</Text>
+                        <Text c={"var(--color-fg-3)"}>Bluff by making illegal moves disguised as one of your secret rules, or call out your opponent when they bluff.</Text>
                     </div>
 
-                    <div className={"bg-bg-1/75 text-gray-200 rounded-lg p-4"}>
+                    <div className={"bg-bg-1/75 rounded-lg p-4"}>
                         <div className={"text-fg-1 font-bold text-lg"}>3. Win</div>
-                        <Text>You win by capturing the king, or when the opponent runs out of time.</Text>
+                        <Text c={"var(--color-fg-3)"}>You win by capturing the king, or when the opponent runs out of time.</Text>
                     </div>
 
                 </div>
@@ -203,18 +203,18 @@ function Home() {
                 <Card className={"bg-bg-2! border-3 border-red-500/10 hover:border-fg-1/50 transition-colors cursor-pointer group"}
                       onClick={() => {navigate("/games")}}
                 >
-                    <div className={"flex flex-col justify-center gap-5 text-white"}>
-                        <Title order={3} className={"text-xl group-hover:text-fg-1"}>Find a Game</Title>
-                        <Text size={"sm"} className={"text-gray-200! group-hover:text-white! transition-colors"}>Find an existing public match</Text>
+                    <div className={"flex flex-col justify-center gap-5 "}>
+                        <Title order={3} className={"text-xl text-gray-400"}>Find a Game</Title>
+                        <Text size={"sm"} c={"var(--color-fg-3)"}>Find an existing public match</Text>
                     </div>
                 </Card>
 
                 <Card className={"bg-bg-2! border-3 border-green-500/10 hover:border-fg-1/50 transition-colors cursor-pointer group"}
                       onClick={handleCreateGame}
                 >
-                    <div className={"flex flex-col justify-center gap-5 text-white"}>
-                        <Title order={3} className={"text-xl group-hover:text-fg-1"}>Create a Game</Title>
-                        <Text size={"sm"} className={"text-gray-200! group-hover:text-white! transition-colors"}>Create a private or public match</Text>
+                    <div className={"flex flex-col justify-center gap-5 "}>
+                        <Title order={3} className={"text-xl"}>Create a Game</Title>
+                        <Text size={"sm"} c={"var(--color-fg-3)"}>Create a private or public match</Text>
                     </div>
                 </Card>
             </div>
@@ -223,7 +223,7 @@ function Home() {
             <Card className={"bg-bg-2! border-3 border-blue-500/10 transition-colors mb-5"}
                 onClick={() => {handleJoinGame(gameCodeInput)}}
             >
-                <Title order={3} c={"white"} mb={10}>Join a Game</Title>
+                <Title order={3} mb={10}>Join a Game</Title>
                 <div className={"flex flex-row gap-3"}>
                     <TextInput
                         size={"md"}
@@ -244,6 +244,7 @@ function Home() {
                         color={"var(--color-fg-1)"}
                         onClick={() => gameCodeInput.trim() && handleJoinGame(gameCodeInput.trim())}
                         disabled={!gameCodeInput.trim()}
+                        className={"transition-colors duration-200"}
                     >
                         Join
                     </Button>
@@ -255,8 +256,8 @@ function Home() {
                 onClick={handlePlayBot}
             >
                 <div className={"flex flex-row justify-between"}>
-                    <Title order={3} c={"white"}>Play a Bot</Title>
-                    <FaRobot size={30} className={"text-fg-1/50 group-hover:text-fg-1"}/>
+                    <Title order={3}>Play a Bot</Title>
+                    <FaRobot size={30} className={"text-fg-1/70 group-hover:text-fg-1 transition-colors"}/>
                 </div>
             </Card>
 

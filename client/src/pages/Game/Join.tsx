@@ -20,14 +20,14 @@ function Join({handleJoinGame}: {handleJoinGame: (gameId: string) => void}) {
             <Card className={"bg-bg-2/50! text-white! border-white/20!"} padding="xl" withBorder shadow={"md"}>
                 <div className={"flex flex-col items-center gap-4"}>
                     <Loader />
-                    <p>Connecting to server...</p>
+                    <Text>Connecting to server...</Text>
                 </div>
             </Card>
         </div>
     }
 
 
-    return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] text-white"}>
+    return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] "}>
         <div className={"w-full max-w-md"}>
             <Card padding={"xl"} className={"bg-bg-2!"}>
                 <div className={"flex flex-col items-center gap-6"}>
@@ -37,15 +37,15 @@ function Join({handleJoinGame}: {handleJoinGame: (gameId: string) => void}) {
 
                     {/* Game Details */}
                     <div className={"flex flex-col items-center gap-1"}>
-                        <Text size="md" c={"gray"}>
+                        <Text size={"md"}>
                             Game Code:{" "}
                             <Text inherit span fw={700} c={"var(--color-fg-1)"} className={"font-mono"}>{gameId}</Text>
                         </Text>
-                        <Text size="md" c={"gray"}>
+                        <Text size="md">
                             Bluff Punishment:{" "}
                             <Text inherit span fw={700} c={"var(--color-fg-1)"} className={"font-mono capitalize"}>{bluffPunishment}</Text>
                         </Text>
-                        <Text size="md" c={"gray"}>
+                        <Text size="md">
                             Rule Count:{" "}
                             <Text inherit span fw={700} c={"var(--color-fg-1)"} className={"font-mono capitalize"}>{ruleCount}</Text>
                         </Text>

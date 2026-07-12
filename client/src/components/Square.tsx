@@ -1,11 +1,12 @@
-import {BoardColorType, Color, type Piece, type PieceType} from "@chess-bs/common"
+import {Color, type Piece, type PieceType} from "@chess-bs/common"
 import {pieceImages} from "../assets/pieceImages.ts";
+import {BoardColorPreset, type BoardColors, DefaultMoveColors, type MoveColors} from "../atoms/settings.ts";
 
 
 const CAPTURE_HIGHLIGHT_SIZE = 25;
 
 function Square(
-    { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, handleSelectPromotion, boardType = BoardColorType.Brown }:
+    { row, col, color, piece, hovered, selected, highlighted, movable, ruleMovable, isBluffing, promotionOptionPieceType, handleSelectPromotion, boardColors = BoardColorPreset.Brown, moveColors = DefaultMoveColors }:
     {
         row: number,
         col: number,
@@ -19,7 +20,8 @@ function Square(
         isBluffing: boolean,
         promotionOptionPieceType: PieceType | null,
         handleSelectPromotion: (pieceType: PieceType) => void,
-        boardType?: [string, string, string, string],
+        boardColors?: BoardColors,
+        moveColors?: MoveColors
     }
 ) {
 
@@ -45,10 +47,11 @@ function Square(
     }
 
     const anyMovable = movable || ruleMovable;
+    const moveColor = isBluffing ? moveColors.bluff : ruleMovable ? moveColors.rule : moveColors.regular;
 
     return (
-        <div className={`relative flex w-full h-full items-center justify-center z-10 pointer-events-none ${(row+col) % 2 === 0 ? boardType[0] : boardType[1]} `}
-             style={{ touchAction: "none" }}
+        <div className={`relative flex w-full h-full items-center justify-center z-10 pointer-events-none`}
+             style={{ touchAction: "none", backgroundColor: (row+col) % 2 === 0 ? boardColors.light : boardColors.dark }}
 
         >
             {/* Selected Piece highlight */}
@@ -61,9 +64,9 @@ function Square(
             {anyMovable && !hovered &&
                 <svg
                     viewBox={"0 0 100 100"}
-                    fill={isBluffing ? "var(--color-red-700)" : ruleMovable ? "var(--color-blue-700)" :"var(--color-green-700"}
+                    fill={moveColor}
                     stroke={"none"}
-                    opacity={0.5}
+                    // opacity={0.5}
                     className={`absolute w-full h-full pointer-events-none`}
                 >
                     {piece === null ?
@@ -82,7 +85,12 @@ function Square(
             }
 
             {/* Legal move on-hover-highlight */}
-            {hovered && anyMovable && !selected && <div className={`absolute w-full h-full top-0 left-0 ${isBluffing ? "bg-red-600/30" : (ruleMovable ? "bg-blue-600/30" : (movable ? "bg-green-600/30" : ""))}`}/>}
+            {hovered && anyMovable && !selected &&
+                <div
+                    style={{backgroundColor: moveColor, opacity: 0.5}}
+                    // style={{backgroundColor: moveColor}}
+                    className={`absolute w-full h-full top-0 left-0`}/>
+            }
 
             {piece && <img src={pieceImages[pieceString]} alt={pieceString} width={90} height={90} draggable={false} className={"w-full h-full z-20 pointer-events-none "} style={{ touchAction: "none" }}/>}
 

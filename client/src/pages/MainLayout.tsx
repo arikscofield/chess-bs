@@ -1,6 +1,7 @@
 import {Outlet} from "react-router";
 import {AppShell} from "@mantine/core";
 import NavBar from "../components/NavBar.tsx";
+import ThemeSync from "../components/ThemeSync.tsx";
 
 
 function MainLayout() {
@@ -11,6 +12,8 @@ function MainLayout() {
             main: "flex flex-col"
         }}
     >
+        <ThemeSync/>
+
         <AppShell.Header>
             <NavBar/>
         </AppShell.Header>

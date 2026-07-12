@@ -74,7 +74,7 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
                 onClick={() => {
                     setViewMoveIndex(turnViewIndex+1)
                 }}
-                className={`px-1 py-0.5 flex-1 rounded-md transition-colors hover:cursor-pointer ${viewMoveIndex == turnViewIndex+1 || (viewMoveIndex === -1 && turnViewIndex === turnHistory.length-1) ? "bg-fg-1/50 text-white" : "hover:bg-white/10 text-gray-300"}`}
+                className={`px-1 py-0.5 flex-1 rounded-md transition-colors hover:cursor-pointer ${viewMoveIndex == turnViewIndex+1 || (viewMoveIndex === -1 && turnViewIndex === turnHistory.length-1) ? "bg-fg-1/50 text-fg-2" : "hover:bg-white/10 text-fg-3"}`}
             >
                 {content}
             </div>)
@@ -106,11 +106,11 @@ function TurnHistory({turnHistory, viewMoveIndex, setViewMoveIndex, setView, pla
     }
 
     return (
-        <div className={"flex flex-col justify-between h-full text-white text-base"}>
+        <div className={"flex flex-col justify-between h-full"}>
             <ol className={"flex flex-col justify-start overflow-y-auto pb-1"}>
                 {turnRows.map((row, i) => (
                     <div key={i} className={"flex flex-row justify-between"}>
-                        <div className={"px-1 py-0.5 text-gray-400/80"}>{i+1}</div>
+                        <div className={"px-1 py-0.5 text-fg-3/60"}>{i+1}</div>
                         {row[0]}
                         {row[1]}
                     </div>

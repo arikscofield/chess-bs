@@ -74,14 +74,14 @@ function SortIndicator({ state }: { state: SortDir | undefined }) {
     return (
         <span
             aria-hidden
-            style={{ display: "inline-block", width: "1.1em", textAlign: "center" }}
+            style={{ display: "inline-block", width: "1.1em", textAlign: "center", color: "var(--color-fg-3)", opacity: 0.75 }}
         >
             {state === SortDir.Asc ? (
                 "\u25B2"
             ) : state === SortDir.Desc ? (
                 "\u25BC"
             ) : (
-                <span style={{ opacity: 0.3 }}>{"\u2195"}</span>
+                "\u2195"
             )}
         </span>
     );
@@ -212,18 +212,18 @@ function PublicGamesBrowser() {
 
     const totalPages = Math.max(1, Math.ceil(totalGames / query.pageSize));
 
-    const filterForm = <Stack gap="sm" className={"text-white min-w-[280px]"}>
+    const filterForm = <Stack gap={"sm"} className={"min-w-70"}>
         <Group grow>
             <Switch
-                label="Only timed games"
-                checked={draftQuery.usesClock}
+                label={<Text span size={"sm"}>Only timed games</Text>}
+                checked={draftQuery.usesClock === true}
                 onChange={e =>
                     setDraftQuery(q => ({ ...q, usesClock: e.currentTarget.checked ? true : undefined }))
                 }
                 color={"var(--color-fg-1)"}
             />
             <Switch
-                label="Only non-timed games"
+                label={<Text span size={"sm"}>Only non-timed games</Text>}
                 checked={draftQuery.usesClock === false}
                 onChange={e =>
                     setDraftQuery(q => ({ ...q, usesClock: e.currentTarget.checked ? false : undefined }))
@@ -235,7 +235,7 @@ function PublicGamesBrowser() {
 
         <Group grow>
             <NumberInput
-                label="Min start (s)"
+                label={<Text span size={"sm"} fw={500}>Min start (s)</Text>}
                 min={0}
                 value={draftQuery.minStartSeconds}
                 onChange={v =>
@@ -243,7 +243,7 @@ function PublicGamesBrowser() {
                 }
             />
             <NumberInput
-                label="Max start (s)"
+                label={<Text span size={"sm"} fw={500}>Max start (s)</Text>}
                 min={0}
                 value={draftQuery.maxStartSeconds}
                 onChange={v =>
@@ -254,7 +254,7 @@ function PublicGamesBrowser() {
 
         <Group grow>
             <NumberInput
-                label="Min increment (s)"
+                label={<Text span size={"sm"} fw={500}>Min increment (s)</Text>}
                 min={0}
                 value={draftQuery.minIncrementSeconds}
                 onChange={v =>
@@ -262,7 +262,7 @@ function PublicGamesBrowser() {
                 }
             />
             <NumberInput
-                label="Max increment (s)"
+                label={<Text span size={"sm"} fw={500}>Max increment (s)</Text>}
                 min={0}
                 value={draftQuery.maxIncrementSeconds}
                 onChange={v =>
@@ -273,7 +273,7 @@ function PublicGamesBrowser() {
 
         <Group grow>
             <NumberInput
-                label="Min rules"
+                label={<Text span size={"sm"} fw={500}>Min rules</Text>}
                 min={1}
                 value={draftQuery.minRuleCount}
                 onChange={v =>
@@ -281,7 +281,7 @@ function PublicGamesBrowser() {
                 }
             />
             <NumberInput
-                label="Max rules"
+                label={<Text span size={"sm"} fw={500}>Max rules</Text>}
                 min={1}
                 value={draftQuery.maxRuleCount}
                 onChange={v =>
@@ -292,7 +292,7 @@ function PublicGamesBrowser() {
 
         <Select
             comboboxProps={{ withinPortal: false }}
-            label="Bluff punishment"
+            label={<Text span size={"sm"} fw={500}>Bluff punishment</Text>}
             placeholder="Any"
             clearable
             data={[
@@ -307,7 +307,7 @@ function PublicGamesBrowser() {
 
         <Select
             comboboxProps={{ withinPortal: false }}
-            label="Creator color"
+            label={<Text span size={"sm"} fw={500}>Creator color</Text>}
             placeholder="Any"
             clearable
             data={Object.values(CreateGameColor)}
@@ -325,9 +325,9 @@ function PublicGamesBrowser() {
 
     const rows = games.map(game => (
         <Table.Tr key={game.gameId}>
-            <Table.Td>{formatTimeControl(game)}</Table.Td>
-            <Table.Td className={"capitalize"}>{game.bluffPunishment}</Table.Td>
-            <Table.Td>{game.ruleCount}</Table.Td>
+            <Table.Td><Text size={"sm"}>{formatTimeControl(game)}</Text></Table.Td>
+            <Table.Td className={"capitalize"}><Text size={"sm"}>{game.bluffPunishment}</Text></Table.Td>
+            <Table.Td><Text size={"sm"}>{game.ruleCount}</Text></Table.Td>
             <Table.Td>
                 <Button
                     size={"sm"}
@@ -463,31 +463,32 @@ function PublicGamesBrowser() {
             : <Table.ScrollContainer minWidth={400} bg={rgba("fff", 0)}>
                 <Table stickyHeader horizontalSpacing={"xs"}>
                     <Table.Thead>
-                        <Table.Tr className={"[&>*]:bg-bg-1! rounded-lg [&>*]:p-3!"}>
+                        <Table.Tr className={"*:bg-bg-1! rounded-lg *:p-3!"}>
                             <Table.Th
                                 onClick={() => cycleSort(PublicGameSortBy.Clock)}
                                 style={{ cursor: "pointer", userSelect: "none"}}
                                 className={"rounded-tl-lg"}
                             >
-                                Time Control
+                                <Text span size={"sm"} fw={700}>Time Control</Text>
                                 <SortIndicator state={query.sortBy === PublicGameSortBy.Clock ? query.sortDir : undefined}/>
                             </Table.Th>
                             <Table.Th
                                 onClick={() => cycleSort(PublicGameSortBy.BluffPunishment)}
                                 style={{ cursor: "pointer", userSelect: "none" }}
                             >
-                                Bluff Punishment
+                                <Text span size={"sm"} fw={700}>Bluff Punishment</Text>
+
                                 <SortIndicator state={query.sortBy === PublicGameSortBy.BluffPunishment ? query.sortDir : undefined}/>
                             </Table.Th>
                             <Table.Th
                                 onClick={() => cycleSort(PublicGameSortBy.RuleCount)}
                                 style={{ cursor: "pointer", userSelect: "none" }}
                             >
-                                Rule Count
+                                <Text span size={"sm"} fw={700}>Rule Count</Text>
                                 <SortIndicator state={query.sortBy === PublicGameSortBy.RuleCount ? query.sortDir : undefined}/>
                             </Table.Th>
-                            <Table.Th>Rule Pool</Table.Th>
-                            <Table.Th className={"rounded-tr-lg"}>Join</Table.Th>
+                            <Table.Th><Text span size={"sm"} fw={700}>Rule Pool</Text></Table.Th>
+                            <Table.Th className={"rounded-tr-lg"}><Text span size={"sm"} fw={700}>Join</Text></Table.Th>
                         </Table.Tr>
                     </Table.Thead>
 
@@ -500,13 +501,13 @@ function PublicGamesBrowser() {
 
 
         {!loading && games.length === 0 && (
-            <Text c={"dimmed"} ta={"center"} py={"md"}>
+            <Text c={"var(--color-fg-3)"} ta={"center"} py={"md"}>
                 No public games found.
             </Text>
         )}
 
         <Group justify={"space-between"}>
-            <Text c={"dimmed"}>{totalGames} game{totalGames === 1 ? "" : "s"}</Text>
+            <Text c={"var(--color-fg-3)"}>{totalGames} game{totalGames === 1 ? "" : "s"}</Text>
 
             <Select
                 data={PAGE_SIZE_OPTIONS}
@@ -514,7 +515,7 @@ function PublicGamesBrowser() {
                 onChange={handlePageSizeChange}
                 w={90}
                 aria-label="Games per page"
-                label={"Page size"}
+                label={<Text size={"sm"} fw={700}>Page size</Text>}
             />
 
             <Pagination

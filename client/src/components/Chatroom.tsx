@@ -10,7 +10,7 @@ import {useAuth} from "./context/AuthContext.ts";
 const PLAYER_COLOR = "text-blue-500";
 const OPPONENT_COLOR = "text-red-400/80";
 const ERROR_COLOR = "text-red-300/80";
-const SYSTEM_COLOR = "text-gray-400";
+const SYSTEM_COLOR = "text-fg-3";
 
 function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean}) {
     type Message = {
@@ -98,12 +98,12 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
             {messages.map((message, index) => (
                 <div key={index} className={`wrap-anywhere ${message.centered && "text-center"}`}>
                     {message.username && <p className={`inline font-semibold ${message.usernameColor ?? ""}`}>{message.username}: </p>}
-                    <p className={`inline ${message.messageColor ?? "text-gray-200"}`}>{message.message}</p>
+                    <p className={`inline ${message.messageColor ?? "text-fg-2"}`}>{message.message}</p>
                 </div>
             ))}
 
             {messages.length === 0 && (
-                <div className="flex items-center justify-center h-full text-gray-600 text-sm">
+                <div className="flex items-center justify-center h-full text-fg-3/50 text-sm">
                     No messages yet
                 </div>
             )}

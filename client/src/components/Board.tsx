@@ -6,7 +6,6 @@ import {
 } from "react";
 import Square from "./Square.tsx";
 import {
-    BoardColorType,
     Color,
     GameStatus, IndexToFile,
     type Move,
@@ -22,6 +21,8 @@ import type {AnimationPiece} from "../hooks/PieceAnimation.ts";
 import PieceAnimationOverlay from "./PieceAnimationOverlay.tsx";
 import {useArrows} from "../hooks/Arrows.ts";
 import ArrowLayer from "./ArrowLayer.tsx";
+import {useAtomValue} from "jotai";
+import {boardColorsAtom, moveColorsAtom} from "../atoms/settings.ts";
 
 
 
@@ -42,14 +43,15 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
 
     const {arrows, handlers: arrowHandlers, draft, clear: clearArrows} = useArrows();
 
+    const boardColors = useAtomValue(boardColorsAtom);
+    const moveColors = useAtomValue(moveColorsAtom);
+
     const [selectedSquare, setSelectedSquare] = useState<SquareType | null>(null);
     const [legalMoves, setLegalMoves] = useState<Move[]>([]);
     const [legalRuleMoves, setLegalRuleMoves] = useState<Move[]>([]);
     const [draggedSquare, setDraggedSquare] = useState<SquareType | null>(null);
     const [promotionMove, setPromotionMove] = useState<Move | null>(null);
     const [hovered, setHovered] = useState<{row: number | null; col: number | null}>({row: null, col: null});
-
-    const [boardType, ] = useState<[string, string, string, string]>(BoardColorType.Brown);
 
     const { ref: sizeRef, width } = useElementSize();
     const boardElementRef = useRef<HTMLElement | null>(null);
@@ -338,12 +340,12 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                     cols.map((col, j) => {
                         return <div key={`${row}-${col}`} className={"w-full h-full relative"}>
                             {i === numRows-1 && (
-                                <span className={`absolute z-20 bottom-0 right-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
+                                <span className={`absolute z-20 bottom-0 right-0.5`} style={{color: (i+j)%2 ? boardColors.light : boardColors.dark}}>
                                     {IndexToFile[col]}
                                 </span>
                             )}
                             {j === 0 && (
-                                <span className={`absolute z-20 top-0 left-0.5  ${(i+j)%2 ? boardType[2] : boardType[3]}`}>
+                                <span className={`absolute z-20 top-0 left-0.5`} style={{color: (i+j)%2 ? boardColors.light : boardColors.dark}}>
                                     {numRows-row}
                                 </span>
                             )}
@@ -363,6 +365,7 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                 onContextMenu={(e) => {
                     e.preventDefault();
                 }}
+                onPointerLeave={() => {setHovered({row: null, col: null})}}
             >
                 {rows.map((row) => (
                     cols.map((col) => {
@@ -386,7 +389,8 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                                     isBluffing={isBluffing}
                                     promotionOptionPieceType={promotionOptionPieceType}
                                     handleSelectPromotion={selectPromotionPiece}
-                                    boardType={boardType}
+                                    boardColors={boardColors}
+                                    moveColors={moveColors}
                             />
                         </div>
                     })
@@ -400,10 +404,6 @@ function Board({board, gameStatus, player, view=Color.White, turn, canMove, isBl
                             ref={draggedPiecePortalRef}
                             className={"absolute z-30 pointer-events-none cursor-grabbing"}
                              style={{
-                                 // top: `calc(${mouse.current.y}px - ${squareSize/2}px)`,
-                                 // left: `calc(${mouse.current.x}px - ${squareSize/2}px)`,
-                                 // top: `calc(${mouse.y}px - ${squareSize/2}px)`,
-                                 // left: `calc(${mouse.x}px - ${squareSize/2}px)`,
                                  width: squareSize,
                                  height: squareSize,
                              }}

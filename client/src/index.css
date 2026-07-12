@@ -16,16 +16,17 @@
     /*--color-bg-2: #44444E;*/
 
     /* https://colorhunt.co/palette/222831393e4600adb5eeeeee */
-    --color-fg-1: #00ADB5;
-    --color-fg-2: #EEEEEE;
-    --color-bg-1: #222831;
-    --color-bg-2: #393E46;
+    --color-fg-1: #00ADB5; /* accent */
+    --color-fg-2: #EEEEEE; /* main text */
+    --color-fg-3: #99a1af; /* alt text */
+    --color-bg-1: #222831; /* main background */
+    --color-bg-2: #393E46; /* alt background / panels */
 
 }
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  line-height: 1.25;
   font-weight: 400;
 
   color-scheme: light dark;
@@ -36,6 +37,11 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.mantine-Text-root, .mantine-Title-root {
+    color: var(--color-fg-2);
+    line-height: 1.25;
 }
 
 /*a {*/

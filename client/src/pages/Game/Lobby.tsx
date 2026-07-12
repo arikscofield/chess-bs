@@ -38,7 +38,7 @@ function Lobby() {
             {/* Header */}
             <div className={"text-center mb-4"}>
                 <Title order={2}>Game Lobby</Title>
-                <Text size={"sm"} c={"gray"}>Share the game code or link with your opponent</Text>
+                <Text size={"sm"} c={"var(--color-fg-3)"}>Share the game code or link with your opponent</Text>
             </div>
 
             {/* Game Code/Link */}
@@ -66,8 +66,8 @@ function Lobby() {
                         </CopyButton>
                     </div>
 
-                    <Text size="sm" className="text-gray-500 text-center">
-                        or visit: <span className="font-mono text-gray-400">{window.location.href}</span>
+                    <Text size={"sm"} className={"text-center"}>
+                        or visit: <Text span c={"var(--color-fg-3)"} className={"font-mono"}>{window.location.href}</Text>
                     </Text>
                 </div>
             </Card>
