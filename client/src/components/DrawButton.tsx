@@ -1,4 +1,4 @@
-import {Button} from "@mantine/core";
+import {ActionIcon, Button, Loader, Tooltip} from "@mantine/core";
 import { IoClose } from "react-icons/io5";
 import {useEffect, useRef, useState} from "react";
 import {useSocket} from "./context/SocketContext.ts";
@@ -98,25 +98,31 @@ function DrawButton(
     }
 
 
+    const label = waitingForResponse
+        ? "Draw offered"
+        : sentOffer
+            ? "Draw declined"
+            : confirming
+                ? "Confirm"
+                : "Offer draw";
+
     return (
-        <div className={"flex justify-center relative"} title={"Offer Draw"}>
+        <div className={"flex flex-row flex-1 gap-1"}>
             <Button
-                color={confirming ? "teal" : "var(--color-fg-1)"}
+                fullWidth
+                variant={confirming ? "filled" : "default"}
                 onClick={handleClick}
-                mr={0}
-                loading={waitingForResponse}
                 disabled={sentOffer && !waitingForResponse}
-                w={80}
-                className={`transition-colors `}
+                leftSection={waitingForResponse ? <Loader size={12} color={"var(--color-fg-3)"}/> : <span className={"font-bold"}>½</span>}
+                className={waitingForResponse ? "pointer-events-none" : ""}
             >
-                Draw
+                {label}
             </Button>
-            {(confirming || waitingForResponse) && <button
-                onClick={handleCancel}
-                className={`block absolute items-center h-full right-[-30px] m-0 p-0 text-fg-1 hover:bg-fg-1/20 hover:cursor-pointer rounded-md px-1.5`}
-            >
-                <IoClose size={20}/>
-            </button>}
+            {(confirming || waitingForResponse) && <Tooltip label={waitingForResponse ? "Cancel draw offer" : "Cancel"}>
+                <ActionIcon variant={"default"} size={36} onClick={handleCancel} aria-label={"Cancel"}>
+                    <IoClose size={18}/>
+                </ActionIcon>
+            </Tooltip>}
         </div>
 
     )

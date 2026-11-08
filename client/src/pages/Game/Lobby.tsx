@@ -1,145 +1,99 @@
-import {Button, Card, CopyButton, Divider, Text, Title} from "@mantine/core";
-import {LuClipboard, LuClipboardCheck, LuClock, LuHash, LuPalette, LuShieldAlert} from "react-icons/lu";
-import {BluffPunishment} from "@chess-bs/common";
+import {Button, CopyButton, Loader, TextInput, Tooltip} from "@mantine/core";
+import {
+    LuCheck,
+    LuCopy,
+    LuLayers,
+    LuLink,
+} from "react-icons/lu";
 import RuleList from "../../components/RuleList.tsx";
 import {useAtomValue} from "jotai"
 import {
-    bluffPunishmentAtom,
-    clockIncrementMsAtom,
-    clockStartMsAtom,
-    creatorColorAtom,
-    gameIdAtom, ruleCountAtom,
+    gameIdAtom, playersAtom,
     rulePoolIdsAtom,
-    usesClockAtom
 } from "./atoms.ts";
+import {useAuth} from "../../components/context/AuthContext.ts";
+import GameSettingsSummary from "../../components/GameSettingsSummary.tsx";
+import GamePanel from "../../components/GamePanel.tsx";
 
 
 function Lobby() {
-
     const gameId = useAtomValue(gameIdAtom);
-    const creatorColor = useAtomValue(creatorColorAtom);
-    const bluffPunishment = useAtomValue(bluffPunishmentAtom);
     const rulePoolIds = useAtomValue(rulePoolIdsAtom);
-    const ruleCount = useAtomValue(ruleCountAtom);
+    const players = useAtomValue(playersAtom);
 
-    const usesClock = useAtomValue(usesClockAtom)
-    const clockStartMs = useAtomValue(clockStartMsAtom);
-    const clockIncrementMs = useAtomValue(clockIncrementMsAtom);
+    const {user} = useAuth();
 
-    const bluffPunishmentMap: Record<BluffPunishment, string> = {
-        [BluffPunishment.Turn]: "Lose Turn",
-        [BluffPunishment.Piece]: "Lose Piece (You Pick)",
-        [BluffPunishment.PieceOpponent]: "Lose Piece (Opponent Picks)",
-        [BluffPunishment.PieceRandom ]: "Lose Piece (Random)",
-    }
+    const yourColor = players.find(p => p.userId === user?.userId)?.color;
+    const gameUrl = window.location.href;
 
-    return (<div className={"flex flex-col justify-center items-center min-h-[calc(100vh-82px)] w-full text-white"}>
-        <div className={"w-full max-w-2xl"}>
+    return (<div className={"flex flex-col items-center w-full px-1 py-6 sm:py-12"}>
+        <div className={"w-full max-w-2xl flex flex-col gap-4"}>
+
             {/* Header */}
-            <div className={"text-center mb-4"}>
-                <Title order={2}>Game Lobby</Title>
-                <Text size={"sm"} c={"var(--color-fg-3)"}>Share the game code or link with your opponent</Text>
+            <div className={"flex flex-col items-center text-center gap-3 mb-2"}>
+                <div className={"flex items-center justify-center w-14 h-14 rounded-full bg-fg-1/10"}>
+                    <Loader type={"dots"} size={"sm"}/>
+                </div>
+                <div>
+                    <h1 className={"text-2xl sm:text-3xl font-bold text-fg-2"}>Waiting for an opponent</h1>
+                    <p className={"text-fg-3 mt-1"}>Send them the link below. The game starts as soon as they join.</p>
+                </div>
             </div>
 
-            {/* Game Code/Link */}
-            <Card className={"bg-bg-2! mb-3"}>
-                <div className={"flex flex-col items-center gap-3 text-white"}>
-                    <div className={"flex flex-row justify-center items-center gap-5"}>
-                        <Text>
-                            Game Code:{" "}
-                            <Text span inherit c={"var(--color-fg-1)"} fw={700}>{gameId}</Text>
-                        </Text>
-                        <CopyButton value={window.location.href}>
-                            {({ copied, copy }) => (
-                                <Button
-                                    color={copied ? "green" : "var(--color-fg-1)"}
-                                    onClick={() => {
-                                        copy();
-                                    }}
-                                    classNames={{root: "transition-colors duration-300"}}
+            {/* Invite */}
+            <div className={"rounded-xl bg-bg-2/70 border border-white/5 p-4 flex flex-col gap-3"}>
+
+                {/* Link + copy button*/}
+                <div className={"flex flex-row gap-2"}>
+                    <TextInput
+                        flex={1}
+                        readOnly
+                        value={gameUrl}
+                        aria-label={"Game link"}
+                        leftSection={<LuLink size={15}/>}
+                        onFocus={e => e.currentTarget.select()}
+                        classNames={{input: "font-mono text-sm"}}
+                    />
+                    <CopyButton value={gameUrl}>
+                        {({copied, copy}) => (
+                            <Button
+                                onClick={copy}
+                                color={copied ? "green" : undefined}
+                                leftSection={copied ? <LuCheck size={16}/> : <LuCopy size={16}/>}
+                                className={"min-w-30 transition-colors"}
+                            >
+                                {copied ? "Copied" : "Copy link"}
+                            </Button>
+                        )}
+                    </CopyButton>
+                </div>
+
+                {/* Pure game code*/}
+                <div className={"flex flex-row items-center justify-center gap-2 text-sm text-fg-3"}>
+                    or share the code
+                    <CopyButton value={gameId}>
+                        {({copied, copy}) => (
+                            <Tooltip label={copied ? "Copied" : "Copy code"}>
+                                <button
+                                    type={"button"}
+                                    onClick={copy}
+                                    className={"font-mono font-bold text-base tracking-wider text-fg-1 bg-fg-1/10 hover:bg-fg-1/20 rounded-md px-2.5 py-0.5 transition-colors cursor-pointer"}
                                 >
-                                    {copied
-                                        ? <><LuClipboardCheck size={25} className={"mr-1"}/>Copy Link</>
-                                        : <><LuClipboard size={25} className={"mr-1"}/>Copy Link</>}
-                                </Button>
-                            )}
-                        </CopyButton>
-                    </div>
-
-                    <Text size={"sm"} className={"text-center"}>
-                        or visit: <Text span c={"var(--color-fg-3)"} className={"font-mono"}>{window.location.href}</Text>
-                    </Text>
+                                    {gameId}
+                                </button>
+                            </Tooltip>
+                        )}
+                    </CopyButton>
                 </div>
-            </Card>
+            </div>
 
-            {/* Game Settings/Info */}
-            <Card className={"bg-bg-2! mb-3"}>
-                <Title order={3} className={"text-white text-center"} mb={8}>Game Settings</Title>
+            {/* Settings */}
+            <GameSettingsSummary yourColor={yourColor}/>
 
-                <div className={"flex flex-col items-center gap-3 text-white"}>
-
-                    {/* Time Control */}
-                    {usesClock && clockStartMs !== undefined && clockIncrementMs !== undefined && (
-                        <div className={"flex flex-row items-center justify-between w-full"}>
-                            <div className={"flex flex-row justify-center items-center gap-2"}>
-                                <LuClock color={"var(--color-fg-1)"}/>
-                                <Text>Time Control</Text>
-                            </div>
-                            <Text>
-                                {clockStartMs / 1000 / 60}min + {clockIncrementMs / 1000}sec
-                            </Text>
-                        </div>
-                    )}
-
-                    <Divider color={"var(--color-fg-1)"} my={1} className={"w-full opacity-50"}/>
-
-                    {/* Bluff Punishment */}
-                    <div className={"flex flex-row items-center justify-between w-full"}>
-                        <div className={"flex flex-row justify-center items-center gap-2"}>
-                            <LuShieldAlert color={"var(--color-fg-1)"}/>
-                            <Text>Bluff Punishment</Text>
-                        </div>
-                        <Text>
-                            {bluffPunishmentMap[bluffPunishment ?? BluffPunishment.Turn]}
-                        </Text>
-                    </div>
-
-                    <Divider color={"var(--color-fg-1)"} my={1} className={"w-full opacity-50"}/>
-
-                    {/* Creator Color */}
-                    <div className={"flex flex-row items-center justify-between w-full"}>
-                        <div className={"flex flex-row justify-center items-center gap-2"}>
-                            <LuPalette color={"var(--color-fg-1)"}/>
-                            <Text>Creator Color</Text>
-                        </div>
-                        <Text>
-                            {creatorColor}
-                        </Text>
-                    </div>
-
-                    <Divider color={"var(--color-fg-1)"} my={1} className={"w-full opacity-50"}/>
-
-                    {/* Rule Count */}
-                    <div className={"flex flex-row items-center justify-between w-full"}>
-                        <div className={"flex flex-row justify-center items-center gap-2"}>
-                            <LuHash color={"var(--color-fg-1)"}/>
-                            <Text>Rule Count</Text>
-                        </div>
-                        <Text>
-                            {ruleCount}
-                        </Text>
-                    </div>
-
-                </div>
-            </Card>
-
-            {/* Rule Pool/Count */}
-            <Card className={"bg-bg-2!"}>
-                <Title order={3} className={"text-white text-center"} mb={8}>Rule Pool</Title>
-
-                <RuleList enabledRuleIds={rulePoolIds} size={"xs"}/>
-            </Card>
-
+            {/* Rule Pool */}
+            <GamePanel title={"Rule pool"} icon={<LuLayers size={14}/>} className={"h-auto"}>
+                <RuleList enabledRuleIds={rulePoolIds} size={"xs"} wrapChips={true}/>
+            </GamePanel>
         </div>
     </div>)
 }

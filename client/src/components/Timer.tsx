@@ -1,7 +1,33 @@
 import {useEffect, useState} from "react";
 
 
-function Timer({baseMs, anchorMs, isRunning, }: {baseMs: number | undefined, anchorMs: number, isRunning: boolean, }) {
+function formatTime(timeMs: number): string {
+    let result = "";
+    const negative = timeMs < 0;
+    if (negative) {
+        timeMs = -timeMs;
+        result += "-";
+    }
+    const tenths = Math.floor(timeMs % 1000 / 100);
+    const seconds = Math.floor((timeMs / 1000) % 60);
+    const minutes = Math.floor((timeMs / (60 * 1000)) % 60);
+    const hours = Math.floor((timeMs / (60 * 60 * 1000)) % 60);
+
+    if (hours > 0)
+        result += hours + ":";
+    result += (hours !== 0 && minutes < 10 ? "0" + minutes : minutes) + ":";
+    result += seconds < 10 ? "0" + seconds : seconds;
+    if (hours === 0 && minutes === 0 && seconds < 10)
+        result += "." + tenths;
+
+    return result
+}
+
+function Timer({baseMs, anchorMs, isRunning, }: {
+    baseMs: number | undefined,
+    anchorMs: number,
+    isRunning: boolean,
+}) {
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
@@ -11,28 +37,6 @@ function Timer({baseMs, anchorMs, isRunning, }: {baseMs: number | undefined, anc
         return () => clearInterval(id);
     }, [isRunning, anchorMs, baseMs]);
 
-    function formatTime(timeMs: number): string {
-        let result = "";
-        const negative = timeMs < 0;
-        if (negative) {
-            timeMs = -timeMs;
-            result += "-";
-        }
-        const tenths = Math.floor(timeMs % 1000 / 100);
-        const seconds = Math.floor((timeMs / 1000) % 60);
-        const minutes = Math.floor((timeMs / (60 * 1000)) % 60);
-        const hours = Math.floor((timeMs / (60 * 60 * 1000)) % 60);
-
-        if (hours > 0)
-            result += hours + ":";
-        result += (hours !== 0 && minutes < 10 ? "0" + minutes : minutes) + ":";
-        result += seconds < 10 ? "0" + seconds : seconds;
-        if (hours === 0 && minutes === 0 && seconds < 10)
-            result += "." + tenths;
-
-        return result
-    }
-
 
     if (typeof baseMs !== "number") return null;
 
@@ -40,18 +44,20 @@ function Timer({baseMs, anchorMs, isRunning, }: {baseMs: number | undefined, anc
     const clockMs = Math.max(0, baseMs - elapsed);
     const isLowTime = clockMs <= 30000 && clockMs > 0;
 
-    return <div className={`px-5 py-1.5 rounded-md text-lg font-bold transition-all duration-300 border-2
-    ${clockMs <= 0 
-        ? "bg-red-500/10 text-red-400/80 border-red-500/20"
-        : isRunning 
-            ? isLowTime 
-                ? "bg-orange-500/10 text-orange-400/80 border-orange-500/20"
-                : "bg-bg-2/50 text-fg-2 border-white/10"
+
+    const style = clockMs <= 0
+        ? "bg-danger/20 text-red-300"
+        : isRunning
+            ? isLowTime
+                ? "bg-danger text-white"
+                : "bg-fg-2 text-bg-1"
             : isLowTime
-                ? "bg-orange-500/10 text-orange-400/50 border-orange-500/10"
-                : "bg-bg-2/30 text-fg-3 border-white/10"
-    }
-    `}
+                ? "bg-danger/15 text-red-300"
+                : "bg-bg-1/70 text-fg-3";
+
+    return <div
+        className={`min-w-22 px-3 py-1 rounded-md text-xl font-bold font-mono tabular text-right transition-colors duration-200 ${style}`}
+        role={"timer"}
     >
         {formatTime(clockMs)}
     </div>

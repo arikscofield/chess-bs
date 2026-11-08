@@ -1,7 +1,7 @@
-import {Button} from "@mantine/core";
+import {ActionIcon, Button, Tooltip} from "@mantine/core";
 import { FaRegFlag, } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useSocket} from "./context/SocketContext.ts";
 import type {GameResignRequest, GenericCallback} from "@chess-bs/common";
 
@@ -9,10 +9,9 @@ function ResignButton({gameId}: {gameId: string}) {
     const socket = useSocket();
 
     const [confirming, setConfirming] = useState<boolean>(false);
-
     const resetConfirmingTimeout = useRef<number>(0);
 
-
+    useEffect(() => () => clearTimeout(resetConfirmingTimeout.current), []);
 
     function handleClick() {
         if (confirming) {
@@ -46,24 +45,22 @@ function ResignButton({gameId}: {gameId: string}) {
     }
 
     return (
-        <div className={"flex justify-center relative"}  title={"Resign"}>
+        <div className={"flex flex-row flex-1 gap-1"}>
             <Button
-                color={confirming ? "orange" : "red"}
+                fullWidth
+                variant={confirming ? "filled" : "default"}
+                color={confirming ? "red" : undefined}
                 onClick={handleClick}
-                mr={0}
-                w={80}
-                className={`transition-colors `}
+                leftSection={<FaRegFlag size={13}/>}
             >
-                <FaRegFlag />
+                {confirming ? "Confirm" : "Resign"}
             </Button>
-            {confirming && <button
-                onClick={handleCancel}
-                className={`block absolute items-center h-full right-[-30px] m-0 p-0 text-fg-1 hover:bg-fg-1/20 hover:cursor-pointer rounded-md px-1.5`}
-            >
-                <IoClose size={20}/>
-            </button>}
+            {confirming && <Tooltip label={"Cancel"}>
+                <ActionIcon variant={"default"} size={36} onClick={handleCancel} aria-label={"Cancel resign"}>
+                    <IoClose size={18}/>
+                </ActionIcon>
+            </Tooltip>}
         </div>
-
     )
 }
 

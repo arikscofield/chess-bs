@@ -1,35 +1,24 @@
-import {Button} from "@mantine/core";
-import {type Dispatch, type SetStateAction, useEffect} from "react"
-
-function BluffButton({ isBluffing, setIsBluffing }: {isBluffing: boolean, setIsBluffing:  Dispatch<SetStateAction<boolean>>}) {
+import {Button, Kbd} from "@mantine/core";
+import {type Dispatch, type SetStateAction} from "react"
 
 
-    // Hotkeys
-    useEffect(() => {
-        function handleKeyDown(e: KeyboardEvent) {
-
-            switch (e.key) {
-                case " ": // Space bar toggles bluffing
-                    if (document.activeElement && document.activeElement == document.getElementById("chat-input"))
-                        break;
-                    setIsBluffing((prev) => !prev);
-                    break;
-
-            }
-        }
-        document.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [setIsBluffing])
+/** Button for toggling bluff mode */
+function BluffButton({ isBluffing, setIsBluffing, disabled = false }: {
+    isBluffing: boolean,
+    setIsBluffing: Dispatch<SetStateAction<boolean>>,
+    disabled: boolean,
+}) {
 
     return (
         <Button
-            color={isBluffing ? "orange" : "red"}
-            w={120}
+            color={"orange"}
+            variant={isBluffing ? "filled" : "light"}
             onClick={() => setIsBluffing((prev) => !prev)}
+            disabled={disabled}
+            // leftSection={<LuVenetianMask size={18}/>}
+            rightSection={<Kbd size={"xs"} className={"hidden sm:inline-block opacity-70"}>Space</Kbd>}
             className={"transition-colors"}
+            aria-pressed={isBluffing}
         >
             {isBluffing ? "Stop Bluffing" : "Bluff"}
         </Button>

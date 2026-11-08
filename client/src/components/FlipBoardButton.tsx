@@ -1,4 +1,4 @@
-import {Button} from "@mantine/core";
+import {ActionIcon, Tooltip} from "@mantine/core";
 import type {SetStateAction} from "react";
 import {Color} from "@chess-bs/common";
 import {HiMiniArrowsUpDown} from "react-icons/hi2";
@@ -11,15 +11,17 @@ function FlipBoardButton({playerColor, setView}: {
 
     const opponentColor = playerColor === Color.White ? Color.Black : Color.White;
 
-    return <Button
-        variant={"subtle"}
-        color={"var(--color-fg-2)"}
-        onClick={() => setView((prevColor) => prevColor === opponentColor ? undefined : opponentColor)}
-        title={"Flip Board"}
-        aria-label={"Flip Board"}
-    >
-        <HiMiniArrowsUpDown size={15}/>
-    </Button>
+    return <Tooltip label={"Flip board"}>
+        <ActionIcon
+            variant={"subtle"}
+            color={"gray"}
+            size={"lg"}
+            onClick={() => setView((prevColor) => prevColor === opponentColor ? undefined : opponentColor)}
+            aria-label={"Flip board"}
+        >
+            <HiMiniArrowsUpDown size={16}/>
+        </ActionIcon>
+    </Tooltip>
 }
 
 

@@ -7,9 +7,10 @@ import ThemeSync from "../components/ThemeSync.tsx";
 function MainLayout() {
     return (<AppShell
         padding={"md"}
-        header={{ height: 50 }}
+        header={{ height: 56 }}
         classNames={{
-            main: "flex flex-col"
+            main: "flex flex-col",
+            header: "border-none bg-transparent"
         }}
     >
         <ThemeSync/>

@@ -3,11 +3,8 @@ import {io, type Socket} from "socket.io-client";
 import {SocketContext} from "./SocketContext.ts";
 import type {ClientToServerEvents, ServerToClientEvents} from "@chess-bs/common";
 import {useAuth} from "./AuthContext.ts";
+import {API_BASE} from "../../utils/api.ts";
 
-
-const API_BASE = import.meta.env.DEV
-    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
-    : '';
 
 function SocketProvider({ children }: { children: ReactNode }) {
     const { user, isConnected } = useAuth();

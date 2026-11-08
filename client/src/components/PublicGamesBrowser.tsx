@@ -12,19 +12,18 @@ import {
 } from "@chess-bs/common";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {
-    ActionIcon, Badge,
-    Button, Card, Drawer,
+    ActionIcon, Alert, Badge,
+    Button, Drawer,
     Group,
     Modal,
     NumberInput,
     Pagination,
     Popover,
-    rgba,
     Select,
     Stack,
     Switch,
     Table,
-    Text
+    Text, Tooltip
 } from "@mantine/core";
 import {useSocket} from "./context/SocketContext.ts";
 import {useAuth} from "./context/AuthContext.ts";
@@ -32,10 +31,13 @@ import {useNavigate} from "react-router";
 import RuleList from "./RuleList.tsx";
 import {IoRefresh} from "react-icons/io5";
 import {useMediaQuery} from "@mantine/hooks";
+import {API_BASE} from "../utils/api.ts";
+import {useCreateGame} from "../hooks/CreateGame.ts";
+import {BLUFF_PUNISHMENT_LABELS, CreateGameMode, formatTimeControl} from "../utils/const.ts";
+import {LuLayers, LuSlidersHorizontal} from "react-icons/lu";
+import {FiPlus, FiUsers} from "react-icons/fi";
+import CreateGameModal from "./CreateGameModal.tsx";
 
-const API_BASE = import.meta.env.DEV
-    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
-    : '';
 
 const DEFAULT_QUERY: PublicGamesQueryRequest = PublicGamesQuerySchema.parse({
     sortBy: PublicGameSortBy.CreatedAt,
@@ -64,10 +66,6 @@ function buildUrl(query: PublicGamesQueryRequest) {
     if (query.creatorColor !== undefined) p.set("creatorColor", query.creatorColor);
 
     return url;
-}
-
-function formatTimeControl(game: GameDTO) {
-    return game.usesClock ? `${(game.clockStartMs ?? 0) / 60000}+${(game.clockIncrementMs ?? 0) / 1000}` : `Unlimited`
 }
 
 function SortIndicator({ state }: { state: SortDir | undefined }) {
@@ -103,6 +101,9 @@ function PublicGamesBrowser() {
 
     const [rulePoolModalOpen, setRulePoolModalOpen] = useState(false);
     const [rulePoolIds, setRulePoolIds] = useState<number[]>([]);
+
+    const [createOpen, setCreateOpen] = useState(false);
+    const {createGame, error: createError, clearError} = useCreateGame();
 
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -220,7 +221,6 @@ function PublicGamesBrowser() {
                 onChange={e =>
                     setDraftQuery(q => ({ ...q, usesClock: e.currentTarget.checked ? true : undefined }))
                 }
-                color={"var(--color-fg-1)"}
             />
             <Switch
                 label={<Text span size={"sm"}>Only non-timed games</Text>}
@@ -228,7 +228,6 @@ function PublicGamesBrowser() {
                 onChange={e =>
                     setDraftQuery(q => ({ ...q, usesClock: e.currentTarget.checked ? false : undefined }))
                 }
-                color={"var(--color-fg-1)"}
             />
         </Group>
 
@@ -296,10 +295,7 @@ function PublicGamesBrowser() {
             placeholder="Any"
             clearable
             data={[
-                { label: "Lose Turn", value: BluffPunishment.Turn},
-                { label: "Lose Piece (You Pick)", value: BluffPunishment.Piece},
-                { label: "Lose Piece (Opponent Picks)", value: BluffPunishment.PieceOpponent},
-                { label: "Lose Piece (Random)", value: BluffPunishment.PieceRandom},
+                ...Object.values(BluffPunishment).map(p => ({label: BLUFF_PUNISHMENT_LABELS[p], value: p})),
             ]}
             value={draftQuery.bluffPunishment || null}
             onChange={v => setDraftQuery(q => ({ ...q, bluffPunishment: v as BluffPunishment ?? undefined }))}
@@ -316,62 +312,73 @@ function PublicGamesBrowser() {
         />
 
         <Group justify="space-between" mt="xs">
-            <Button variant={"subtle"} color={"var(--color-fg-1)"} onClick={resetFilters}>
+            <Button variant={"subtle"} color={"gray"} onClick={resetFilters}>
                 Reset
             </Button>
-            <Button color={"var(--color-fg-1)"} onClick={applyFilters}>Apply</Button>
+            <Button onClick={applyFilters}>Apply</Button>
         </Group>
     </Stack>;
 
+    function sortableHeader(label: string, column: PublicGameSortBy) {
+        return <Table.Th
+            onClick={() => cycleSort(column)}
+            className={"cursor-pointer select-none hover:text-fg-2 transition-colors"}
+        >
+            <span className={"inline-flex items-center gap-1"}>
+                {label}
+                <SortIndicator state={query.sortBy === column ? query.sortDir : undefined}/>
+            </span>
+        </Table.Th>
+    }
+
     const rows = games.map(game => (
-        <Table.Tr key={game.gameId}>
-            <Table.Td><Text size={"sm"}>{formatTimeControl(game)}</Text></Table.Td>
-            <Table.Td className={"capitalize"}><Text size={"sm"}>{game.bluffPunishment}</Text></Table.Td>
-            <Table.Td><Text size={"sm"}>{game.ruleCount}</Text></Table.Td>
+        <Table.Tr key={game.gameId} className={"hover:bg-white/3 transition-colors"}>
             <Table.Td>
-                <Button
-                    size={"sm"}
-                    variant={"outline"}
-                    color={"var(--color-fg-1)"}
-                    onClick={() => {
-                        openRulePool(game.rulePoolIds);
-                    }}
-                >
-                    Rule Pool
+                <span className={"font-semibold text-fg-2 tabular"}>{formatTimeControl(game.usesClock, game.clockStartMs, game.clockIncrementMs)}</span>
+            </Table.Td>
+            <Table.Td className={"text-fg-2"}>{game.ruleCount}</Table.Td>
+            <Table.Td className={"text-fg-2"}>{BLUFF_PUNISHMENT_LABELS[game.bluffPunishment]}</Table.Td>
+            <Table.Td>
+                <Button size={"compact-sm"} variant={"subtle"} color={"gray"} leftSection={<LuLayers size={14}/>}
+                        onClick={() => openRulePool(game.rulePoolIds)}>
+                    {game.rulePoolIds.length} rules
                 </Button>
             </Table.Td>
-            <Table.Td>
-                <Button
-                    disabled={!isConnected}
-                    color={"var(--color-fg-1)"}
-                    onClick={() => {handleJoinGame(game.gameId)}}
-                >
+            <Table.Td className={"text-right"}>
+                <Button size={"compact-md"} disabled={!isConnected} onClick={() => handleJoinGame(game.gameId)}>
                     Join
                 </Button>
             </Table.Td>
         </Table.Tr>
     ))
 
-    return (<Stack gap={"md"} className={"text-white"}>
+    const filtersButton = <Button
+        variant={"default"}
+        leftSection={<LuSlidersHorizontal size={15}/>}
+        rightSection={activeFilterCount ? <Badge size={"sm"} circle>{activeFilterCount}</Badge> : undefined}
+        onClick={openFilters}
+    >
+        Filters
+    </Button>
 
-        {/* Above table */}
-        <Group justify={"space-between"}>
-            <Group gap={"sm"}>
-                {/* Refresh Button*/}
-                <Button color={"var(--color-fg-1)"} onClick={fetchData} loading={loading}>
-                    <IoRefresh size={20}/>
-                    Refresh
-                </Button>
+    return (<div className={"w-full max-w-5xl mx-auto px-1 sm:px-4 py-4 sm:py-8 flex flex-col gap-5"}>
 
-                {/* Mobile: filters are shown in bottom drawer */}
-                {isMobile ?
-                <div>
-                    <Button
-                        color={"var(--color-fg-1)"}
-                        onClick={openFilters}
-                    >
-                        Filters{activeFilterCount ? `(${activeFilterCount})` : ""}
-                    </Button>
+        {/* Header */}
+        <div className={"flex flex-col sm:flex-row sm:items-end justify-between gap-4"}>
+            <div>
+                <h1 className={"text-2xl sm:text-3xl font-bold text-fg-2"}>Public games</h1>
+                <p className={"text-fg-3 mt-1"}>Join an open game, or create your own for others to find.</p>
+            </div>
+            <Button leftSection={<FiPlus size={18}/>} onClick={() => { clearError(); setCreateOpen(true); }}>
+                Create public game
+            </Button>
+        </div>
+
+        {/* Toolbar */}
+        <div className={"flex flex-row flex-wrap items-center gap-2"}>
+            {isMobile
+                ? <>
+                    {filtersButton}
                     <Drawer
                         opened={filtersOpen}
                         onClose={() => setFiltersOpen(false)}
@@ -383,8 +390,7 @@ function PublicGamesBrowser() {
                     >
                         {filterForm}
                     </Drawer>
-                </div>
-                // Desktop: filters are shown in Popover
+                </>
                 : <Popover
                     opened={filtersOpen}
                     onChange={setFiltersOpen}
@@ -393,144 +399,133 @@ function PublicGamesBrowser() {
                     shadow={"md"}
                     trapFocus
                 >
-                    <Popover.Target>
-                        <Button
-                            color={"var(--color-fg-1)"}
-                            onClick={openFilters}
-                        >
-                            Filters{activeFilterCount ? `(${activeFilterCount})` : ""}
-                        </Button>
-                    </Popover.Target>
-                    <Popover.Dropdown className={""} bg={"var(--color-bg-1)"} >{filterForm}</Popover.Dropdown>
+                    <Popover.Target>{filtersButton}</Popover.Target>
+                    <Popover.Dropdown>{filterForm}</Popover.Dropdown>
                 </Popover>
-                }
+            }
 
-                {/* Mobile sort-control */}
-                {isMobile && <Group>
-                    <Select
-                        data={[
-                            { label: "Newest", value: PublicGameSortBy.CreatedAt},
-                            { label: "Time Control", value: PublicGameSortBy.Clock},
-                            { label: "Clock Start", value: PublicGameSortBy.ClockStart},
-                            { label: "Clock Increment", value: PublicGameSortBy.ClockIncrement},
-                            { label: "Rule Count", value: PublicGameSortBy.RuleCount},
-                            { label: "Bluff Punishment", value: PublicGameSortBy.BluffPunishment},
-                        ]}
-                        value={query.sortBy}
-                        onChange={v => v && setQuery(q => ({ ...q, sortBy: v as PublicGameSortBy }))}
-                        w={150}
-                    />
-                    <ActionIcon
-                        size={"lg"}
-                        onClick={toggleSortDir}
-                        color={"var(--color-fg-1)"}
-                    >
-                        {query.sortDir === SortDir.Asc ? "\u25B2" : "\u25BC"}
-                    </ActionIcon>
-                </Group>}
+            {isMobile && <Group gap={"xs"}>
+                <Select
+                    data={[
+                        { label: "Newest", value: PublicGameSortBy.CreatedAt},
+                        { label: "Time control", value: PublicGameSortBy.Clock},
+                        { label: "Clock start", value: PublicGameSortBy.ClockStart},
+                        { label: "Clock increment", value: PublicGameSortBy.ClockIncrement},
+                        { label: "Rule count", value: PublicGameSortBy.RuleCount},
+                        { label: "Bluff punishment", value: PublicGameSortBy.BluffPunishment},
+                    ]}
+                    value={query.sortBy}
+                    onChange={v => v && setQuery(q => ({ ...q, sortBy: v as PublicGameSortBy }))}
+                    w={150}
+                    aria-label={"Sort by"}
+                />
+                <ActionIcon variant={"default"} size={36} onClick={toggleSortDir} aria-label={"Toggle sort direction"}>
+                    {query.sortDir === SortDir.Asc ? "\u25B2" : "\u25BC"}
+                </ActionIcon>
+            </Group>}
+
+            <div className={"flex-1"}/>
+
+            <Text size={"sm"} c={"dimmed"}>{totalGames} open game{totalGames === 1 ? "" : "s"}</Text>
+            <Tooltip label={"Refresh"}>
+                <ActionIcon variant={"default"} size={36} onClick={fetchData} loading={loading} aria-label={"Refresh"}>
+                    <IoRefresh size={18}/>
+                </ActionIcon>
+            </Tooltip>
+        </div>
+
+        {error && <Alert color={"red"} variant={"light"} title={"Couldn't load games"}>{error}</Alert>}
+
+        {/* Games */}
+        {games.length === 0
+            ? !loading && <div className={"flex flex-col items-center text-center gap-3 rounded-xl border border-dashed border-white/10 py-14 px-4"}>
+            <div className={"flex items-center justify-center w-12 h-12 rounded-full bg-fg-1/10 text-fg-1"}>
+                <FiUsers size={22}/>
+            </div>
+            <div>
+                <div className={"font-semibold text-fg-2"}>No open games right now</div>
+                <div className={"text-sm text-fg-3 mt-0.5"}>
+                    {activeFilterCount ? "Try clearing your filters, or create a game yourself." : "Create a public game and it'll show up here for others to join."}
+                </div>
+            </div>
+            <Group gap={"sm"}>
+                {activeFilterCount > 0 && <Button variant={"default"} onClick={resetFilters}>Clear filters</Button>}
+                <Button variant={"light"} onClick={() => { clearError(); setCreateOpen(true); }}>Create public game</Button>
             </Group>
-        </Group>
-
-        {error && <Text c={"red"} size={"sm"}>{error}</Text>}
-
-        {isMobile
-            // Mobile: show games as separate cards
-            ? <Stack>
-                {games.map(game => (
-                    <Card key={game.gameId} withBorder radius={"lg"} padding={"sm"}>
-                        <Group justify={"space-between"}>
-                            <Text fw={600}>{formatTimeControl(game)}</Text>
-                            <Badge tt={"capitalize"} color={"var(--color-fg-1)"} variant={"light"}>
-                                {game.bluffPunishment}
-                            </Badge>
-                        </Group>
-                        <Text size={"sm"} c={"dimmed"} mb={"sm"}>
-                            {game.ruleCount} rule{game.ruleCount === 1 ? "" : "s"}
-                        </Text>
-                        <Group grow>
-                            <Button variant={"light"} color={"var(--color-fg-1)"}
-                                    onClick={() => {openRulePool(game.rulePoolIds);}}>
-                                Rule Pool
-                            </Button>
-                            <Button color={"var(--color-fg-1)"} onClick={() => {handleJoinGame(game.gameId)}}>
-                                Join
-                            </Button>
-                        </Group>
-                    </Card>
-                ))}
-            </Stack>
-            // Desktop: Show games as a table
-            : <Table.ScrollContainer minWidth={400} bg={rgba("fff", 0)}>
-                <Table stickyHeader horizontalSpacing={"xs"}>
-                    <Table.Thead>
-                        <Table.Tr className={"*:bg-bg-1! rounded-lg *:p-3!"}>
-                            <Table.Th
-                                onClick={() => cycleSort(PublicGameSortBy.Clock)}
-                                style={{ cursor: "pointer", userSelect: "none"}}
-                                className={"rounded-tl-lg"}
-                            >
-                                <Text span size={"sm"} fw={700}>Time Control</Text>
-                                <SortIndicator state={query.sortBy === PublicGameSortBy.Clock ? query.sortDir : undefined}/>
-                            </Table.Th>
-                            <Table.Th
-                                onClick={() => cycleSort(PublicGameSortBy.BluffPunishment)}
-                                style={{ cursor: "pointer", userSelect: "none" }}
-                            >
-                                <Text span size={"sm"} fw={700}>Bluff Punishment</Text>
-
-                                <SortIndicator state={query.sortBy === PublicGameSortBy.BluffPunishment ? query.sortDir : undefined}/>
-                            </Table.Th>
-                            <Table.Th
-                                onClick={() => cycleSort(PublicGameSortBy.RuleCount)}
-                                style={{ cursor: "pointer", userSelect: "none" }}
-                            >
-                                <Text span size={"sm"} fw={700}>Rule Count</Text>
-                                <SortIndicator state={query.sortBy === PublicGameSortBy.RuleCount ? query.sortDir : undefined}/>
-                            </Table.Th>
-                            <Table.Th><Text span size={"sm"} fw={700}>Rule Pool</Text></Table.Th>
-                            <Table.Th className={"rounded-tr-lg"}><Text span size={"sm"} fw={700}>Join</Text></Table.Th>
-                        </Table.Tr>
-                    </Table.Thead>
-
-                    <Table.Tbody className={""}>
-                        {rows}
-                    </Table.Tbody>
-                </Table>
-            </Table.ScrollContainer>
+        </div>
+            : isMobile
+                // Mobile: show games as separate cards
+                ? <Stack gap={"sm"}>
+                    {games.map(game => (
+                        <div key={game.gameId} className={"rounded-xl bg-bg-2/70 border border-white/5 p-3"}>
+                            <Group justify={"space-between"} mb={4}>
+                                <span className={"text-lg font-bold text-fg-2 tabular"}>{formatTimeControl(game.usesClock, game.clockStartMs, game.clockIncrementMs)}</span>
+                                <Badge variant={"light"}>{game.ruleCount} rule{game.ruleCount === 1 ? "" : "s"}</Badge>
+                            </Group>
+                            <Text size={"sm"} c={"dimmed"} mb={"sm"}>Bluff punishment: {BLUFF_PUNISHMENT_LABELS[game.bluffPunishment]}</Text>
+                            <Group grow>
+                                <Button variant={"default"} onClick={() => openRulePool(game.rulePoolIds)}>
+                                    Rule pool
+                                </Button>
+                                <Button disabled={!isConnected} onClick={() => handleJoinGame(game.gameId)}>
+                                    Join
+                                </Button>
+                            </Group>
+                        </div>
+                    ))}
+                </Stack>
+                // Desktop: Show games as a table
+                : <div className={"rounded-xl bg-bg-2/70 border border-white/5 overflow-hidden"}>
+                    <Table verticalSpacing={"sm"} horizontalSpacing={"md"} classNames={{th: "text-xs font-semibold uppercase tracking-wider text-fg-3 bg-bg-1/40", tr: "border-white/5"}}>
+                        <Table.Thead>
+                            <Table.Tr>
+                                {sortableHeader("Time control", PublicGameSortBy.Clock)}
+                                {sortableHeader("Rules", PublicGameSortBy.RuleCount)}
+                                {sortableHeader("Bluff punishment", PublicGameSortBy.BluffPunishment)}
+                                <Table.Th>Rule pool</Table.Th>
+                                <Table.Th/>
+                            </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {rows}
+                        </Table.Tbody>
+                    </Table>
+                </div>
         }
 
+        {totalGames > 0 && <Group justify={"space-between"}>
+            <Group gap={"xs"}>
+                <Text size={"sm"} c={"dimmed"}>Per page</Text>
+                <Select
+                    data={PAGE_SIZE_OPTIONS}
+                    value={String(query.pageSize)}
+                    onChange={handlePageSizeChange}
+                    w={80}
+                    size={"xs"}
+                    aria-label="Games per page"
+                />
+            </Group>
 
-        {!loading && games.length === 0 && (
-            <Text c={"var(--color-fg-3)"} ta={"center"} py={"md"}>
-                No public games found.
-            </Text>
-        )}
-
-        <Group justify={"space-between"}>
-            <Text c={"var(--color-fg-3)"}>{totalGames} game{totalGames === 1 ? "" : "s"}</Text>
-
-            <Select
-                data={PAGE_SIZE_OPTIONS}
-                value={String(query.pageSize)}
-                onChange={handlePageSizeChange}
-                w={90}
-                aria-label="Games per page"
-                label={<Text size={"sm"} fw={700}>Page size</Text>}
-            />
-
-            <Pagination
+            {totalPages > 1 && <Pagination
                 total={totalPages}
-                color={"var(--color-fg-1)"}
                 value={query.page + 1}
                 onChange={p => setQuery(q => ({...q, page: p-1}))}
-            />
+            />}
+        </Group>}
 
-        </Group>
-
-        <Modal opened={rulePoolModalOpen} onClose={() => {setRulePoolModalOpen(false); setRulePoolIds([])}}>
-            <RuleList enabledRuleIds={rulePoolIds} onlyShowEnabled={true}/>
+        <Modal opened={rulePoolModalOpen} onClose={() => {setRulePoolModalOpen(false); setRulePoolIds([])}} title={"Rule pool"}>
+            <RuleList enabledRuleIds={rulePoolIds} onlyShowEnabled={true} wrapChips={true}/>
         </Modal>
-    </Stack>)
+
+        <CreateGameModal
+            mode={CreateGameMode.Online}
+            defaultPublic={true}
+            opened={createOpen}
+            onClose={() => setCreateOpen(false)}
+            onSubmit={createGame}
+            error={createError}
+        />
+    </div>)
 
 }
 

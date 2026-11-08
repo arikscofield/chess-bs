@@ -1,6 +1,6 @@
-import {type CSSProperties, useEffect, useState} from "react";
+import {type CSSProperties, useEffect} from "react";
 import {useSocket} from "../../components/context/SocketContext.ts";
-import {Color, type GameSpectateRequest, GameStatus, type GenericCallback} from "@chess-bs/common"
+import {BOT_UUID, Color, type GameSpectateRequest, GameStatus, type GenericCallback} from "@chess-bs/common"
 import {useAtom, useAtomValue} from "jotai";
 import {
     clockInfoAtom,
@@ -12,9 +12,8 @@ import {
     viewAtom
 } from "./atoms.ts";
 import {useNavigate} from "react-router";
-import {Group, Panel, Separator} from "react-resizable-panels";
+import {Group, Panel} from "react-resizable-panels";
 import RuleList from "../../components/RuleList.tsx";
-import {MdOutlineDragIndicator} from "react-icons/md";
 import Timer from "../../components/Timer.tsx";
 import Board from "../../components/Board.tsx";
 import TurnHistory from "../../components/TurnHistory.tsx";
@@ -23,12 +22,15 @@ import {useGameViewer} from "../../hooks/GameViewer.ts";
 import GameActions from "../../components/GameActions.tsx";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
 import {useClockState} from "../../hooks/LiveClock.ts";
+import {LuEye, LuLayers, LuListOrdered, LuMessageSquare} from "react-icons/lu";
+import PlayerBar from "../../components/PlayerBar.tsx";
+import GamePanel from "../../components/GamePanel.tsx";
+import PanelSeparator from "../../components/PanelSeparator.tsx";
+import GameTabs from "../../components/GameTabs.tsx";
 
 const PLAY_AREA_STYLE = {
     "--play-h": "calc(100dvh - var(--app-shell-header-offset) - var(--app-shell-padding) * 2)",
 } as CSSProperties;
-
-type MobileTab = "rules" | "history" | "chat";
 
 function Spectate() {
     const navigate = useNavigate();
@@ -46,8 +48,6 @@ function Spectate() {
     const gameResultReason = useAtomValue(gameResultReasonAtom);
 
     const [view, setView] = useAtom(viewAtom);
-
-    const [mobileTab, setMobileTab] = useState<MobileTab>("history");
 
     const { visibleBoard, viewMoveIndex, setViewMoveIndex, highlightedMove } = useGameViewer(startBoard, turnHistory);
     const clockState = useClockState(turnHistory, clockInfo, -1);
@@ -76,194 +76,129 @@ function Spectate() {
     const topClock = clockState.get(topColor);
     const bottomClock = clockState.get(bottomColor);
 
-    const mobileTabs: { id: MobileTab; label: string }[] = [
-        { id: "rules", label: "Rules" },
-        { id: "history", label: "History" },
-        { id: "chat", label: "Chat" },
-    ];
+    const gameRunning = gameStatus !== GameStatus.DONE;
 
-    return (<div style={PLAY_AREA_STYLE} className={"flex flex-col min-h-[var(--play-h)] w-full text-white"}>
-        <div className={"flex flex-col xl:flex-row gap-3 xl:gap-5 justify-center items-stretch xl:items-start min-h-[var(--play-h)] xl:h-[var(--play-h)]"}>
+    function renderPlayerBar(color: Color, clock: ReturnType<typeof clockState.get>) {
+        const p = players.find(p => p.color === color);
+        const isBot = p?.userId === BOT_UUID;
+        return <PlayerBar
+            username={p?.username}
+            color={color}
+            isBot={isBot}
+            isTurn={gameRunning && turnColor === color}
+            materialEval={visibleBoard?.getPieceEval(color, true)}
+            clock={clockInfo.usesClock && clock && <Timer
+                baseMs={clock.baseMs}
+                anchorMs={clock.anchorMs}
+                isRunning={gameRunning && clock.running}
+            />}
+        />
+    }
+
+    const spectatingBadge = <span className={"inline-flex items-center gap-1.5 rounded-full bg-danger/15 text-red-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"}>
+        <span className={"w-1.5 h-1.5 rounded-full bg-red-400 animate-turn-pulse"}/>
+        {gameRunning ? "Live" : "Ended"}
+    </span>
+
+    const rulePoolPanel = <GamePanel title={"Rule pool"} icon={<LuLayers size={14}/>}>
+        <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={view ?? Color.White} onlyShowEnabled={true} wrapChips={true}/>
+    </GamePanel>
+
+    const movesPanel = <GamePanel title={"Moves"} icon={<LuListOrdered size={14}/>} actions={spectatingBadge} bodyClassName={"flex flex-col"}>
+        <div className={"flex-1 min-h-0"}>
+            <TurnHistory
+                turnHistory={turnHistory}
+                viewMoveIndex={viewMoveIndex}
+                setViewMoveIndex={setViewMoveIndex}
+                setView={setView}
+                playerColor={Color.White}
+            />
+        </div>
+        {!gameRunning && <div className={"shrink-0 w-full p-2 border-t border-white/5"}>
+            <GameActions gameId={gameId}
+                         color={view ?? Color.White}
+                         drawOfferedColor={null}
+                         setDrawOfferedColor={() => {}}
+                         gameStatus={gameStatus}
+                         gameResult={gameResult}
+                         gameResultReason={gameResultReason}
+                         isSpectating={true}
+            />
+        </div>}
+    </GamePanel>
+
+    const chatPanel = <GamePanel title={"Chat"} icon={<LuMessageSquare size={14}/>}>
+        <Chatroom gameId={gameId} canSend={false}/>
+    </GamePanel>
+
+    return (<div style={PLAY_AREA_STYLE} className={"flex flex-col min-h-(--play-h) w-full"}>
+        <div className={"flex flex-col xl:flex-row gap-3 xl:gap-4 justify-center items-stretch xl:items-start min-h-(--play-h) xl:h-(--play-h)"}>
 
             {/* Left Side (desktop only)*/}
-            <div className={"hidden xl:block w-[300px] h-full"}>
-                <Group orientation={"vertical"}
-                       defaultLayout={{
-                           "rule-pool": 1,
-                       }}
-                >
-                    <Panel id={"rule-pool"} minSize={"250px"}>
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10"}>
-                            <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Game Rules</h3>
-                            <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={view ?? Color.White} onlyShowEnabled={true} wrapChips={true}/>
-                        </div>
-                    </Panel>
-                </Group>
+            <div className={"hidden xl:flex flex-col gap-3 w-75 shrink-0 h-full"}>
+                <div className={"flex flex-row items-center gap-3 rounded-xl bg-bg-2/70 border border-white/5 px-3 py-2.5"}>
+                    <LuEye size={18} className={"text-fg-1"}/>
+                    <div className={"leading-tight"}>
+                        <div className={"text-sm font-semibold text-fg-2"}>Spectating</div>
+                        <div className={"text-xs text-fg-3"}>Players' secret rules stay hidden</div>
+                    </div>
+                </div>
+                <div className={"flex-1 min-h-0"}>{rulePoolPanel}</div>
             </div>
 
             {/* Board Area */}
-            <div className={"flex flex-col items-center justify-center flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh_-_100px),75vw)]"}>
+            <div className={"flex flex-col items-center justify-center flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh-140px),75vw)]"}>
+                <div className={"w-full max-w-[min(100%,calc(100dvh-220px))] xl:max-w-[min(calc(100dvh-200px),65vw)] flex flex-col gap-1.5"}>
+                    {renderPlayerBar(topColor, topClock)}
 
-                {/* Top Player */}
-                <div className={"flex flex-row justify-between w-full mb-0.5"}>
-                    <div className={"flex flex-row justify-center items-end gap-1"}>
-                        {/* Player Name*/}
-                        <p className={"text-base font-semibold"}>{players.find(p => p.color === topColor)?.username ?? topColor}</p>
-                        {/* Piece Eval */}
-                        <p className={"text-sm text-gray-400 "}>{visibleBoard?.getPieceEval(topColor, true)}</p>
+                    <div className={"w-full aspect-square ring-1 ring-white/5 rounded-sm"}>
+                        {visibleBoard !== null && <Board
+                            board={visibleBoard}
+                            gameStatus={gameStatus}
+                            player={null}
+                            view={view ?? Color.White}
+                            turn={turnColor}
+                            canMove={false}
+                            isBluffing={false}
+                            handleMove={() => {}}
+                            highlightedMove={highlightedMove}
+                            animations={activeAnimations}
+                            hiddenSquares={hiddenSquares}
+                        />}
                     </div>
 
-                    {clockInfo.usesClock && topClock && <Timer
-                        baseMs={topClock.baseMs}
-                        anchorMs={topClock.anchorMs}
-                        isRunning={gameStatus !== GameStatus.DONE && topClock.running}
-                    />}
+                    {renderPlayerBar(bottomColor, bottomClock)}
                 </div>
-
-                {/* Board */}
-                <div className={"w-full max-w-[min(92vw,calc(100dvh_-_240px))] xl:max-w-[min(calc(100dvh_-_180px),65vw)] aspect-square"}>
-                    {visibleBoard !== null && <Board
-                        board={visibleBoard}
-                        gameStatus={gameStatus}
-                        player={null}
-                        view={view ?? Color.White}
-                        turn={turnColor}
-                        canMove={false}
-                        isBluffing={false}
-                        handleMove={() => {}}
-                        highlightedMove={highlightedMove}
-                        animations={activeAnimations}
-                        hiddenSquares={hiddenSquares}
-                    />}
-                </div>
-
-                {/* Bottom Player */}
-                <div className={"flex flex-row justify-between w-full mt-1"}>
-                    <div className={"flex flex-row justify-center items-start gap-1"}>
-                        {/* Player Name*/}
-                        <p className={"text-base font-semibold"}>{players.find(p => p.color === bottomColor)?.username ?? bottomColor}</p>
-                        {/* Piece Eval */}
-                        <p className={"text-sm text-gray-400 "}>{visibleBoard?.getPieceEval(bottomColor, true)}</p>
-                    </div>
-
-                    {clockInfo.usesClock && bottomClock && <Timer
-                        baseMs={bottomClock.baseMs}
-                        anchorMs={bottomClock.anchorMs}
-                        isRunning={gameStatus !== GameStatus.DONE && bottomClock.running}
-                    />}
-                </div>
-
             </div>
 
             {/* Right Side (desktop only) */}
-            <div className={"hidden xl:block w-[300px] h-full"}>
+            <div className={"hidden xl:block w-80 shrink-0 h-full"}>
                 <Group orientation={"vertical"}
                        defaultLayout={{
                            "turn-history": 1.3,
                            "chat": 1
                        }}
                 >
-                    <Panel
-                        id={"turn-history"}
-                        minSize={"100px"}
-                    >
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <div className={"flex-1 min-h-0"}>
-                                <TurnHistory
-                                    turnHistory={turnHistory}
-                                    viewMoveIndex={viewMoveIndex}
-                                    setViewMoveIndex={setViewMoveIndex}
-                                    setView={setView}
-                                    playerColor={view ?? Color.White}
-                                />
-                            </div>
-
-                            <div className={"shrink-0 w-full pt-2 pb-1"}>
-                                <GameActions gameId={gameId}
-                                             color={view ?? Color.White}
-                                             drawOfferedColor={null}
-                                             setDrawOfferedColor={() => {}}
-                                             gameStatus={gameStatus}
-                                             gameResult={gameResult}
-                                             gameResultReason={gameResultReason}
-                                             isSpectating={true}
-                                />
-                            </div>
-                        </div>
+                    <Panel id={"turn-history"} minSize={"160px"}>
+                        {movesPanel}
                     </Panel>
-
-                    <Separator className={"flex flex-row justify-center h-4 my-1 outline-none bg-bg-2/50 hover:bg-bg-2"}>
-                        <MdOutlineDragIndicator color={"gray"} className={"rotate-90"}/>
-                    </Separator>
-
-                    <Panel
-                        id={"chat"}
-                        minSize={"100px"}
-                    >
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
-                            <Chatroom
-                                gameId={gameId}
-                                canSend={false}
-                            />
-                        </div>
+                    <PanelSeparator/>
+                    <Panel id={"chat"} minSize={"100px"}>
+                        {chatPanel}
                     </Panel>
                 </Group>
-
-
             </div>
 
-            {/* Mobile secondary content: tabbed Rules / History / Chat */}
-            <div className={"xl:hidden flex flex-col w-full mt-3"}>
-                <div className={"flex flex-row gap-1 mb-2"}>
-                    {mobileTabs.map(({ id, label }) => (
-                        <button
-                            key={id}
-                            type={"button"}
-                            onClick={() => setMobileTab(id)}
-                            className={`flex-1 min-h-11 rounded-lg text-sm font-semibold uppercase transition-colors ${
-                                mobileTab === id ? "bg-bg-2 text-white" : "bg-bg-2/40 text-gray-400 hover:bg-bg-2/70"
-                            }`}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className={"h-[50dvh] min-h-[300px]"}>
-                    {mobileTab === "rules" && (
-                        <div className={"flex flex-col gap-2 h-full overflow-y-auto"}>
-                            <div className={"flex flex-col rounded-lg bg-bg-2 border border-white/10"}>
-                                <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Game Rules</h3>
-                                <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={view ?? Color.White} onlyShowEnabled={true} wrapChips={true}/>
-                            </div>
-                        </div>
-                    )}
-
-                    {mobileTab === "history" && (
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <div className={"flex-1 min-h-0"}>
-                                <TurnHistory
-                                    turnHistory={turnHistory}
-                                    viewMoveIndex={viewMoveIndex}
-                                    setViewMoveIndex={setViewMoveIndex}
-                                    setView={setView}
-                                    playerColor={view ?? Color.White}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {mobileTab === "chat" && (
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
-                            <Chatroom
-                                gameId={gameId}
-                                canSend={false}
-                            />
-                        </div>
-                    )}
-                </div>
+            {/* Mobile secondary content */}
+            <div className={"xl:hidden"}>
+                <GameTabs
+                    defaultTab={"moves"}
+                    tabs={[
+                        {id: "rules", label: "Rules", content: rulePoolPanel},
+                        {id: "moves", label: "Moves", content: movesPanel},
+                        {id: "chat", label: "Chat", content: chatPanel},
+                    ]}
+                />
             </div>
         </div>
     </div>)

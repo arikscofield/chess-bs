@@ -13,12 +13,13 @@ import {IoCheckmark, IoClose} from "react-icons/io5";
 import ResignButton from "./ResignButton.tsx";
 import DrawButton from "./DrawButton.tsx";
 import RematchButton from "./RematchButton.tsx";
+import {useNavigate} from "react-router";
 
 
 const RESULT_TEXT: [Record<Color, Record<GameResult, string>>, Record<GameResult, string>] = [
     {
-        [Color.White]: {[GameResult.White]: "You Won!", [GameResult.Black]: "You Lost", [GameResult.Draw]: "You Tied"},
-        [Color.Black]: {[GameResult.White]: "You Lost", [GameResult.Black]: "You Won!", [GameResult.Draw]: "You Tied"}
+        [Color.White]: {[GameResult.White]: "You won!", [GameResult.Black]: "You lost", [GameResult.Draw]: "Draw"},
+        [Color.Black]: {[GameResult.White]: "You lost", [GameResult.Black]: "You won!", [GameResult.Draw]: "Draw"}
     },
     {[GameResult.White]: "White won", [GameResult.Black]: "Black won", [GameResult.Draw]: "Draw"},
 ]
@@ -35,6 +36,7 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
 
 }) {
     const socket = useSocket();
+    const navigate = useNavigate();
 
     function declineDrawOffer() {
         if (!socket) return;
@@ -73,45 +75,54 @@ function GameActions({gameId, color, drawOfferedColor, setDrawOfferedColor, game
         const resultText = isSpectating
             ? RESULT_TEXT[1][gameResult ?? GameResult.White]
             : RESULT_TEXT[0][color ?? Color.White][gameResult ?? GameResult.White]
+        const won = !isSpectating && gameResult !== GameResult.Draw && (gameResult as string) === (color as string);
+        const lost = !isSpectating && gameResult !== GameResult.Draw && !won;
 
         return (<div className={"flex flex-col gap-3 w-full"}>
-            <div className={"flex flex-col justify-center items-center gap-1"}>
-                <div className={"text-xl font-bold text-center text-white"}>{resultText}</div>
-                <div className={"text-sm text-center text-gray-300"}>{gameResultReason}</div>
+            <div className={`flex flex-col items-center gap-0.5 rounded-lg py-3 px-2 border
+                ${won ? "bg-success/10 border-success/30" : lost ? "bg-danger/10 border-danger/25" : "bg-white/5 border-white/10"}`}
+            >
+                <div className={`text-lg font-bold text-center ${won ? "text-success" : lost ? "text-red-300" : "text-fg-2"}`}>{resultText}</div>
+                {gameResultReason && <div className={"text-sm text-center text-fg-3"}>{gameResultReason}</div>}
             </div>
-            {!isSpectating && <RematchButton gameId={gameId}/>}
+            {!isSpectating && <div className={"flex flex-col gap-2"}>
+                <RematchButton gameId={gameId}/>
+                <Button variant={"default"} fullWidth onClick={() => navigate("/")}>New game</Button>
+            </div>}
         </div>)
     }
 
     if (isSpectating) {
-        return ""
+        return null;
     }
 
     // Received draw offer; show decline/accept buttons
     if (drawOfferedColor && drawOfferedColor !== color) {
-        return (<div className={"flex flex-row justify-between w-full"}>
-            <div>
+        return (<div className={"flex flex-col gap-2 w-full rounded-lg border border-fg-1/30 bg-fg-1/10 p-2"}>
+            <p className={"flex justify-center items-center text-sm px-1"}>Your opponent offers a draw</p>
+            <div className={"flex flex-row gap-2"}>
                 <Button
+                    fullWidth
                     color={"red"}
+                    leftSection={<IoClose size={16}/>}
                     onClick={declineDrawOffer}
                 >
-                    <IoClose size={20}/>
+                    Decline
                 </Button>
-            </div>
-            <p className={"flex justify-center items-center text-sm px-1"}>Opponent offers a draw</p>
-            <div>
                 <Button
+                    fullWidth
                     color={"green"}
+                    leftSection={<IoCheckmark size={16}/>}
                     onClick={acceptDrawOffer}
                 >
-                    <IoCheckmark size={20}/>
+                    Accept
                 </Button>
             </div>
         </div>)
     }
 
     // Typical in-game resign/draw buttons
-    return (<div className={"flex flex-row justify-around w-full"}>
+    return (<div className={"flex flex-row gap-2 w-full"}>
         <ResignButton gameId={gameId}/>
         <DrawButton gameId={gameId} drawOfferedColor={drawOfferedColor}/>
     </div>)

@@ -6,64 +6,74 @@ import {pieceImages} from "../assets/pieceImages.ts";
 import {Chip, type MantineSize, Tooltip} from "@mantine/core";
 import Rule from "@chess-bs/common/src/rule.js";
 
+/**
+ * Rule list grouped by piece type. Toggle editable chips with `setEnabledRuleIds`
+ */
 function RuleList(
     { enabledRuleIds, setEnabledRuleIds, size = "sm", color = Color.White, onlyShowEnabled = false, wrapChips = false }:
     { enabledRuleIds: number[], setEnabledRuleIds?: (enabledRuleIds: number[]) => void, size?: MantineSize, color?: Color, onlyShowEnabled?: boolean, wrapChips?: boolean }
 ) {
+    const editable = !!setEnabledRuleIds;
+    const iconSize = size === "xs" ? 32 : size === "sm" ? 40 : 48;
 
-    const enabledRules = Rule.getRulesFromIds(enabledRuleIds);
+    const rows = Object.values(PieceType)
+        .map(pieceType => ({
+            pieceType,
+            rules: allRules.filter((rule: Rule) =>
+                rule.pieceType === pieceType && (!onlyShowEnabled || enabledRuleIds.includes(rule.id))),
+        }))
+        .filter(row => row.rules.length > 0);
 
 
-    return (<div className={"@container h-full overflow-auto"}>
-        <div className={"flex flex-col h-full"} >
-            {Object.values(PieceType).map((pieceType, pieceTypeIndex) => {
+    if (rows.length === 0) {
+        return <div className={"flex items-center justify-center h-full p-4 text-sm text-fg-3/70"}>No rules</div>
+    }
+
+    return (<div className={"h-full overflow-auto"}>
+        <div className={"flex flex-col h-full  divide-y divide-white/8"} >
+            {rows.map(({pieceType, rules}) => {
                 const pieceString: string = "" + color + pieceType;
 
-                return <div key={pieceType} className={`flex flex-row flex-1 w-full items-center pl-2 
-                border-gray-400/20 ${pieceTypeIndex === 0 ? "border-b-1" : pieceTypeIndex === Object.values(PieceType).length - 1 ? "border-t-1" : "border-y-1"} 
-                `}>
-                    <img src={pieceImages[pieceString]} alt={pieceString}
-                         width={size === "xs" ? "40"
-                             : size === "sm" ? "50"
-                             : size === "md" ? "60"
-                             : "60"
-                        }
-                    />
-                    <div className={`flex flex-row grow overflow-y-auto ${wrapChips && "flex-wrap"}`}>
-                        {/* TODO: Sort allRules so that the enabled ones are first */}
-                        {allRules.filter((rule: Rule) => rule.pieceType === pieceType && (!onlyShowEnabled || enabledRules.some(r => r.name === rule.name))).map((rule: Rule) => (
-                            <div key={rule.name} className={"m-1"}>
-                                <Tooltip
-                                    label={rule.description}
-                                    transitionProps={{ transition: "pop", duration: 300 }}
-                                    events={{ hover: true, focus: true, touch: true }}
-                                    openDelay={150}
-                                >
-                                    <div>
+                return <div key={pieceType} className={"flex flex-row w-full items-center gap-2 px-2 py-1.5"}>
+                    <img src={pieceImages[pieceString]} alt={pieceString} width={iconSize} height={iconSize} draggable={false} className={"shrink-0"}/>
+                    <div className={`flex flex-row gap-1.5 grow ${wrapChips ? "flex-wrap" : "overflow-x-auto"}`}>
+                        {rules.map((rule: Rule) => {
+                            const enabled = enabledRuleIds.includes(rule.id);
+
+                            return <Tooltip
+                                key={rule.id}
+                                label={rule.description}
+                                transitionProps={{transition: "pop", duration: 300}}
+                                multiline
+                                maw={260}
+                                events={{hover: true, focus: true, touch: true}}
+                                openDelay={150}
+                            >
+                                {editable
+                                    ? <div>
                                         <Chip
                                             size={size}
-                                            checked={enabledRules.some(r => r.name === rule.name)}
+                                            checked={enabled}
                                             onChange={(checked) => {
-                                                if (!setEnabledRuleIds) return;
                                                 if (checked) {
                                                     setEnabledRuleIds([...enabledRuleIds, rule.id]);
                                                 } else {
                                                     setEnabledRuleIds(enabledRuleIds.filter(id => id !== rule.id));
                                                 }
                                             }}
-                                            disabled={!setEnabledRuleIds && !enabledRuleIds.some(id => id === rule.id)}
-                                            styles={{ label: !setEnabledRuleIds ? { cursor: "default"} : {} }}
-                                            color={"var(--color-fg-1)"}
                                         >
                                             {rule.name}
                                         </Chip>
                                     </div>
-
-                                </Tooltip>
-                                {/*<IoInformationCircleOutline size={25} />*/}
-
-                            </div>
-                        ))}
+                                    : <span
+                                        tabIndex={0}
+                                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap cursor-help outline-none focus-visible:ring-2 focus-visible:ring-fg-1
+                                            ${enabled ? "bg-fg-1/15 text-fg-1" : "bg-white/5 text-fg-3/60 line-through"}`}
+                                    >
+                                        {rule.name}
+                                    </span>}
+                            </Tooltip>
+                        })}
                     </div>
 
                 </div>

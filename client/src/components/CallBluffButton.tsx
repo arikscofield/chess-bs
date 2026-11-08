@@ -8,7 +8,7 @@ function CallBluffButtonBase({ onClick, disabled = false} : {
     disabled?: boolean;
 }) {
     return (
-        <Button color={"green"} w={120} onClick={onClick} disabled={disabled}>
+        <Button color={"red"} onClick={onClick} disabled={disabled}>
             Call Bluff
         </Button>
     )

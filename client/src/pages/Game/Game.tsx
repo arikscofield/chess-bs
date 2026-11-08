@@ -1,5 +1,3 @@
-import '../Home/Home.css'
-
 import {useNavigate, useParams} from "react-router";
 import {useEffect, useState} from "react";
 import {
@@ -49,11 +47,8 @@ import {
     startBoardAtom, turnColorAtom, turnHistoryAtom,
     usesClockAtom,
 } from "./atoms.ts";
+import {API_BASE} from "../../utils/api.ts";
 
-
-const API_BASE = import.meta.env.DEV
-    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
-    : '';
 
 function Game() {
     const { gameId } = useParams();

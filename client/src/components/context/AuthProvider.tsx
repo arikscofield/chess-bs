@@ -1,12 +1,8 @@
 import type {UserDTO} from "@chess-bs/common/"
 import {type ReactNode, useEffect, useState} from "react";
 import {AuthContext} from "./AuthContext.ts";
+import {API_BASE} from "../../utils/api.ts";
 
-
-
-const API_BASE = import.meta.env.DEV
-    ? `http://${import.meta.env.VITE_BACKEND_SERVER_IP ?? window.location.hostname}:${import.meta.env.VITE_BACKEND_SERVER_PORT ?? 3000}`
-    : '';
 
 const MAX_DELAY_MS = 30_000;
 const BASE_DELAY_MS = 500;

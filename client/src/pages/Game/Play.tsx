@@ -1,6 +1,5 @@
-import {Group, Panel, Separator} from "react-resizable-panels";
+import {Group, Panel} from "react-resizable-panels";
 import RuleList from "../../components/RuleList.tsx";
-import {MdOutlineDragIndicator} from "react-icons/md";
 import {
     BOT_UUID,
     Color,
@@ -36,12 +35,16 @@ import {
 } from "./atoms.ts";
 import {useGameViewer} from "../../hooks/GameViewer.ts";
 import {useSocket} from "../../components/context/SocketContext.ts";
-import {type CSSProperties, useEffect, useState} from "react";
+import {type CSSProperties, type ReactNode, useEffect, useState} from "react";
 import GameActions from "../../components/GameActions.tsx";
 import {useClockState} from "../../hooks/LiveClock.ts";
 import {usePieceAnimations} from "../../hooks/PieceAnimation.ts";
-import ConnectionIcon from "../../components/ConnectionIcon.tsx";
-import {Text, Title} from "@mantine/core";
+import {useBluffHotkey} from "../../hooks/BluffHotkey.ts";
+import PlayerBar from "../../components/PlayerBar.tsx";
+import {LuKeyRound, LuLayers, LuListOrdered, LuMessageSquare} from "react-icons/lu";
+import GamePanel from "../../components/GamePanel.tsx";
+import PanelSeparator from "../../components/PanelSeparator.tsx";
+import GameTabs from "../../components/GameTabs.tsx";
 
 // Usable height inside AppShell.Main, derived from Mantine's own CSS vars
 // (header height + top/bottom padding). Stays correct if you change either.
@@ -49,8 +52,6 @@ import {Text, Title} from "@mantine/core";
 const PLAY_AREA_STYLE = {
     "--play-h": "calc(100dvh - var(--app-shell-header-offset) - var(--app-shell-padding) * 2)",
 } as CSSProperties;
-
-type MobileTab = "rules" | "history" | "chat";
 
 function Play() {
     const socket = useSocket();
@@ -82,8 +83,6 @@ function Play() {
     const { activeAnimations, clearAnimations, hiddenSquares } = usePieceAnimations(turnHistory, viewMoveIndex, isDragMove);
 
     const [opponent, setOpponent] = useState<PlayerDTO | null>(null)
-    const [mobileTab, setMobileTab] = useState<MobileTab>("history");
-
 
     useEffect(() => {
         const oppColor = player?.color === Color.White ? Color.Black : Color.White;
@@ -127,6 +126,12 @@ function Play() {
         })
     }
 
+    function isConnected(p: PlayerDTO | null) {
+        if (!p) return false;
+        if (p.userId === BOT_UUID) return true;
+        return p.color === player?.color ? !!socket : playersConnected.has(p.userId);
+    }
+
     const topPlayer: PlayerDTO | null = (view === undefined || view === player?.color) ? opponent : player;
     const bottomPlayer: PlayerDTO | null = topPlayer?.color === opponent?.color ? player : opponent;
     const topColor: Color = topPlayer?.color ?? Color.Black;
@@ -139,242 +144,173 @@ function Play() {
         turnHistory.length === 0 ||
         !("from" in (turnHistory.at(-1) ?? {}));
 
-    const mobileTabs: { id: MobileTab; label: string }[] = [
-        { id: "rules", label: "Rules" },
-        { id: "history", label: "History" },
-        { id: "chat", label: "Chat" },
-    ];
+    const gameRunning = gameStatus !== GameStatus.DONE;
+    const isMyTurn = gameRunning && turnColor === player?.color;
 
+    useBluffHotkey(setIsBluffing, gameRunning);
 
-    return (<div style={PLAY_AREA_STYLE} className={"flex flex-col min-h-(--play-h) w-full text-white"}>
+    // Tab title cue when it's your move
+    useEffect(() => {
+        const baseTitle = document.title.replace(/^Your turn · /, "");
+        document.title = isMyTurn ? `Your turn · ${baseTitle}` : baseTitle;
+        return () => { document.title = baseTitle; };
+    }, [isMyTurn]);
 
-        <div className={"flex flex-col xl:flex-row gap-3 xl:gap-5 justify-center items-stretch xl:items-start min-h-(--play-h) xl:h-(--play-h)"}>
+    function renderPlayerBar(p: PlayerDTO | null, color: Color, clock: ReturnType<typeof clockState.get>, extra?: ReactNode) {
+        const isSelf = p?.color === player?.color;
+        return <PlayerBar
+            username={p?.username}
+            color={color}
+            isSelf={isSelf}
+            isBot={p?.userId === BOT_UUID}
+            isTurn={gameRunning && turnColor === color}
+            isBluffing={isSelf && isBluffing}
+            connected={p?.userId === BOT_UUID ? undefined : isConnected(p)}
+            materialEval={visibleBoard?.getPieceEval(color, true)}
+            clock={clockInfo.usesClock && clock && <Timer
+                baseMs={clock.baseMs}
+                anchorMs={clock.anchorMs}
+                isRunning={gameRunning && clock.running}
+            />}
+        >
+            {extra}
+        </PlayerBar>
+    }
+
+    const bluffControls = <>
+        <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing} disabled={!gameRunning}/>
+        <CallBluffButtonOnline
+            gameId={gameId}
+            disabled={bluffCallDisabled || !gameRunning}
+        />
+    </>
+
+    const ownRulesPanel = <GamePanel title={"Your secret rules"} icon={<LuKeyRound size={14}/>}>
+        <OwnRules ruleIds={player?.ruleIds ?? []} color={player?.color || Color.White}/>
+    </GamePanel>
+
+    const rulePoolPanel = <GamePanel title={"Rule pool"} icon={<LuLayers size={14}/>}>
+        <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true} wrapChips={true}/>
+    </GamePanel>
+
+    const movesPanel = <GamePanel title={"Moves"} icon={<LuListOrdered size={14}/>} bodyClassName={"flex flex-col"}>
+        <div className={"flex-1 min-h-0"}>
+            <TurnHistory
+                turnHistory={turnHistory}
+                viewMoveIndex={viewMoveIndex}
+                setViewMoveIndex={setViewMoveIndex}
+                setView={setView}
+                playerColor={player?.color ?? Color.White}
+            />
+        </div>
+        <div className={"shrink-0 w-full p-2 border-t border-white/5"}>
+            <GameActions gameId={gameId}
+                         color={player?.color ?? Color.White}
+                         drawOfferedColor={drawOfferedColor}
+                         setDrawOfferedColor={setDrawOfferedColor}
+                         gameStatus={gameStatus}
+                         gameResult={gameResult}
+                         gameResultReason={gameResultReason}
+            />
+        </div>
+    </GamePanel>
+
+    const chatPanel = <GamePanel title={"Chat"} icon={<LuMessageSquare size={14}/>}>
+        <Chatroom gameId={gameId}/>
+    </GamePanel>
+
+    return (<div style={PLAY_AREA_STYLE} className={"flex flex-col min-h-(--play-h) w-full"}>
+
+        <div className={"flex flex-col xl:flex-row gap-3 xl:gap-4 justify-center items-stretch xl:items-start min-h-(--play-h) xl:h-(--play-h)"}>
 
             {/* Left Side (desktop only) */}
-            <div className={"hidden xl:block w-75 h-full"}>
+            <div className={"hidden xl:block w-75 shrink-0 h-full"}>
                 <Group orientation={"vertical"}
                        defaultLayout={{
-                           "rule-pool": 1,
-                           "own-rules": 1
+                           "own-rules": 1,
+                           "rule-pool": 1.2,
                        }}
                 >
-                    <Panel id={"rule-pool"} minSize={"100px"}>
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10"}>
-                            <Title order={5} c={"var(--color-fg-3)"} className={"font-semibold! text-center pt-2 uppercase "}>Game Rules</Title>
-                            <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true} wrapChips={true}/>
-                        </div>
+                    <Panel id={"own-rules"} minSize={"100px"}>
+                        {ownRulesPanel}
                     </Panel>
-
-                    <Separator className={"flex flex-row justify-center h-4 my-1 outline-none bg-bg-2/50 hover:bg-bg-2"}>
-                        <MdOutlineDragIndicator color={"gray"} className={"rotate-90"}/>
-                    </Separator>
-
-                    <Panel
-                        id={"own-rules"}
-                        minSize={"100px"}
-                    >
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10"}>
-                            <Title order={5} c={"var(--color-fg-3)"} className={"font-semibold! text-center pt-2 uppercase "}>Your Rules</Title>
-                            <OwnRules ruleIds={player?.ruleIds ?? []} color={player?.color || Color.White}/>
-                        </div>
+                    <PanelSeparator/>
+                    <Panel id={"rule-pool"} minSize={"100px"}>
+                        {rulePoolPanel}
                     </Panel>
                 </Group>
             </div>
 
             {/* Board Area */}
-            <div className={"flex flex-col items-center justify-center flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh-100px),75vw)]"}>
+            <div className={"flex flex-col items-center justify-center gap-1.5 flex-1 w-full min-w-0 max-w-full xl:max-w-[min(calc(100dvh-140px),75vw)]"}>
+                <div className={"w-full max-w-[min(100%,calc(100dvh-260px))] xl:max-w-[min(calc(100dvh-200px),65vw)] flex flex-col gap-1.5"}>
 
-                {/* Top Player */}
-                <div className={"flex flex-row justify-between w-full mb-0.5"}>
-                    <div className={"flex flex-row justify-center items-end gap-1"}>
-                        <ConnectionIcon connected={topPlayer?.userId === BOT_UUID || (topPlayer?.color === player?.color ? !!socket : playersConnected.has(topPlayer?.userId ?? ""))} mb={3}/>
-                        {/* Player Name*/}
-                        <Text className={"font-semibold!"}>{view === player?.color || view === undefined ? opponent?.username : player?.username}</Text>
-                        {/* Piece Eval */}
-                        <Text size={"sm"} c={"var(--color-fg-3)"}>{visibleBoard?.getPieceEval(topColor, true)}</Text>
+                    {/* Top Player */}
+                    {renderPlayerBar(topPlayer, topColor, topClock)}
+
+                    {/* Board */}
+                    <div className={`w-full aspect-square rounded-sm transition-shadow duration-300
+                        ${isBluffing ? "ring-4 ring-orange-500/70 shadow-[0_0_40px_-8px] shadow-orange-500/50" : "ring-1 ring-white/5"}`}
+                    >
+                        {visibleBoard !== null && player && <Board
+                            board={visibleBoard}
+                            gameStatus={gameStatus}
+                            player={player}
+                            view={view ?? player.color}
+                            turn={turnColor}
+                            canMove={viewMoveIndex == -1 || viewMoveIndex == turnHistory.length}
+                            isBluffing={isBluffing}
+                            handleMove={handleMove}
+                            highlightedMove={highlightedMove}
+                            animations={activeAnimations}
+                            hiddenSquares={hiddenSquares}
+                            setIsDragMove={setIsDragMove}
+                        />}
                     </div>
 
-                    {clockInfo.usesClock && topClock && <Timer
-                        baseMs={topClock.baseMs}
-                        anchorMs={topClock.anchorMs}
-                        isRunning={gameStatus !== GameStatus.DONE && topClock.running}
-                    />}
-                </div>
+                    {/* Bottom Player */}
+                    {renderPlayerBar(bottomPlayer, bottomColor, bottomClock,
+                        <div className={"hidden xl:flex flex-row gap-2"}>{bluffControls}</div>
+                    )}
 
-                {/* Board */}
-                <div className={"w-full max-w-[min(92vw,calc(100dvh-240px))] xl:max-w-[min(calc(100dvh-180px),65vw)] aspect-square"}>
-                    {visibleBoard !== null && player && <Board
-                        board={visibleBoard}
-                        gameStatus={gameStatus}
-                        player={player}
-                        view={view ?? player.color}
-                        turn={turnColor}
-                        canMove={viewMoveIndex == -1}
-                        isBluffing={isBluffing}
-                        handleMove={handleMove}
-                        highlightedMove={highlightedMove}
-                        animations={activeAnimations}
-                        hiddenSquares={hiddenSquares}
-                        setIsDragMove={setIsDragMove}
-                    />}
-                </div>
-
-                {/* Bottom Player */}
-                <div className={"flex flex-row justify-between w-full mt-1"}>
-                    <div className={"flex flex-row justify-center items-start gap-1"}>
-                        <ConnectionIcon connected={bottomPlayer?.userId === BOT_UUID || (bottomPlayer?.color === player?.color ? !!socket : playersConnected.has(bottomPlayer?.userId ?? ""))} mt={5}/>
-                        {/* Player Name*/}
-                        <Text className={"font-semibold!"}>{view === player?.color || view === undefined ? player?.username : opponent?.username}</Text>
-                        {/* Piece Eval */}
-                        <Text size={"sm"} c={"var(--color-fg-3)"} pt={1.5}>{visibleBoard?.getPieceEval(bottomColor, true)}</Text>
+                    {/* Mobile bluff controls */}
+                    <div className={"xl:hidden grid grid-cols-2 gap-2 w-full *:min-h-11"}>
+                        {bluffControls}
                     </div>
-
-                    <div className={"hidden xl:flex flex-row justify-center gap-2"}>
-                        <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
-                        <CallBluffButtonOnline
-                            gameId={gameId}
-                            disabled={bluffCallDisabled}
-                        />
-                    </div>
-
-                    {clockInfo.usesClock && bottomClock && <Timer
-                        baseMs={bottomClock.baseMs}
-                        anchorMs={bottomClock.anchorMs}
-                        isRunning={gameStatus !== GameStatus.DONE && bottomClock.running}
-                    />}
                 </div>
-
-                <div className={"xl:hidden flex flex-row justify-around gap-2 w-full mt-2 *:min-h-11 *:flex-1"}>
-                    <BluffButton isBluffing={isBluffing} setIsBluffing={setIsBluffing}/>
-                    <CallBluffButtonOnline
-                        gameId={gameId}
-                        disabled={bluffCallDisabled}
-                    />
-                </div>
-
             </div>
 
             {/* Right Side (desktop only) */}
-            <div className={"hidden xl:block w-75 h-full"}>
+            <div className={"hidden xl:block w-80 shrink-0 h-full"}>
                 <Group orientation={"vertical"}
                        defaultLayout={{
                            "turn-history": 1.3,
                            "chat": 1
                        }}
                 >
-                    <Panel
-                        id={"turn-history"}
-                        minSize={"100px"}
-                    >
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <div className={"flex-1 min-h-0"}>
-                                <TurnHistory
-                                    turnHistory={turnHistory}
-                                    viewMoveIndex={viewMoveIndex}
-                                    setViewMoveIndex={setViewMoveIndex}
-                                    setView={setView}
-                                    playerColor={player?.color ?? Color.White}
-                                />
-                            </div>
-
-                            <div className={"shrink-0 w-full pt-2 pb-1"}>
-                                <GameActions gameId={gameId}
-                                             color={player?.color ?? Color.White}
-                                             drawOfferedColor={drawOfferedColor}
-                                             setDrawOfferedColor={setDrawOfferedColor}
-                                             gameStatus={gameStatus}
-                                             gameResult={gameResult}
-                                             gameResultReason={gameResultReason}
-                                />
-                            </div>
-                        </div>
+                    <Panel id={"turn-history"} minSize={"100px"}>
+                        {movesPanel}
                     </Panel>
-
-                    <Separator className={"flex flex-row justify-center h-4 my-1 outline-none bg-bg-2/50 hover:bg-bg-2"}>
-                        <MdOutlineDragIndicator color={"gray"} className={"rotate-90"}/>
-                    </Separator>
-
-                    <Panel
-                        id={"chat"}
-                        minSize={"100px"}
-                    >
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <Title order={5} c={"var(--color-fg-3)"} className={"font-semibold! text-center pt-1 uppercase"}>Chat</Title>
-                            <Chatroom
-                                gameId={gameId}
-                            />
-                        </div>
+                    <PanelSeparator/>
+                    <Panel id={"chat"} minSize={"100px"}>
+                        {chatPanel}
                     </Panel>
                 </Group>
-
-
             </div>
 
             {/* Mobile secondary content: tabbed Rules / History / Chat */}
-            <div className={"xl:hidden flex flex-col w-full mt-3"}>
-                <div className={"flex flex-row gap-1 mb-2"}>
-                    {mobileTabs.map(({ id, label }) => (
-                        <button
-                            key={id}
-                            type={"button"}
-                            onClick={() => setMobileTab(id)}
-                            className={`flex-1 min-h-11 rounded-lg text-sm font-semibold uppercase transition-colors ${
-                                mobileTab === id ? "bg-bg-2 text-white" : "bg-bg-2/40 text-gray-400 hover:bg-bg-2/70"
-                            }`}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className={"h-[50dvh] min-h-75"}>
-                    {mobileTab === "rules" && (
-                        <div className={"flex flex-col gap-2 h-full overflow-y-auto"}>
-                            <div className={"flex flex-col rounded-lg bg-bg-2 border border-white/10"}>
-                                <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Your Rules</h3>
-                                <OwnRules ruleIds={player?.ruleIds ?? []} color={player?.color || Color.White}/>
-                            </div>
-                            <div className={"flex flex-col rounded-lg bg-bg-2 border border-white/10"}>
-                                <h3 className={"text-base font-semibold text-center pt-2 text-gray-300 uppercase "}>Game Rules</h3>
-                                <RuleList enabledRuleIds={rulePoolIds} size={"xs"} color={player?.color || Color.White} onlyShowEnabled={true} wrapChips={true}/>
-                            </div>
-                        </div>
-                    )}
-
-                    {mobileTab === "history" && (
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <div className={"flex-1 min-h-0"}>
-                                <TurnHistory
-                                    turnHistory={turnHistory}
-                                    viewMoveIndex={viewMoveIndex}
-                                    setViewMoveIndex={setViewMoveIndex}
-                                    setView={setView}
-                                    playerColor={player?.color ?? Color.White}
-                                />
-                            </div>
-
-                            <div className={"shrink-0 w-full pt-2 pb-1"}>
-                                <GameActions gameId={gameId}
-                                             color={player?.color ?? Color.White}
-                                             drawOfferedColor={drawOfferedColor}
-                                             setDrawOfferedColor={setDrawOfferedColor}
-                                             gameStatus={gameStatus}
-                                             gameResult={gameResult}
-                                             gameResultReason={gameResultReason}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {mobileTab === "chat" && (
-                        <div className={"flex flex-col rounded-lg h-full bg-bg-2 border border-white/10 p-1"}>
-                            <h3 className={"text-base font-semibold text-center pt-1 text-gray-300 uppercase "}>Chat</h3>
-                            <Chatroom
-                                gameId={gameId}
-                            />
-                        </div>
-                    )}
-                </div>
+            <div className={"xl:hidden"}>
+                <GameTabs
+                    defaultTab={"moves"}
+                    tabs={[
+                        {id: "rules", label: "Rules", content: <div className={"flex flex-col gap-2 h-full"}>
+                                <div className={"flex-[1.2] min-h-0"}>{ownRulesPanel}</div>
+                                <div className={"flex-1 min-h-0"}>{rulePoolPanel}</div>
+                            </div>},
+                        {id: "moves", label: "Moves", content: movesPanel},
+                        {id: "chat", label: "Chat", content: chatPanel},
+                    ]}
+                />
             </div>
         </div>
     </div>)

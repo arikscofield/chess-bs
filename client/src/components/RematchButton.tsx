@@ -1,5 +1,5 @@
 import {useSocket} from "./context/SocketContext.ts";
-import {Button} from "@mantine/core";
+import {ActionIcon, Button, Loader, Tooltip} from "@mantine/core";
 import type {
     GameRematchAcceptRequest, GameRematchCancelOfferRequest,
     GameRematchOfferRequest,
@@ -7,6 +7,7 @@ import type {
 } from "@chess-bs/common";
 import {useEffect, useState} from "react";
 import {IoClose} from "react-icons/io5";
+import {LuRefreshCw} from "react-icons/lu";
 
 
 function RematchButton({gameId}: {
@@ -103,25 +104,23 @@ function RematchButton({gameId}: {
         }) as GenericCallback)
     }
 
-    return (<div className={"flex justify-center self-center relative w-[80%]"}>
+    return (<div className={"flex flex-row gap-1 w-full"}>
         <Button
             onClick={onClick}
-            loading={waitingForResponse}
             disabled={sentOffer && !waitingForResponse}
-            variant={receivedOffer ? "filled" : "outline"}
+            variant={"filled"}
             fullWidth={true}
-            color={"var(--color-fg-1)"}
-            className={`transition-all duration-200 ${receivedOffer ? "animate-pulse" : ""}`}
+            leftSection={waitingForResponse ? <Loader size={12} color={"white"}/> : <LuRefreshCw size={15}/>}
+            className={`${receivedOffer ? "animate-pulse" : ""} ${waitingForResponse ? "pointer-events-none" : ""}`}
         >
-            {receivedOffer ? "Accept Rematch" : "Rematch"}
+            {receivedOffer ? "Accept rematch" : waitingForResponse ? "Rematch offered" : sentOffer ? "Rematch declined" : "Rematch"}
         </Button>
 
-        {waitingForResponse && <button
-            onClick={onCancel}
-            className={`block absolute items-center h-full right-[-30px] m-0 p-0 text-fg-1 hover:bg-fg-1/20 hover:cursor-pointer rounded-md px-1.5`}
-        >
-            <IoClose size={20}/>
-        </button>}
+        {waitingForResponse && <Tooltip label={"Cancel rematch offer"}>
+            <ActionIcon variant={"default"} size={36} onClick={onCancel} aria-label={"Cancel rematch offer"}>
+                <IoClose size={18}/>
+            </ActionIcon>
+        </Tooltip>}
     </div>)
 }
 

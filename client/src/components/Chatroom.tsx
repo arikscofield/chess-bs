@@ -1,5 +1,5 @@
 import { IoSend } from "react-icons/io5";
-import {Button, TextInput} from "@mantine/core";
+import {ActionIcon, TextInput} from "@mantine/core";
 import {useInputState} from "@mantine/hooks";
 import {useEffect, useRef, useState} from "react";
 import {useSocket} from "./context/SocketContext.ts";
@@ -7,9 +7,9 @@ import type {GameChatMessageResponse, GameChatSystemResponse, GameChatSendReques
 import {useAuth} from "./context/AuthContext.ts";
 
 
-const PLAYER_COLOR = "text-blue-500";
-const OPPONENT_COLOR = "text-red-400/80";
-const ERROR_COLOR = "text-red-300/80";
+const PLAYER_COLOR = "text-fg-1";
+const OPPONENT_COLOR = "text-orange-300";
+const ERROR_COLOR = "text-red-300";
 const SYSTEM_COLOR = "text-fg-3";
 
 function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean}) {
@@ -93,23 +93,26 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
     }
 
 
-    return (<div className={"w-full h-full flex flex-col rounded-lg p-2 gap-2 bg-bg-2 text-white"}>
-        <div ref={scrollRef} className={"flex flex-col grow overflow-auto min-h-0 "}>
-            {messages.map((message, index) => (
-                <div key={index} className={`wrap-anywhere ${message.centered && "text-center"}`}>
-                    {message.username && <p className={`inline font-semibold ${message.usernameColor ?? ""}`}>{message.username}: </p>}
-                    <p className={`inline ${message.messageColor ?? "text-fg-2"}`}>{message.message}</p>
+    return (<div className={"w-full h-full flex flex-col"}>
+        <div ref={scrollRef} className={"flex flex-col gap-1 grow overflow-auto min-h-0 px-3 py-2 text-sm"}>
+            {messages.map((message, index) => message.centered
+                ? <div key={index} className={`self-center text-center text-xs rounded-full bg-white/5 px-2.5 py-1 my-0.5 ${message.messageColor ?? "text-fg-3"}`}>
+                    {message.message}
                 </div>
-            ))}
+                : <div key={index} className={"wrap-anywhere leading-snug"}>
+                    {message.username && <span className={`font-semibold ${message.usernameColor ?? ""}`}>{message.username} </span>}
+                    <span className={message.messageColor ?? "text-fg-2"}>{message.message}</span>
+                </div>
+            )}
 
             {messages.length === 0 && (
-                <div className="flex items-center justify-center h-full text-fg-3/50 text-sm">
+                <div className="flex items-center justify-center h-full text-fg-3/70 text-sm">
                     No messages yet
                 </div>
             )}
         </div>
 
-        {canSend && <div className={"flex flex-row gap-2"}>
+        {canSend && <div className={"p-2 border-t border-white/5 shrink-0"}>
             <TextInput
                 id={"chat-input"}
                 value={inputMessage}
@@ -119,21 +122,18 @@ function Chatroom({gameId, canSend = true}: {gameId: string, canSend?: boolean})
                         handleSendMessage();
                     }
                 }}
-                placeholder={"Message"}
+                placeholder={"Send a message"}
+                aria-label={"Chat message"}
                 maxLength={200}
-                classNames={{
-                    input: "bg-bg-1"
-                }}
-                className={"grow rounded-md bg-bg-1 "}
+                rightSection={<ActionIcon
+                    variant={"subtle"}
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim()}
+                    aria-label={"Send message"}
+                >
+                    <IoSend size={14}/>
+                </ActionIcon>}
             />
-            <Button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim()}
-                className={""}
-                color={"var(--color-fg-1)"}
-            >
-                <IoSend/>
-            </Button>
         </div>}
     </div>)
 }
