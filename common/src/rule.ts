@@ -48,6 +48,93 @@ class Rule implements RuleType {
     }
 }
 
+type StepMode = "move" | "capture" | "both";
+
+/*
+Get the moves for moving the piece on `square` one step to each `square + offset`
+ */
+function stepMoves(board: Board, square: Square, offsets: number[][], mode: StepMode): Move[] {
+    const moves: Move[] = [];
+    const piece = board.getPiece(square);
+    if (!piece) return moves;
+
+    for (const [dr = 0, dc = 0] of offsets) {
+        const to = {row: square.row + dr, col: square.col + dc};
+        const destPiece = board.getPiece(to);
+        if (destPiece === undefined) continue; // Off the board
+
+        const isEmpty = destPiece === null;
+        const isEnemy = destPiece !== null && destPiece.color !== piece.color;
+        if ((mode === "move" && isEmpty) || (mode === "capture" && isEnemy) || (mode === "both" && (isEmpty || isEnemy))) {
+            moves.push({from: {row: square.row, col: square.col}, to, piece: {type: piece.pieceType, color: piece.color}});
+        }
+    }
+
+    return moves;
+}
+
+/*
+Removes moves that leave your own king in check (unless you are capturing opponents king)
+ */
+function filterOutChecks(board: Board, color: Color, moves: Move[]): Move[] {
+    const opponentColor = color === Color.White ? Color.Black : Color.White;
+
+    return moves.filter((move) => {
+        const movedBoard = board.clone();
+        movedBoard.applyMove({...move, promotion: move.promotion ?? PieceType.Queen});
+
+        // Allow a move that puts yourself in check if you are capturing opponents king
+        const opponentKingSquare = movedBoard.findKing(opponentColor);
+        if (!opponentKingSquare) return true;
+
+        const kingSquare = movedBoard.findKing(color);
+        if (!kingSquare) return false;
+
+        return movedBoard.attackers(kingSquare, opponentColor).length === 0;
+    })
+}
+
+/*
+Slides the piece on `square` along each direction, hopping over exactly one piece of its own color.
+It can land on any empty square past the hopped piece, or capture the first enemy piece past it.
+Lines are blocked by an enemy piece before the hop and by a second friendly piece.
+ */
+function hopMoves(board: Board, square: Square, directions: number[][]): Move[] {
+    const moves: Move[] = [];
+    const {row, col} = square;
+    const piece = board.getPiece(square);
+    if (!piece) return moves;
+
+    for (const [dr = 0, dc = 0] of directions) {
+        let destRow = row+dr;
+        let destCol = col+dc;
+        let hopped = false;
+        let destPiece = board.getPiece({row: destRow, col: destCol});
+        while (destPiece !== undefined) {
+            if (destPiece && destPiece.color !== piece.color) {
+                // An enemy piece blocks the line; it can only be captured after a hop
+                if (hopped) moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
+                break;
+            }
+            if (destPiece) {
+                if (hopped) break; // Second friendly piece
+                hopped = true;
+            } else if (hopped) {
+                moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
+            }
+            destRow += dr;
+            destCol += dc;
+            destPiece = board.getPiece({row: destRow, col: destCol});
+        }
+    }
+
+    return moves;
+}
+
+
+const ORTHOGONAL =[[1, 0], [-1, 0], [0, 1], [0, -1]];
+const DIAGONAL = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+const KNIGHT = [[1, 2], [-1, 2], [1, -2], [-1, -2], [2, 1], [-2, 1], [2, -1], [-2, -1]];
 
 export const allRules: Rule[] = [
     new Rule(
@@ -56,37 +143,10 @@ export const allRules: Rule[] = [
         "The queen can also move like a knight.",
         PieceType.Queen,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.Queen) return moves;
+            if (piece?.pieceType !== PieceType.Queen) return [];
 
-            const moveOptions = [[1, 2], [-1, 2], [1, -2], [-1, -2], [2, 1], [-2, 1], [2, -1], [-2, -1]];
-            for (const [dr, dc] of moveOptions) {
-                const destPiece = board.getPiece({row: row+dr, col: col+dc});
-                if (destPiece !== undefined && (destPiece == null || destPiece.color !== piece.color)) {
-                    moves.push({from: {row, col}, to: {row: row+dr, col: col+dc}, piece: {type: piece.pieceType, color: piece.color}});
-                }
-            }
-
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
-
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
-
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
-
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
-
-            return moves;
+            return filterOutChecks(board, piece.color, stepMoves(board, square, KNIGHT, "both"));
         }
     ),
     new Rule(
@@ -95,36 +155,11 @@ export const allRules: Rule[] = [
         "Pawns can move backwards one space, but cannot attack backwards.",
         PieceType.Pawn,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.Pawn) return moves;
+            if (piece?.pieceType !== PieceType.Pawn) return [];
 
-            const direction = piece.color === Color.White ? 1 : -1;
-            const destPiece = board.getPiece({row: row+direction, col: col});
-
-            if (destPiece === null) {
-                moves.push({from: {row, col}, to: {row: row+direction, col: col}, piece: {type: piece.pieceType, color: piece.color}});
-            }
-
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
-
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
-
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
-
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
-
-            return moves;
+            const backwards = piece.color === Color.White ? 1 : -1;
+            return filterOutChecks(board, piece.color, stepMoves(board, square, [[backwards, 0]], "move"));
         }
     ),
     new Rule(
@@ -133,58 +168,10 @@ export const allRules: Rule[] = [
         "Rooks can hop over one piece of the same color.",
         PieceType.Rook,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.Rook) return moves;
+            if (piece?.pieceType !== PieceType.Rook) return [];
 
-            const moveOptions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-            for (const [dr, dc] of moveOptions) {
-                let destRow = row+dr;
-                let destCol = col+dc;
-                let piecesHopped = 0;
-                let destPiece = board.getPiece({row: destRow, col: destCol});
-                while (destPiece !== undefined ) {
-                    if (piecesHopped > 0 && destPiece && destPiece.color !== piece.color) {
-                        moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                        break
-                    }
-
-                    if (piecesHopped > 0 && destPiece?.color !== piece.color) {
-                        moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                    }
-
-                    if (destPiece && destPiece.color === piece.color) {
-                        if (piecesHopped >= 1) {
-                            break;
-                        }
-                        piecesHopped++;
-                    }
-
-                    destRow += dr;
-                    destCol += dc;
-                    destPiece = board.getPiece({row: destRow, col: destCol});
-                }
-            }
-
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
-
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
-
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
-
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
-
-            return moves;
+            return filterOutChecks(board, piece.color, hopMoves(board, square, ORTHOGONAL));
         }
     ),
     new Rule(
@@ -193,40 +180,10 @@ export const allRules: Rule[] = [
         "The rook can capture one space diagonally in any direction.",
         PieceType.Rook,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.Rook) return moves;
+            if (piece?.pieceType !== PieceType.Rook) return [];
 
-            const moveOptions = [[1, -1], [1, 1], [-1, -1], [-1, 1]];
-            for (const [dr, dc] of moveOptions) {
-                const destRow = row + dr;
-                const destCol = col + dc;
-                const destPiece = board.getPiece({row: destRow, col: destCol});
-
-                if (destPiece && destPiece.color !== piece.color) {
-                    moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                }
-            }
-
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
-
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
-
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
-
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
-
-            return moves;
+            return filterOutChecks(board, piece.color, stepMoves(board, square, DIAGONAL, "capture"));
         }
     ),
     new Rule(
@@ -235,40 +192,10 @@ export const allRules: Rule[] = [
         "The knight can move 2x2 in any direction.",
         PieceType.Knight,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.Knight) return moves;
+            if (piece?.pieceType !== PieceType.Knight) return [];
 
-            const moveOptions = [[2, 2], [2, -2], [-2, 2], [-2, -2]];
-            for (const [dr, dc] of moveOptions) {
-                const destRow = row + dr;
-                const destCol = col + dc;
-                const destPiece = board.getPiece({row: destRow, col: destCol});
-
-                if (destPiece === null || (destPiece && destPiece.color !== piece.color)) {
-                    moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                }
-            }
-
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
-
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
-
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
-
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
-
-            return moves;
+            return filterOutChecks(board, piece.color, stepMoves(board, square, [[2, 2], [2, -2], [-2, 2], [-2, -2]], "both"));
         }
     ),
     new Rule(
@@ -277,58 +204,10 @@ export const allRules: Rule[] = [
         "Bishops can hop over one piece of the same color.",
         PieceType.Bishop,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.Bishop) return moves;
+            if (piece?.pieceType !== PieceType.Bishop) return [];
 
-            const moveOptions = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
-            for (const [dr, dc] of moveOptions) {
-                let destRow = row+dr;
-                let destCol = col+dc;
-                let piecesHopped = 0;
-                let destPiece = board.getPiece({row: destRow, col: destCol});
-                while (destPiece !== undefined ) {
-                    if (piecesHopped > 0 && destPiece && destPiece.color !== piece.color) {
-                        moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                        break
-                    }
-
-                    if (piecesHopped > 0 && destPiece?.color !== piece.color) {
-                        moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                    }
-
-                    if (destPiece && destPiece.color === piece.color) {
-                        if (piecesHopped >= 1) {
-                            break;
-                        }
-                        piecesHopped++;
-                    }
-
-                    destRow += dr;
-                    destCol += dc;
-                    destPiece = board.getPiece({row: destRow, col: destCol});
-                }
-            }
-
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
-
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
-
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
-
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
-
-            return moves;
+            return filterOutChecks(board, piece.color, hopMoves(board, square, DIAGONAL));
         }
     ),
     new Rule(
@@ -337,40 +216,10 @@ export const allRules: Rule[] = [
         "The bishop can capture one space in any orthogonal direction.",
         PieceType.Bishop,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.Bishop) return moves;
+            if (piece?.pieceType !== PieceType.Bishop) return [];
 
-            const moveOptions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-            for (const [dr, dc] of moveOptions) {
-                const destRow = row + dr;
-                const destCol = col + dc;
-                const destPiece = board.getPiece({row: destRow, col: destCol});
-
-                if (destPiece && destPiece.color !== piece.color) {
-                    moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                }
-            }
-
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
-
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
-
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
-
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
-
-            return moves;
+            return filterOutChecks(board, piece.color, stepMoves(board, square, ORTHOGONAL, "capture"));
         }
     ),
     new Rule(
@@ -379,40 +228,87 @@ export const allRules: Rule[] = [
         "The king can capture two spaces in any orthogonal direction.",
         PieceType.King,
         (board: Board, square: Square): Move[] => {
-            let moves: Move[] = [];
-            const {row, col} = square;
-
             const piece = board.getPiece(square);
-            if (piece?.pieceType !== PieceType.King) return moves;
+            if (piece?.pieceType !== PieceType.King) return [];
 
-            const moveOptions = [[2, 0], [-2, 0], [0, 2], [0, -2]];
-            for (const [dr, dc] of moveOptions) {
-                const destRow = row + dr;
-                const destCol = col + dc;
-                const destPiece = board.getPiece({row: destRow, col: destCol});
+            return filterOutChecks(board, piece.color, stepMoves(board, square, [[2, 0], [-2, 0], [0, 2], [0, -2]], "capture"));
+        }
+    ),
+    new Rule(
+        9,
+        "Sidestepping Pawns",
+        "Pawns can move on space sideways, but cannot capture sideways.",
+        PieceType.Pawn,
+        (board: Board, square: Square): Move[] => {
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Pawn) return [];
 
-                if (destPiece && destPiece.color !== piece.color) {
-                    moves.push({from: {row, col}, to: {row: destRow, col: destCol}, piece: {type: piece.pieceType, color: piece.color}});
-                }
-            }
+            return filterOutChecks(board, piece.color, stepMoves(board, square, [[0, 1], [0, -1]], "move"));
+        }
+    ),
+    new Rule(
+        10,
+        "Charging Pawns",
+        "Pawns can always move two spaces forward, not only on their first move.",
+        PieceType.Pawn,
+        (board: Board, square: Square): Move[] => {
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Pawn) return [];
 
-            // Filter out Checks
-            moves = moves.filter((move) => {
-                const movedBoard = board.clone();
-                movedBoard.applyMove(move);
+            const direction = piece.color === Color.White ? -1 : 1;
+            const {row, col} = square;
+            if (board.getPiece({row: row+direction, col}) !== null) return [];
 
-                // Allow a move that puts yourself in check if you are capturing opponents king
-                const opponentKingSquare = movedBoard.findKing(piece.color === Color.White ? Color.Black : Color.White);
-                if (!opponentKingSquare) return true;
+            return filterOutChecks(board, piece.color, stepMoves(board, square, [[2*direction, 0]], "move"));
+        }
+    ),
+    new Rule(
+        11,
+        "Camel Knight",
+        "The knight can also jump 3x1 in any direction.",
+        PieceType.Knight,
+        (board: Board, square: Square): Move[] => {
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Knight) return [];
 
-                const kingSquare = movedBoard.findKing(piece.color);
-                if (!kingSquare) return false;
+            const moveOptions = [[1, 3], [-1, 3], [1, -3], [-1, -3], [3, 1], [-3, 1], [3, -1], [-3, -1]];
+            return filterOutChecks(board, piece.color, stepMoves(board, square, moveOptions, "both"));
+        }
+    ),
+    new Rule(
+        12,
+        "Stepping Knight",
+        "The knight can move one space in any orthogonal direction, but cannot capture that way.",
+        PieceType.Knight,
+        (board: Board, square: Square): Move[] => {
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Knight) return [];
 
-                const attackers = movedBoard.attackers(kingSquare, piece.color === Color.White ? Color.Black : Color.White);
-                return attackers.length === 0;
-            })
+            return filterOutChecks(board, piece.color, stepMoves(board, square, ORTHOGONAL, "move"));
+        }
+    ),
+    new Rule(
+        13,
+        "Stepping Bishop",
+        "The bishop can move one space in any orthogonal direction, but cannot capture that way.",
+        PieceType.Bishop,
+        (board: Board, square: Square): Move[] => {
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.Bishop) return [];
 
-            return moves;
+            return filterOutChecks(board, piece.color, stepMoves(board, square, ORTHOGONAL, "move"));
+        }
+    ),
+    new Rule(
+        14,
+        "Knighted King",
+        "The king can also move like a knight.",
+        PieceType.King,
+        (board: Board, square: Square): Move[] => {
+            const piece = board.getPiece(square);
+            if (piece?.pieceType !== PieceType.King) return [];
+
+            return filterOutChecks(board, piece.color, stepMoves(board, square, KNIGHT, "both"));
         }
     ),
 
