@@ -2,6 +2,7 @@
 import { createRoot } from 'react-dom/client'
 import {BrowserRouter, Route, Routes} from "react-router";
 import './index.css'
+import './analytics.ts'
 import Home from "./pages/Home/Home.tsx";
 import MainLayout from "./pages/MainLayout.tsx";
 import {MantineProvider} from "@mantine/core";
