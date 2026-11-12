@@ -4,10 +4,12 @@ import {type ReactNode, useState} from "react";
 import CreateGameModal from "../../components/CreateGameModal.tsx";
 import {FaRobot} from "react-icons/fa";
 import {useCreateGame} from "../../hooks/CreateGame.ts";
-import {FiArrowRight, FiEye, FiKey, FiPlus, FiUsers} from "react-icons/fi";
-import {LuCrown} from "react-icons/lu";
+import {FiArrowRight, FiKey, FiPlus, FiUsers} from "react-icons/fi";
 import HeroBoard from "../../components/HeroBoard.tsx";
 import {CreateGameMode} from "../../utils/const.ts";
+import {useAtomValue} from "jotai";
+import {moveColorsAtom} from "../../atoms/settings.ts";
+import MiniBoard from "../../components/MiniBoard.tsx";
 
 
 /** Extract the game code from a string. Accepts bare game code or full game link */
@@ -22,14 +24,28 @@ function parseGameCode(input: string): string {
 }
 
 
-function Step({icon, title, children}: { icon: ReactNode, title: string, children: ReactNode }) {
-    return <div className={"flex flex-col gap-3 rounded-xl bg-bg-2/60 border border-white/5 p-5"}>
-        <div className={"flex items-center justify-center w-10 h-10 rounded-lg bg-fg-1/15 text-fg-1"}>
-            {icon}
+function Step({number, title, diagram, last = false, children}: {
+    number: number,
+    title: string,
+    diagram: ReactNode,
+    last?: boolean,
+    children: ReactNode,
+}) {
+    // The marker column/row and its line connect the steps: vertical on mobile, horizontal on md+
+    return <div className={"group flex flex-row md:flex-col gap-3 md:gap-4"}>
+        <div className={"flex flex-col md:flex-row items-center gap-2 md:gap-3"}>
+            <span className={"flex items-center justify-center shrink-0 w-8 h-8 rounded-full border border-fg-1/50 bg-bg-1 text-sm font-semibold text-fg-1 transition-colors group-hover:bg-fg-1 group-hover:text-bg-1"}>
+                {number}
+            </span>
+            {/* Reaches across the grid gap, stopping just short of the next marker */}
+            {!last && <span className={"flex-1 w-px md:w-auto md:h-px -mb-2 md:mb-0 md:-mr-1 bg-fg-3/30"}/>}
         </div>
-        <div>
-            <h3 className={"font-semibold text-fg-2 mb-1"}>{title}</h3>
-            <p className={"text-sm text-fg-3 leading-relaxed"}>{children}</p>
+        <div className={"flex-1 flex flex-col gap-4 rounded-xl bg-bg-2/60 border border-white/5 p-5 transition-colors group-hover:border-fg-1/30"}>
+            {diagram}
+            <div>
+                <h3 className={"font-semibold text-fg-2 mb-1"}>{title}</h3>
+                <p className={"text-sm text-fg-3 leading-relaxed"}>{children}</p>
+            </div>
         </div>
     </div>
 }
@@ -37,6 +53,8 @@ function Step({icon, title, children}: { icon: ReactNode, title: string, childre
 function Home() {
     const navigate = useNavigate();
     const {createGame, createBotGame, error, clearError} = useCreateGame();
+
+    const moveColors = useAtomValue(moveColorsAtom);
 
     const [gameCodeInput, setGameCodeInput] = useState<string>("");
     const [modal, setModal] = useState<CreateGameMode>(CreateGameMode.None);
@@ -65,7 +83,8 @@ function Home() {
                 {/*    A chess variant*/}
                 {/*</span>*/}
                     <h1 className={"text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-fg-2 leading-[1.05]"}>
-                        Chess with <span className={"text-fg-1"}>bluffing</span>.
+                        {/*Chess with <span className={"text-fg-1"}>bluffing</span>.*/}
+                        <span className={"text-fg-1"}>Bluffing</span> Chess
                     </h1>
                     <p className={"text-base sm:text-lg text-fg-3 max-w-xl leading-relaxed"}>
                         Each player gets secret rules that let their pieces break the rules of chess.
@@ -112,17 +131,40 @@ function Home() {
 
             {/* How to play */}
             <section className={"mt-20 sm:mt-24"}>
-                <h2 className={"text-2xl font-bold text-center text-fg-2 mb-3"}>How it works</h2>
-                {/*<p className={"text-fg-3 mb-6"}>Normal chess, plus a little deception.</p>*/}
+                <h2 className={"text-2xl font-bold text-fg-2 mb-1"}>How it works</h2>
                 <div className={"grid grid-cols-1 md:grid-cols-3 gap-4"}>
-                    <Step icon={<FiKey size={20}/>} title={"1. Get secret rules"}>
-                        Each player is dealt secret rules from the game's rule pool that can change how their own pieces can move.
+                    <Step
+                        number={1}
+                        title={"Get secret rules"}
+                        diagram={<MiniBoard
+                            position={["....p.", "..Q...", ".P...."]}
+                            targets={[[0, 0], [0, 4], [2, 0], [2, 4]].map(([row = 0, col = 0]) => ({square: [row, col], color: moveColors.rule}))}
+                        />}
+                    >
+                        Each player is dealt a few hidden rules from the game's rule pool, like a
+                        queen that can also move like a knight, or a rook that hops over its own pieces.
                     </Step>
-                    <Step icon={<FiEye size={20}/>} title={"2. Bluff or call it"}>
+                    <Step
+                        number={2}
+                        title={"Bluff or call it"}
+                        diagram={<MiniBoard
+                            position={["..N.p.", ".p....", "...P.."]}
+                            highlights={[{square: [2, 2], color: moveColors.bluff}, {square: [0, 2], color: moveColors.bluff}]}
+                            badges={[{square: [0, 2], content: <span className={"flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-bg-1/90 text-[10px] sm:text-xs font-bold text-fg-2"}>?</span>}]}
+                        />}
+                    >
                         On your turn, play a normal move, use one of your rules, or bluff a move you
                         don't actually have. If you think your opponent bluffed, call it instead of moving.
                     </Step>
-                    <Step icon={<LuCrown size={20}/>} title={"3. Take the king"}>
+                    <Step
+                        number={3}
+                        title={"Take the king"}
+                        last={true}
+                        diagram={<MiniBoard
+                            position={[".k..p.", "......", ".R..K."]}
+                            targets={[{square: [1, 1], color: moveColors.regular}, {square: [0, 1], color: moveColors.regular}]}
+                        />}
+                    >
                         A wrong call or a caught bluff costs a turn. There's no checkmate:
                         you win by capturing the king, or when your opponent runs out of time.
                     </Step>
